@@ -1,0 +1,33 @@
+### Gradle ###
+
+.gradle
+build/
+gradle-app.setting
+!gradle/wrapper/gradle-wrapper.jar
+**/build/
+.gradletasknamecache
+
+### IntelliJ ###
+.idea
+
+### Java ###
+# Compiled class file
+*.class
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# OS-Specific #
+__MACOSX/
