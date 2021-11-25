@@ -2,7 +2,7 @@
 # CSE2115 - Project
 
 ### Running 
-`gradle bootRun`
+`gradle microservices:<service-name>:bootRun`
 
 ### Testing
 ```
