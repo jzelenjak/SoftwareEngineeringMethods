@@ -38,12 +38,16 @@ subprojects {
     // Dependencies
     dependencies {
         implementation 'org.springframework.boot:spring-boot-starter'
+        implementation 'org.springframework.data:spring-data-jpa:2.6.0'
         testImplementation('org.springframework.boot:spring-boot-starter-test') {
             exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
         }
         testImplementation('org.junit.jupiter:junit-jupiter:5.5.2')
         testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.1.0'
         testImplementation('org.assertj:assertj-core:3.14.0')
+
+        implementation 'org.postgresql:postgresql:42.1.4'
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.22'
     }
 
     // Code style
