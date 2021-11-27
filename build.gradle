@@ -39,6 +39,8 @@ subprojects {
     dependencies {
         implementation 'org.springframework.boot:spring-boot-starter'
         implementation 'org.springframework.data:spring-data-jpa:2.6.0'
+        implementation 'org.springframework.boot:spring-boot-starter-web'
+        implementation 'org.springframework.boot:spring-boot-starter-validation'
         testImplementation('org.springframework.boot:spring-boot-starter-test') {
             exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
         }
@@ -47,7 +49,9 @@ subprojects {
         testImplementation('org.assertj:assertj-core:3.14.0')
 
         implementation 'org.postgresql:postgresql:42.1.4'
+
         compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.22'
+        annotationProcessor group: 'org.projectlombok', name: 'lombok', version: '1.18.22'
     }
 
     // Code style
@@ -61,7 +65,7 @@ subprojects {
         useJUnitPlatform()
         jacoco {
             enabled = true
-            includes = ['nl.tudelft.sem.template.*']
+            includes = ['nl.tudelft.sem.*']
             excludes = []
         }
     }
