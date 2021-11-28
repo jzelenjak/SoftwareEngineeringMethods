@@ -1,14 +1,7 @@
 package nl.tudelft.sem.authentication.jwt;
 
-import javax.servlet.FilterChain;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
-import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.web.DefaultSecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @ConfigurationProperties(prefix="application.jwt")
@@ -21,7 +14,7 @@ public class JwtConfig {
     }
 
     public String getSecretKey() {
-        return secretKey;
+        return this.secretKey;
     }
 
     public void setSecretKey(String secretKey) {
@@ -29,7 +22,7 @@ public class JwtConfig {
     }
 
     public String getTokenPrefix() {
-        return tokenPrefix;
+        return this.tokenPrefix;
     }
 
     public void setTokenPrefix(String tokenPrefix) {
@@ -37,7 +30,7 @@ public class JwtConfig {
     }
 
     public Integer getTokenExpirationAfterMinutes() {
-        return tokenExpirationAfterMinutes;
+        return this.tokenExpirationAfterMinutes;
     }
 
     public void setTokenExpirationAfterMinutes(Integer tokenExpirationAfterMinutes) {

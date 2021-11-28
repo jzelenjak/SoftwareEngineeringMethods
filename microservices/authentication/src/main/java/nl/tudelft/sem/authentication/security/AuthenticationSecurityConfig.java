@@ -1,15 +1,11 @@
 package nl.tudelft.sem.authentication.security;
 
-//import nl.tudelft.sem.authentication.jwt.JwtConfig;
 import nl.tudelft.sem.authentication.jwt.JwtConfig;
-        import nl.tudelft.sem.authentication.jwt.JwtTokenVerifier;
+import nl.tudelft.sem.authentication.jwt.JwtTokenVerifier;
 import nl.tudelft.sem.authentication.jwt.CredentialsFilter;
 
-        import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -26,18 +22,16 @@ import javax.crypto.SecretKey;
 public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
     private final PasswordEncoder passwordEncoder;
     private final UserDetailsService userDetailsService;
-    private final JwtConfig jwtConfig;
     private final SecretKey secretKey;
+    private final JwtConfig jwtConfig;
 
     @Autowired
-    public AuthenticationSecurityConfig(PasswordEncoder passwordEncoder,
-                                        UserDetailsService userDetailsService,
-                                        JwtConfig jwtConfig,
-                                        SecretKey secretKey) {
+    public AuthenticationSecurityConfig(PasswordEncoder passwordEncoder, UserDetailsService userDetailsService,
+                                        SecretKey secretKey, JwtConfig jwtConfig) {
         this.passwordEncoder = passwordEncoder;
         this.userDetailsService = userDetailsService;
-        this.jwtConfig = jwtConfig;
         this.secretKey = secretKey;
+        this.jwtConfig = jwtConfig;
     }
 
     @Override
@@ -53,25 +47,24 @@ public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/", "index").permitAll()
                 .anyRequest()
                 .authenticated();
-//                .and().apply(new JwtConfigurer(jwtTokenProvider));
     }
 
-    @Override
+    /*@Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.authenticationProvider(authProvider());
-    }
+    }*/
 
-    /**
+    /*/**
      * Configure the authentication provider.
      *
      * @return DaoAuthenticationProvider The authentication provider.
      */
-    @Bean
+    /*@Bean
     public DaoAuthenticationProvider authProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(this.userDetailsService);
         authProvider.setPasswordEncoder(this.passwordEncoder);
         return authProvider;
-    }
+    }*/
 }
 
