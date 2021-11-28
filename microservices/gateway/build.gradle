@@ -1,3 +1,9 @@
 group = 'nl.tudelft.cse.sem.gateway'
 version = '0.0.1-SNAPSHOT'
 mainClassName = 'nl.tudelft.sem.gateway.GatewayMain'
+
+dependencies {
+    implementation 'com.google.guava:guava:31.0.1-jre'
+    implementation 'org.apache.commons:commons-lang3:3.0'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+}
