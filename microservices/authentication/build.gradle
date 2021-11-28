@@ -4,5 +4,6 @@ mainClassName = 'nl.tudelft.sem.authentication.AuthenticationMain'
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-web:2.6.0'
     testImplementation 'org.springframework.security:spring-security-test'
 }
