@@ -1,15 +1,21 @@
 package nl.tudelft.sem.authentication.security;
 
-import nl.tudelft.sem.authentication.auth.AuthenticationService;
+//import nl.tudelft.sem.authentication.jwt.JwtConfig;
 import nl.tudelft.sem.authentication.jwt.JwtConfig;
-import org.springframework.beans.factory.annotation.Autowired;
+        import nl.tudelft.sem.authentication.jwt.JwtTokenVerifier;
+import nl.tudelft.sem.authentication.jwt.CredentialsFilter;
+
+        import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-//import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import javax.crypto.SecretKey;
@@ -19,19 +25,19 @@ import javax.crypto.SecretKey;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
     private final PasswordEncoder passwordEncoder;
-    private final AuthenticationService authenticationService;
+    private final UserDetailsService userDetailsService;
     private final JwtConfig jwtConfig;
-    //private final SecretKey secretKey;
+    private final SecretKey secretKey;
 
     @Autowired
     public AuthenticationSecurityConfig(PasswordEncoder passwordEncoder,
-                                        AuthenticationService authenticationService,
-                                        JwtConfig jwtConfig//,
-                                        /*SecretKey secretKey*/) {
+                                        UserDetailsService userDetailsService,
+                                        JwtConfig jwtConfig,
+                                        SecretKey secretKey) {
         this.passwordEncoder = passwordEncoder;
-        this.authenticationService = authenticationService;
+        this.userDetailsService = userDetailsService;
         this.jwtConfig = jwtConfig;
-        //this.secretKey = secretKey;
+        this.secretKey = secretKey;
     }
 
     @Override
@@ -41,21 +47,31 @@ public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionManagement()
                     .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
-                //.addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager(), jwtConfig, secretKey))
-                //.addFilterAfter(new JwtTokenVerifier(secretKey, jwtConfig),JwtUsernameAndPasswordAuthenticationFilter.class)
+                .addFilter(new CredentialsFilter(authenticationManager(), jwtConfig, this.secretKey))
+                .addFilterAfter(new JwtTokenVerifier(secretKey, jwtConfig), CredentialsFilter.class)
                 .authorizeRequests()
                 .antMatchers("/", "index").permitAll()
                 .anyRequest()
                 .authenticated();
+//                .and().apply(new JwtConfigurer(jwtTokenProvider));
     }
 
-    /*@Override
-    public void configure(AuthenticationManagerBuilder authenticationManagerBuilder) throws Exception {
-        authenticationManagerBuilder.authenticationProvider(dao);
-    }*/
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.authenticationProvider(authProvider());
+    }
 
-    /*
-    Add DAO authentication provider
+    /**
+     * Configure the authentication provider.
+     *
+     * @return DaoAuthenticationProvider The authentication provider.
      */
+    @Bean
+    public DaoAuthenticationProvider authProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(this.userDetailsService);
+        authProvider.setPasswordEncoder(this.passwordEncoder);
+        return authProvider;
+    }
 }
 

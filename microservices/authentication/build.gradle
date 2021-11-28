@@ -4,6 +4,12 @@ mainClassName = 'nl.tudelft.sem.authentication.AuthenticationMain'
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.2'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.2'
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.2'
     implementation 'org.springframework.boot:spring-boot-starter-web:2.6.0'
     testImplementation 'org.springframework.security:spring-security-test'
+//    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+//    compileOnly "org.springframework.boot:spring-boot-configuration-processor"
+    compileOnly 'org.springframework.boot:spring-boot-configuration-processor:2.6.0'
 }
