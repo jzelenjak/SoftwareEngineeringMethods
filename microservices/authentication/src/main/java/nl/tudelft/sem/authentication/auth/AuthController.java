@@ -20,7 +20,7 @@ public class AuthController {
 
     /*TODO Add API:
        Register user credentials (must, can be done once, if there's an entry -> not allowed)*/
-    @PostMapping("/resigter/{username}/{password}")
+    @PostMapping("/register/{username}/{password}")
     public int register(@PathVariable("username") String username,
                         @PathVariable("password") String password) {
         // Register
