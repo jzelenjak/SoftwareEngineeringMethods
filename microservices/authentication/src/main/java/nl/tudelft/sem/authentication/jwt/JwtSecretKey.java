@@ -9,7 +9,8 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * A class for JWT Secret Key.
- * Spring will create the Secret Key automatically based on the properties in the application.properties.
+ * Spring will create the Secret Key automatically
+ * based on the properties in the application.properties.
  */
 @Configuration
 public class JwtSecretKey {
@@ -40,7 +41,7 @@ public class JwtSecretKey {
      * @return the secret key
      */
     @Bean
-    public SecretKey SecretKey() {
+    public SecretKey secretKey() {
         return Keys.hmacShaKeyFor(jwtConfig.getSecretKey().getBytes());
     }
 }

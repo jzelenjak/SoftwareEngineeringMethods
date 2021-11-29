@@ -4,21 +4,17 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-
 import java.io.IOException;
-import org.springframework.http.HttpHeaders;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
-import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.lang.NonNullApi;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -64,6 +60,7 @@ public class JwtTokenVerifier extends OncePerRequestFilter {
 
     /**
      * Performs the internal filtering once per each request.
+     *
      * @param request HTTP request
      * @param response HTTP response
      * @param filterChain the filter chain
@@ -77,8 +74,8 @@ public class JwtTokenVerifier extends OncePerRequestFilter {
 
         String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if (authorizationHeader == null || authorizationHeader.isEmpty() ||
-                !authorizationHeader.startsWith(jwtConfig.getTokenPrefix())) {
+        if (authorizationHeader == null || authorizationHeader.isEmpty()
+                || !authorizationHeader.startsWith(jwtConfig.getTokenPrefix())) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -93,7 +90,8 @@ public class JwtTokenVerifier extends OncePerRequestFilter {
 
             Claims body = claimsJws.getBody();
             String username = body.getSubject();
-            List<Map<String, String>> authorities = (List<Map<String, String>>) body.get("authorities");
+            List<Map<String, String>> authorities =
+                    (List<Map<String, String>>) body.get("authorities");
 
             Set<SimpleGrantedAuthority> simpleGrantedAuthorities = authorities.stream()
                     .map(m -> new SimpleGrantedAuthority(m.get("authority")))

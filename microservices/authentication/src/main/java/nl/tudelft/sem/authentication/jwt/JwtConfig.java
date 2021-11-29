@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
  * A class for JTW configuration.
  */
 @Configuration
-@ConfigurationProperties(prefix="application.jwt")
+@ConfigurationProperties(prefix = "application.jwt")
 public class JwtConfig {
     private String secretKey;
     private String tokenPrefix;
@@ -22,7 +22,7 @@ public class JwtConfig {
     /**
      * Gets the secret key for the JWT Token.
      *
-     * @return the secret key for the JWT Token
+     * @return the secret key for the JWT Token.
      */
     public String getSecretKey() {
         return this.secretKey;
@@ -31,7 +31,7 @@ public class JwtConfig {
     /**
      * Sets the secret key for the JWT Token.
      *
-     * @param secretKey the secret key for the JWT Token
+     * @param secretKey the secret key for the JWT Token.
      */
     public void setSecretKey(String secretKey) {
         this.secretKey = secretKey;
@@ -40,7 +40,7 @@ public class JwtConfig {
     /**
      * Gets the token prefix for the JWT token.
      *
-     * @return the token prefix for the JWT token
+     * @return the token prefix for the JWT token.
      */
     public String getTokenPrefix() {
         return this.tokenPrefix;
@@ -49,7 +49,7 @@ public class JwtConfig {
     /**
      * Sets token prefix for the JWT token.
      *
-     * @param tokenPrefix the token prefix for the JWT token
+     * @param tokenPrefix the token prefix for the JWT token.
      */
     public void setTokenPrefix(String tokenPrefix) {
         this.tokenPrefix = tokenPrefix;
@@ -58,7 +58,7 @@ public class JwtConfig {
     /**
      * Gets the token expiration time (after minutes).
      *
-     * @return the token expiration time (after minutes)
+     * @return the token expiration time (after minutes).
      */
     public Integer getTokenExpirationAfterMinutes() {
         return this.tokenExpirationAfterMinutes;

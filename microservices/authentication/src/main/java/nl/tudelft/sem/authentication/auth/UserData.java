@@ -1,13 +1,12 @@
 package nl.tudelft.sem.authentication.auth;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 
 /**
@@ -48,6 +47,7 @@ public class UserData implements UserDetails {
 
     /**
      * Gets granted authorities.
+     *
      * @return the granted authorities
      */
     @Override
@@ -57,6 +57,7 @@ public class UserData implements UserDetails {
 
     /**
      * Gets the password.
+     *
      * @return the password
      */
     @Override
@@ -66,6 +67,7 @@ public class UserData implements UserDetails {
 
     /**
      * Gets the username.
+     *
      * @return the username
      */
     @Override
@@ -75,6 +77,7 @@ public class UserData implements UserDetails {
 
     /**
      * Checks if the account is not expired.
+     *
      * @return true if the account is not expired, false otherwise
      */
     @Override
@@ -84,6 +87,7 @@ public class UserData implements UserDetails {
 
     /**
      * Checks if the account is not locked.
+     *
      * @return true if the account is not locked, false otherwise
      */
     @Override
@@ -93,6 +97,7 @@ public class UserData implements UserDetails {
 
     /**
      * Checks if the credentials are not expired.
+     *
      * @return true if the credentials are not expired, false otherwise
      */
     @Override
@@ -102,6 +107,7 @@ public class UserData implements UserDetails {
 
     /**
      * Checks if the user is enabled.
+     *
      * @return true if the user is enabled, false otherwise
      */
     @Override

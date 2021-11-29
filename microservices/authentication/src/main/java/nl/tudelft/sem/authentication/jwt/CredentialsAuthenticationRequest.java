@@ -17,7 +17,7 @@ public class CredentialsAuthenticationRequest {
     /**
      * Gets the username.
      *
-     * @return the username
+     * @return the username.
      */
     public String getUsername() {
         return username;
@@ -26,7 +26,7 @@ public class CredentialsAuthenticationRequest {
     /**
      * Sets the username.
      *
-     * @param username the username
+     * @param username the username to set.
      */
     public void setUsername(String username) {
         this.username = username;
@@ -35,7 +35,7 @@ public class CredentialsAuthenticationRequest {
     /**
      * Gets the password.
      *
-     * @return the password
+     * @return the password.
      */
     public String getPassword() {
         return password;
@@ -44,7 +44,7 @@ public class CredentialsAuthenticationRequest {
     /**
      * Sets the password.
      *
-     * @param password the password
+     * @param password the password to set.
      */
     public void setPassword(String password) {
         this.password = password;

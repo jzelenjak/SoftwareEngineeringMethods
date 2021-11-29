@@ -1,6 +1,5 @@
 package nl.tudelft.sem.authentication.security;
 
-
 /**
  * The enum for User roles.
  */
