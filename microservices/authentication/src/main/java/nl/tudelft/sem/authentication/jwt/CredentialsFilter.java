@@ -63,7 +63,7 @@ public class CredentialsFilter extends UsernamePasswordAuthenticationFilter {
      */
     @Override
     public AuthenticationManager getAuthenticationManager() {
-        return authenticationManager;
+        return this.authenticationManager;
     }
 
     /**
@@ -85,7 +85,6 @@ public class CredentialsFilter extends UsernamePasswordAuthenticationFilter {
                     authenticationRequest.getPassword());
 
             return authenticationManager.authenticate(authentication);
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -97,16 +96,17 @@ public class CredentialsFilter extends UsernamePasswordAuthenticationFilter {
      * @param request HTTP request
      * @param response HTTP response
      * @param chain the filter chain
-     * @param authResult the result of the authentication (
+     * @param authResult the result of the authentication
      */
     @Override
-    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
-                                            Authentication authResult) {
+    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
+                                            FilterChain chain, Authentication authResult) {
         String token = Jwts.builder()
                 .setSubject(authResult.getName())
                 .claim("authorities", authResult.getAuthorities())
                 .setIssuedAt(new Date())
-                .setExpiration(java.sql.Date.valueOf(LocalDate.now().plusDays(jwtConfig.getTokenExpirationAfterMinutes())))
+                .setExpiration(java.sql.Date.valueOf(LocalDate.now()
+                        .plusDays(jwtConfig.getTokenExpirationAfterMinutes())))
                 .signWith(secretKey)
                 .compact();
 

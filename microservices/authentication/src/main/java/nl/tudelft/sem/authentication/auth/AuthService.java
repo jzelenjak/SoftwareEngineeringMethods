@@ -5,7 +5,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AuthenticationService {
+public class AuthService {
 //    private Users users;
 //
 //    @Autowired
