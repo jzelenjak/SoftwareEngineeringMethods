@@ -8,12 +8,12 @@ stages:
 build:
   stage: build
   script:
-    gradle build
+    gradle build -x checkstyleMain -x checkstyleTest -x pmdMain -x pmdTest
 
 checkStyle:
   stage: staticAnalysis
   script:
-    gradle checkstyleMain checkStyleTest
+    gradle checkstyleMain checkstyleTest
 
 PMD:
   stage: staticAnalysis
