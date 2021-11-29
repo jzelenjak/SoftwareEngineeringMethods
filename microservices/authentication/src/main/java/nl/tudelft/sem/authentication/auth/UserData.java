@@ -14,14 +14,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 
 /**
- * A class for storing user information.
+ * A class for storing user data.
  */
 @Entity
 @Table
 public class UserData implements UserDetails {
     @Id
     @Column
-    private String username;
+    private final String username;
 
     @Column
     private String password;
@@ -30,16 +30,16 @@ public class UserData implements UserDetails {
     private UserRole role;
 
     @Column
-    private final boolean accountNonExpired;
+    private boolean accountNonExpired;
 
     @Column
-    private final boolean accountNonLocked;
+    private boolean accountNonLocked;
 
     @Column
-    private final boolean credentialsNonExpired;
+    private boolean credentialsNonExpired;
 
     @Column
-    private final boolean enabled;
+    private boolean enabled;
 
     @Column
     private static final long serialVersionUID = 25546278L;
@@ -47,7 +47,7 @@ public class UserData implements UserDetails {
     /**
      * Instantiates a new UserData class.
      *
-     * @param username              the username of the user
+     * @param username              the netID of the user
      * @param password              the password  of the user
      * @param role                  the role of the user
      */
@@ -62,9 +62,9 @@ public class UserData implements UserDetails {
     }
 
     /**
-     * Gets granted authorities.
+     * Gets the granted authorities of the user.
      *
-     * @return the granted authorities
+     * @return the granted authorities of the user
      */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -74,15 +74,21 @@ public class UserData implements UserDetails {
     }
 
     /**
-     * Gets the password.
+     * Gets the password of the user.
      *
-     * @return the password
+     * @return the password of the user
      */
     @Override
     public String getPassword() {
         return this.password;
     }
 
+
+    /**
+     * Sets the password of the user.
+     *
+     * @param password the password of the user
+     */
     public void setPassword(String password) {
         this.password = password;
     }
@@ -97,10 +103,6 @@ public class UserData implements UserDetails {
         return this.username;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
     /**
      * Gets the role of the user.
      *
@@ -111,18 +113,18 @@ public class UserData implements UserDetails {
     }
 
     /**
-     * Gets the password.
+     * Sets the role of the user.
      *
-     * @return the password
+     * @param role the new role of the user
      */
     public void setRole(UserRole role) {
         this.role = role;
     }
 
     /**
-     * Checks if the account is not expired.
+     * Checks if the account of the user is not expired.
      *
-     * @return true if the account is not expired, false otherwise
+     * @return true if the account of the user is not expired, false otherwise
      */
     @Override
     public boolean isAccountNonExpired() {
@@ -130,9 +132,18 @@ public class UserData implements UserDetails {
     }
 
     /**
-     * Checks if the account is not locked.
+     * Sets the account of the user to be either expired or not.
      *
-     * @return true if the account is not locked, false otherwise
+     * @param accountNonExpired whether the account of the user is not expired
+     */
+    public void setAccountNonExpired(boolean accountNonExpired) {
+        this.accountNonExpired = accountNonExpired;
+    }
+
+    /**
+     * Checks if the account of the user is not locked.
+     *
+     * @return true if the account of the user is not locked, false otherwise
      */
     @Override
     public boolean isAccountNonLocked() {
@@ -140,9 +151,18 @@ public class UserData implements UserDetails {
     }
 
     /**
-     * Checks if the credentials are not expired.
+     * Sets the account of the user to be either locked or not.
      *
-     * @return true if the credentials are not expired, false otherwise
+     * @param accountNonLocked whether the account of the user is not locked
+     */
+    public void setAccountNonLocked(boolean accountNonLocked) {
+        this.accountNonLocked = accountNonLocked;
+    }
+
+    /**
+     * Checks if the credentials of the user are not expired.
+     *
+     * @return true if the credentials of the user are not expired, false otherwise
      */
     @Override
     public boolean isCredentialsNonExpired() {
@@ -150,12 +170,30 @@ public class UserData implements UserDetails {
     }
 
     /**
-     * Checks if the user is enabled.
+     * Sets the credentials of the user to be either expired tot not.
+     *
+     * @param credentialsNonExpired whether the credentials of the user are not expired
+     */
+    public void setCredentialsNonExpired(boolean credentialsNonExpired) {
+        this.credentialsNonExpired = credentialsNonExpired;
+    }
+
+    /**
+     * Checks if the user is enabled (a disabled user cannot be authenticated).
      *
      * @return true if the user is enabled, false otherwise
      */
     @Override
     public boolean isEnabled() {
         return this.enabled;
+    }
+
+    /**
+     * Sets the user to be enabled or not.
+     *
+     * @param enabled whether the user is enabled
+     */
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 }
