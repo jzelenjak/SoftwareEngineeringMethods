@@ -1,6 +1,10 @@
 package nl.tudelft.sem.authentication.auth;
 
+import nl.tudelft.sem.authentication.repository.UserDataRepository;
+import nl.tudelft.sem.authentication.security.UserRole;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,20 +15,46 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("auth")
 public class AuthController {
-    private transient AuthService authService;
+    private final transient AuthService authService;
+    private final transient UserDataRepository users;
+    private final transient PasswordEncoder passwordEncoder;
 
+    /**
+     * Controls the authentication.
+     *
+     * @param authService     the authentication service.
+     * @param users           the users.
+     * @param passwordEncoder the password encoder.
+     */
     @Autowired
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, UserDataRepository users,
+                          PasswordEncoder passwordEncoder) {
         this.authService = authService;
+        this.users = users;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    /*TODO Add API:
-       Register user credentials (must, can be done once, if there's an entry -> not allowed)*/
+    /**
+     * Registers a new user to the system, if not already.
+     *
+     * @param username  the username of the user, which needs to be a valid NetID.
+     * @param password  the password of the user.
+     * @return true if successful.
+     * @throws IllegalStateException if the user already exists.
+     */
     @PostMapping("/register/{username}/{password}")
-    public int register(@PathVariable("username") String username,
+    public boolean register(@PathVariable("username") String username,
                         @PathVariable("password") String password) {
-        // Register
-        return -1;
+        try {
+            UserRole role = UserRole.STUDENT;
+            UserData user = new UserData(username,
+                    passwordEncoder.encode(password), role);
+            this.users.save(user);
+            return true;
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalStateException(String.format("User with username %s already exists.",
+                    username));
+        }
     }
 
     /* TODO Add API:

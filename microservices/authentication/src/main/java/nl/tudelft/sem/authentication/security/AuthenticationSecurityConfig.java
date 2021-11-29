@@ -61,30 +61,29 @@ public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authenticated();
     }
 
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.authenticationProvider(authProvider());
-    }
+//    @Override
+//    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+//        auth.authenticationProvider(authProvider());
+//    }
 
     /**
      * Configure the authentication provider.
      *
      * @return The authentication provider as DaoAuthenticationProvider.
      */
-    @Bean
-    public DaoAuthenticationProvider authProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(this.userDetailsService);
-        authProvider.setPasswordEncoder(this.passwordEncoder);
-        return authProvider;
-    }
+//    @Bean
+//    public DaoAuthenticationProvider authProvider() {
+//        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+//        authProvider.setUserDetailsService(this.userDetailsService);
+//        authProvider.setPasswordEncoder(this.passwordEncoder);
+//        return authProvider;
+//    }
 
     /**
      * Gets the password encoder.
      *
      * @return The password encoder as PasswordEncoder.
      */
-    @Bean
     public PasswordEncoder getPasswordEncoder() {
         return this.passwordEncoder;
     }
@@ -94,7 +93,6 @@ public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
      *
      * @return The user details service as UserDetailsService.
      */
-    @Bean
     public UserDetailsService getUserDetailsService() {
         return this.userDetailsService;
     }
@@ -104,7 +102,6 @@ public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
      *
      * @return The secret key as SecretKey.
      */
-    @Bean
     public SecretKey getSecretKey() {
         return this.secretKey;
     }
@@ -114,7 +111,6 @@ public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
      *
      * @return The Jwt configuration as JwtConfig.
      */
-    @Bean
     public JwtConfig getJwtConfig() {
         return this.jwtConfig;
     }

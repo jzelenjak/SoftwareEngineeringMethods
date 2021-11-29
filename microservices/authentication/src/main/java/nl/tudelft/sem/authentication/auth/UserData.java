@@ -3,6 +3,10 @@ package nl.tudelft.sem.authentication.auth;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -12,14 +16,32 @@ import org.springframework.security.core.userdetails.UserDetails;
 /**
  * A class for storing user information.
  */
+@Entity
+@Table
 public class UserData implements UserDetails {
-    private final String username;
-    private final String password;
-    private final Set<SimpleGrantedAuthority> authorities;
+    @Id
+    @Column
+    private String username;
+
+    @Column
+    private String password;
+
+    @Column
+    private UserRole role;
+
+    @Column
     private final boolean accountNonExpired;
+
+    @Column
     private final boolean accountNonLocked;
+
+    @Column
     private final boolean credentialsNonExpired;
+
+    @Column
     private final boolean enabled;
+
+    @Column
     private static final long serialVersionUID = 25546278L;
 
     /**
@@ -32,8 +54,7 @@ public class UserData implements UserDetails {
     public UserData(String username, String password, UserRole role) {
         this.username = username;
         this.password = password;
-        this.authorities = new HashSet<>();
-        this.authorities.add(new SimpleGrantedAuthority(role.name()));
+        this.role = role;
         this.accountNonExpired = true;
         this.accountNonLocked = true;
         this.credentialsNonExpired = true;
@@ -47,7 +68,9 @@ public class UserData implements UserDetails {
      */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return this.authorities;
+        Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+        authorities.add(new SimpleGrantedAuthority(this.role.name()));
+        return authorities;
     }
 
     /**
@@ -60,6 +83,10 @@ public class UserData implements UserDetails {
         return this.password;
     }
 
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     /**
      * Gets the username.
      *
@@ -68,6 +95,28 @@ public class UserData implements UserDetails {
     @Override
     public String getUsername() {
         return this.username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    /**
+     * Gets the role of the user.
+     *
+     * @return the UserRole.
+     */
+    public UserRole getRole() {
+        return this.role;
+    }
+
+    /**
+     * Gets the password.
+     *
+     * @return the password
+     */
+    public void setRole(UserRole role) {
+        this.role = role;
     }
 
     /**

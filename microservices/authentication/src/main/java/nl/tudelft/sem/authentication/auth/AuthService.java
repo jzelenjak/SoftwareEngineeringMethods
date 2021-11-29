@@ -1,36 +1,38 @@
 package nl.tudelft.sem.authentication.auth;
 
+import java.util.HashSet;
+import java.util.Set;
 import nl.tudelft.sem.authentication.repository.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Service
 public class AuthService {
-    private transient final UserDataRepository userDataRepository;
+    private final transient UserDataRepository userDataRepository;
 
     @Autowired
     public AuthService(UserDataRepository userDataRepository) {
         this.userDataRepository = userDataRepository;
     }
 
-    public UserData findUserByNetID(String netID) throws UsernameNotFoundException {
+    /**
+     * Finds the user by their username.
+     *
+     * @param username  the username of the user to be found.
+     *
+     * @return the user, if found.
+     * @throws UsernameNotFoundException thrown when user has not been found.
+     */
+//    @Override
+    public UserData loadUserByUsername(String username) throws UsernameNotFoundException {
         return this.userDataRepository
-                .findByUsername(netID)
-                .orElseThrow(() -> new UsernameNotFoundException(String.format("User with NetID %s not found", netID)));
-    }
-
-    public boolean registerUser(String netID, String password, String role) {
-        // TODO: Change it
-        Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-        authorities.add(new SimpleGrantedAuthority(role));
-
-        this.userDataRepository.save(new UserData(netID, password, UserRole.STUDENT));
-        return true;
+                .findByUsername(username)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(String.format("User with username %s not found", username)));
     }
 }
