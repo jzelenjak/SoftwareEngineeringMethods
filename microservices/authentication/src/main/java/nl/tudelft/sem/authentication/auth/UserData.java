@@ -28,21 +28,16 @@ public class UserData implements UserDetails {
      * @param username              the username of the user
      * @param password              the password  of the user
      * @param role                  the role of the user
-     * @param accountNonExpired     whether the account is not expired
-     * @param accountNonLocked      whether the account is not locked
-     * @param credentialsNonExpired whether the credentials are not expired
-     * @param enabled               whether the user is enabled
      */
-    public UserData(String username, String password, UserRole role, boolean accountNonExpired,
-                    boolean accountNonLocked, boolean credentialsNonExpired, boolean enabled) {
+    public UserData(String username, String password, UserRole role) {
         this.username = username;
         this.password = password;
         this.authorities = new HashSet<>();
         this.authorities.add(new SimpleGrantedAuthority(role.name()));
-        this.accountNonExpired = accountNonExpired;
-        this.accountNonLocked = accountNonLocked;
-        this.credentialsNonExpired = credentialsNonExpired;
-        this.enabled = enabled;
+        this.accountNonExpired = true;
+        this.accountNonLocked = true;
+        this.credentialsNonExpired = true;
+        this.enabled = true;
     }
 
     /**
