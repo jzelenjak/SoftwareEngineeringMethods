@@ -5,9 +5,18 @@ import nl.tudelft.sem.authentication.auth.UserData;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
+
+/**
+ * The repository for storing user data.
+ */
 @Repository
 public interface UserDataRepository extends CrudRepository<UserData, String> {
-    Optional<UserData> findByUsername(String username);
 
-//    UserData findAllByAuthorities(Set<SimpleGrantedAuthority> authorities);
+    /**
+     * Finds user by their username.
+     *
+     * @param username the username
+     * @return the user if has been found
+     */
+    Optional<UserData> findByUsername(String username);
 }
