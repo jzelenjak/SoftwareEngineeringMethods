@@ -16,33 +16,32 @@ import org.springframework.security.core.userdetails.UserDetails;
 /**
  * A class for storing user data.
  */
-@Entity
-@Table
+@Entity(name="user_data")
+@Table(name="user_data")
 public class UserData implements UserDetails {
     @Id
-    @Column
+    @Column(name = "netID", length=50)
     private final String username;
 
-    @Column
+    @Column(name = "password", length = 128)
     private String password;
 
-    @Column
+    @Column(name = "role")
     private UserRole role;
 
-    @Column
+    @Column(name = "account_non_expired")
     private boolean accountNonExpired;
 
-    @Column
+    @Column(name = "account_non_locked")
     private boolean accountNonLocked;
 
-    @Column
+    @Column(name = "credentials_non_expired")
     private boolean credentialsNonExpired;
 
-    @Column
+    @Column(name = "enabled")
     private boolean enabled;
 
-    @Column
-    private static final long serialVersionUID = 25546278L;
+    private static final long serialVersionUID = 25565543525446278L;
 
     /**
      * Instantiates a new UserData class.
