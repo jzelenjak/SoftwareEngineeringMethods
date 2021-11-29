@@ -1,10 +1,10 @@
 package nl.tudelft.sem.gateway.info;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
-import org.springframework.web.bind.annotation.RequestMethod;
-
-import static org.assertj.core.api.Assertions.*;
 
 public class EndpointInfoTest {
     @Test

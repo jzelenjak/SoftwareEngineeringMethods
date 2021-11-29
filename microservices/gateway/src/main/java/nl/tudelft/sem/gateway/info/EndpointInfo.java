@@ -2,7 +2,6 @@ package nl.tudelft.sem.gateway.info;
 
 import lombok.Data;
 import org.springframework.http.HttpMethod;
-import org.springframework.web.bind.annotation.RequestMethod;
 
 @Data
 public class EndpointInfo {
@@ -15,12 +14,17 @@ public class EndpointInfo {
 
     /**
      * Initialize an EndpointInfo object and do validation on it.
-     * @param path URI path of the request
+     *
+     * @param path   URI path of the request
      * @param method request of method (GET, POST, PUT, DELETE)
      */
-    public EndpointInfo(String path, HttpMethod method) throws IllegalArgumentException{
-        if (path == null || path.isBlank()) throw new IllegalArgumentException("A request must have a path");
-        if (method == null) throw new IllegalArgumentException("A request must have a method");
+    public EndpointInfo(String path, HttpMethod method) throws IllegalArgumentException {
+        if (path == null || path.isBlank()) {
+            throw new IllegalArgumentException("A request must have a path");
+        }
+        if (method == null) {
+            throw new IllegalArgumentException("A request must have a method");
+        }
 
         this.path = path;
         this.method = method;

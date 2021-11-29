@@ -1,8 +1,7 @@
 package nl.tudelft.sem.gateway.discovery;
 
-import lombok.Data;
-
 import javax.validation.constraints.NotBlank;
+import lombok.Data;
 
 @Data
 public class Registration {
