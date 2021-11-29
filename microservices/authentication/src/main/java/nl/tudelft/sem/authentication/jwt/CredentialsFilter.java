@@ -17,30 +17,62 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+
+/**
+ * A class for filtering credentials (username and password).
+ */
 public class CredentialsFilter extends UsernamePasswordAuthenticationFilter {
     private final AuthenticationManager authenticationManager;
     private final JwtConfig jwtConfig;
     private final SecretKey secretKey;
 
+    /**
+     * Instantiates a new Credentials filter.
+     *
+     * @param authenticationManager the authentication manager
+     * @param jwtConfig             the JWT configuration
+     * @param secretKey             the secret key for the JWT
+     */
     public CredentialsFilter(AuthenticationManager authenticationManager, JwtConfig jwtConfig, SecretKey secretKey) {
         this.authenticationManager = authenticationManager;
         this.jwtConfig = jwtConfig;
         this.secretKey = secretKey;
     }
 
+    /**
+     * Gets JWT configuration.
+     *
+     * @return the JWT configuration
+     */
     public JwtConfig getJwtConfig() {
         return this.jwtConfig;
     }
 
+    /**
+     * Gets the secret key for the JWT.
+     *
+     * @return the secret key for the JWT
+     */
     public SecretKey getSecretKey() {
         return this.secretKey;
     }
 
+    /**
+     * Gets the authentication manager
+     * @return the authentication manager
+     */
     @Override
     public AuthenticationManager getAuthenticationManager() {
         return authenticationManager;
     }
 
+    /**
+     * Attempts to authenticate the HTTP request.
+     * @param request HTTP request
+     * @param response HTTP response
+     * @return the token for an authentication request
+     * @throws AuthenticationException when Authentication object is invalid
+     */
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request,
                                                 HttpServletResponse response) throws AuthenticationException {
@@ -60,9 +92,16 @@ public class CredentialsFilter extends UsernamePasswordAuthenticationFilter {
 
     }
 
+    /**
+     * Issues the JWT after successful authentication.
+     * @param request HTTP request
+     * @param response HTTP response
+     * @param chain the filter chain
+     * @param authResult the result of the authentication (
+     */
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
-                                            Authentication authResult) throws IOException, ServletException {
+                                            Authentication authResult) {
         String token = Jwts.builder()
                 .setSubject(authResult.getName())
                 .claim("authorities", authResult.getAuthorities())
