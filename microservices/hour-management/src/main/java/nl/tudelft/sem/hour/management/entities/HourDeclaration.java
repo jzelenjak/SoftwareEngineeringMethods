@@ -26,6 +26,7 @@ public class HourDeclaration {
     @Column(name = "course_id")
     private long courseId;
 
+    @Column(name = "approved")
     private boolean approved;
 
     @Column(name = "declared_hours")
