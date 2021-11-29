@@ -12,32 +12,28 @@ import java.util.Set;
 public class AuthenticationUser implements UserDetails {
     private final String username;
     private final String password;
-    private final Set<SimpleGrantedAuthority> grantedAuthorities;
-    private final boolean isAccountNonExpired;
-    private final boolean isAccountNonLocked;
-    private final boolean isCredentialsNonExpired;
-    private final boolean isEnabled;
+    private final Set<SimpleGrantedAuthority> authorities;
+    private final boolean accountNonExpired;
+    private final boolean accountNonLocked;
+    private final boolean credentialsNonExpired;
+    private final boolean enabled;
+    private static final long serialVersionUID = 25546278L;
 
-    public AuthenticationUser(String username,
-                              String password,
-                              UserRole role,
-                              boolean isAccountNonExpired,
-                              boolean isAccountNonLocked,
-                              boolean isCredentialsNonExpired,
-                              boolean isEnabled) {
+    public AuthenticationUser(String username, String password, UserRole role, boolean accountNonExpired,
+                              boolean accountNonLocked, boolean credentialsNonExpired, boolean enabled) {
         this.username = username;
         this.password = password;
-        this.grantedAuthorities = new HashSet<>();
-        this.grantedAuthorities.add(new SimpleGrantedAuthority(role.name()));
-        this.isAccountNonExpired = isAccountNonExpired;
-        this.isAccountNonLocked = isAccountNonLocked;
-        this.isCredentialsNonExpired = isCredentialsNonExpired;
-        this.isEnabled = isEnabled;
+        this.authorities = new HashSet<>();
+        this.authorities.add(new SimpleGrantedAuthority(role.name()));
+        this.accountNonExpired = accountNonExpired;
+        this.accountNonLocked = accountNonLocked;
+        this.credentialsNonExpired = credentialsNonExpired;
+        this.enabled = enabled;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return this.grantedAuthorities;
+        return this.authorities;
     }
 
     @Override
@@ -52,21 +48,21 @@ public class AuthenticationUser implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() {
-        return this.isAccountNonExpired;
+        return this.accountNonExpired;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return this.isAccountNonLocked;
+        return this.accountNonLocked;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return this.isCredentialsNonExpired;
+        return this.credentialsNonExpired;
     }
 
     @Override
     public boolean isEnabled() {
-        return this.isEnabled;
+        return this.enabled;
     }
 }

@@ -66,5 +66,21 @@ public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
         authProvider.setPasswordEncoder(this.passwordEncoder);
         return authProvider;
     }*/
+
+    public PasswordEncoder getPasswordEncoder() {
+        return this.passwordEncoder;
+    }
+
+    public UserDetailsService getUserDetailsService() {
+        return this.userDetailsService;
+    }
+
+    public SecretKey getSecretKey() {
+        return this.secretKey;
+    }
+
+    public JwtConfig getJwtConfig() {
+        return this.jwtConfig;
+    }
 }
 

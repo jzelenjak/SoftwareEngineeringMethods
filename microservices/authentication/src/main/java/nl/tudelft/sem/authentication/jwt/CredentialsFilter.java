@@ -28,6 +28,19 @@ public class CredentialsFilter extends UsernamePasswordAuthenticationFilter {
         this.secretKey = secretKey;
     }
 
+    public JwtConfig getJwtConfig() {
+        return this.jwtConfig;
+    }
+
+    public SecretKey getSecretKey() {
+        return this.secretKey;
+    }
+
+    @Override
+    public AuthenticationManager getAuthenticationManager() {
+        return authenticationManager;
+    }
+
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request,
                                                 HttpServletResponse response) throws AuthenticationException {
@@ -39,8 +52,7 @@ public class CredentialsFilter extends UsernamePasswordAuthenticationFilter {
                     new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(),
                     authenticationRequest.getPassword());
 
-            Authentication authenticate = authenticationManager.authenticate(authentication);
-            return authenticate;
+            return authenticationManager.authenticate(authentication);
 
         } catch (IOException e) {
             throw new RuntimeException(e);
