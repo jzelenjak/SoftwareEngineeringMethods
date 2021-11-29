@@ -1,6 +1,7 @@
 package nl.tudelft.sem.hour.management.entities;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,7 @@ public class HourDeclarationTest {
     @Test
     public void testEqualsNull() {
         HourDeclaration declaration1 = new HourDeclaration(1234, 5678, 10.5);
-        assertThat(declaration1).isNotEqualTo(null);
+        assertNotNull(declaration1);
     }
 
     @Test

@@ -38,9 +38,9 @@ public class HourDeclaration {
     /**
      * Constructs an HourDeclaration DOA instance.
      *
-     * @param studentId      is the ID of the student.
-     * @param courseId       is the ID of the course.
-     * @param hours_declared is the amount of hours that the student declared.
+     * @param studentId     is the ID of the student.
+     * @param courseId      is the ID of the course.
+     * @param declaredHours is the amount of hours that the student declared.
      * @implNote All new entries are by default marked as unapproved.
      */
     public HourDeclaration(long studentId, long courseId, double declaredHours) {
@@ -56,13 +56,14 @@ public class HourDeclaration {
     /**
      * Constructs an HourDeclaration DOA instance.
      *
-     * @param declarationId  is the ID of the declaration.
-     * @param studentId      is the ID of the student.
-     * @param courseId       is the ID of the course.
-     * @param hours_declared is the amount of hours that the student declared.
+     * @param declarationId is the ID of the declaration.
+     * @param studentId     is the ID of the student.
+     * @param courseId      is the ID of the course.
+     * @param declaredHours is the amount of hours that the student declared.
      * @implNote All new entries are by default marked as unapproved.
      */
-    public HourDeclaration(long declarationId, long studentId, long courseId, double declaredHours) {
+    public HourDeclaration(long declarationId, long studentId, long courseId,
+                           double declaredHours) {
         this.declarationId = declarationId;
         this.studentId = studentId;
         this.courseId = courseId;
@@ -74,8 +75,12 @@ public class HourDeclaration {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         HourDeclaration that = (HourDeclaration) o;
         return getDeclarationId() == that.getDeclarationId()
                 && getStudentId() == that.getStudentId()
@@ -90,14 +95,14 @@ public class HourDeclaration {
 
     @Override
     public String toString() {
-        return "HourDeclaration{" +
-                "declarationId=" + declarationId +
-                ", studentId=" + studentId +
-                ", courseId=" + courseId +
-                ", approved=" + approved +
-                ", declaredHours=" + declaredHours +
-                ", declarationDate=" + declarationDate +
-                '}';
+        return "HourDeclaration{"
+                + "declarationId=" + declarationId
+                + ", studentId=" + studentId
+                + ", courseId=" + courseId
+                + ", approved=" + approved
+                + ", declaredHours=" + declaredHours
+                + ", declarationDate=" + declarationDate
+                + '}';
     }
 }
 
