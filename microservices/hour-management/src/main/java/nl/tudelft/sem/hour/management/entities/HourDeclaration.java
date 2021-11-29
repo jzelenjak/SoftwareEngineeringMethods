@@ -42,11 +42,11 @@ public class HourDeclaration {
      * @param hours_declared is the amount of hours that the student declared.
      * @implNote All new entries are by default marked as unapproved.
      */
-    public HourDeclaration(long studentId, long courseId, double hours_declared) {
+    public HourDeclaration(long studentId, long courseId, double declaredHours) {
         this.declarationId = 0;
         this.studentId = studentId;
         this.courseId = courseId;
-        this.declaredHours = hours_declared;
+        this.declaredHours = declaredHours;
 
         this.approved = false;
         this.declarationDate = LocalDateTime.now();
@@ -61,11 +61,11 @@ public class HourDeclaration {
      * @param hours_declared is the amount of hours that the student declared.
      * @implNote All new entries are by default marked as unapproved.
      */
-    public HourDeclaration(long declarationId, long studentId, long courseId, double hours_declared) {
+    public HourDeclaration(long declarationId, long studentId, long courseId, double declaredHours) {
         this.declarationId = declarationId;
         this.studentId = studentId;
         this.courseId = courseId;
-        this.declaredHours = hours_declared;
+        this.declaredHours = declaredHours;
 
         this.approved = false;
         this.declarationDate = LocalDateTime.now();
