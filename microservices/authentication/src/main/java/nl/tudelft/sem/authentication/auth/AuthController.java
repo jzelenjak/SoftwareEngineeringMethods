@@ -1,99 +1,69 @@
 package nl.tudelft.sem.authentication.auth;
 
-import nl.tudelft.sem.authentication.repository.UserDataRepository;
-import nl.tudelft.sem.authentication.security.UserRole;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import nl.tudelft.sem.authentication.exceptions.UserAlreadyExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 
 @RestController
-@RequestMapping("auth")
+@RequestMapping("/auth")
 public class AuthController {
     private final transient AuthService authService;
-    private final transient UserDataRepository users;
-    private final transient PasswordEncoder passwordEncoder;
+    private final transient ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Controls the authentication.
      *
+     //* @param authenticationManager the authentication manager
      * @param authService     the authentication service.
-     * @param users           the users.
-     * @param passwordEncoder the password encoder.
      */
-    @Autowired
-    public AuthController(AuthService authService, UserDataRepository users,
-                          PasswordEncoder passwordEncoder) {
+    public AuthController(AuthService authService) {
         this.authService = authService;
-        this.users = users;
-        this.passwordEncoder = passwordEncoder;
     }
 
     /**
      * Registers a new user to the system, if not already.
      *
-     * @param username  the username of the user, which needs to be a valid NetID.
-     * @param password  the password of the user.
+     * @param body JSON body with username and password
      * @return true if successful.
-     * @throws IllegalStateException if the user already exists.
+     * @throws UserAlreadyExistsException if the user already exists.
      */
-    @PostMapping("/register/{username}/{password}")
-    public boolean register(@PathVariable("username") String username,
-                        @PathVariable("password") String password) {
-        try {
-            UserRole role = UserRole.STUDENT;
-            UserData user = new UserData(username,
-                    passwordEncoder.encode(password), role);
-            this.users.save(user);
-            return true;
-        } catch (DataIntegrityViolationException e) {
-            throw new IllegalStateException(String.format("User with username %s already exists.",
-                    username));
-        }
+    @PostMapping("/register")
+    public String register(@RequestBody String body) throws JsonProcessingException, UserAlreadyExistsException {
+        JsonNode jsonNode = objectMapper.readTree(body);
+        String uname = jsonNode.get("username").asText();
+        this.authService.registerUser(uname, jsonNode.get("password").asText());
+        return String.format("Greetings to %s from registration", jsonNode.get("username").asText());
     }
 
-    /* TODO Add API:
-        Modify credentials (should/could) -> requires user to be authenticated already*/
 
     /**
      * PLACEHOLDER JAVADOC.
      * Allows the user to change their own credentials if authorized.
      *
-     * @param username      the username to change.
-     * @param password      the password to change.
-     * @param newUsername   the new username.
-     * @param newPassword   the new password.
+     * @param body JSON body with the credentials and new password
      *
-     * @return -1 for now.
+     * @return message for now.
      */
-    @PutMapping("/change_credentials/{username}/{password}/{new_username}/{new_password}")
-    public int changeCredentials(@PathVariable("username") String username,
-                                 @PathVariable("password") String password,
-                                 @PathVariable("new_username") String newUsername,
-                                 @PathVariable("new_password") String newPassword) {
-        // Authenticate the user
-        // If successful, change the credentials
-        return -1;
+    @PutMapping("/change_password")
+    public String changePassword(@RequestBody String body) throws JsonProcessingException {
+        JsonNode jsonNode = objectMapper.readTree(body);
+        String username = jsonNode.get("username").asText();
+        //String password = jsonNode.get("password").asText();
+        String newPassword = jsonNode.get("new_password").asText();
+
+        // TODO: Check if user must be authenticated already
+        this.authService.changePassword(username, newPassword);
+
+        return "Password changed successfully!";
     }
 
 
-    @GetMapping("/authenticate/{username}/{password}")
-    public int authenticate(@PathVariable("username") String username,
-                            @PathVariable("password") String password) {
-        //
-        return -1;
-    }
-
-    /* TODO Add API if necessary:
-        Check validity <-> combine this with permission to return the role info directly */
-    @GetMapping("/authenticate/{token}")
-    public int validate(@PathVariable("token") String token) {
-        // Validate the token
+    @GetMapping("/authenticate")
+    public int authenticate(@RequestBody String body) throws JsonProcessingException {
         return -1;
     }
 }
