@@ -22,11 +22,11 @@ public class AuthService {
      * @return the user, if found.
      * @throws UsernameNotFoundException thrown when user has not been found.
      */
-//    @Override
+    //@Override
     public UserData loadUserByUsername(String username) throws UsernameNotFoundException {
         return this.userDataRepository
                 .findByUsername(username)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException(String.format("User with username %s not found", username)));
+                .orElseThrow(() -> new UsernameNotFoundException(String.format(
+                        "User with username %s not found", username)));
     }
 }
