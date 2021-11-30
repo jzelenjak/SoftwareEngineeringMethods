@@ -1,5 +1,6 @@
 package nl.tudelft.sem.authentication.jwt;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
 import java.io.IOException;
@@ -21,40 +22,21 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * A class for filtering credentials (username and password).
  */
 public class CredentialsFilter extends UsernamePasswordAuthenticationFilter {
-    private final AuthenticationManager authenticationManager;
-    private final JwtConfig jwtConfig;
-    private final SecretKey secretKey;
+    private final transient AuthenticationManager authenticationManager;
+    private final transient JwtTokenUtil jwtTokenUtil;
+    private final transient SecretKey secretKey;
 
     /**
      * Instantiates a new Credentials filter.
      *
      * @param authenticationManager the authentication manager
-     * @param jwtConfig             the JWT configuration
+     * @param jwtTokenUtil             the JWT configuration
      * @param secretKey             the secret key for the JWT
      */
-    public CredentialsFilter(AuthenticationManager authenticationManager,
-                             JwtConfig jwtConfig, SecretKey secretKey) {
+    public CredentialsFilter(AuthenticationManager authenticationManager, JwtTokenUtil jwtTokenUtil, SecretKey secretKey) {
         this.authenticationManager = authenticationManager;
-        this.jwtConfig = jwtConfig;
+        this.jwtTokenUtil = jwtTokenUtil;
         this.secretKey = secretKey;
-    }
-
-    /**
-     * Gets JWT configuration.
-     *
-     * @return the JWT configuration.
-     */
-    public JwtConfig getJwtConfig() {
-        return this.jwtConfig;
-    }
-
-    /**
-     * Gets the secret key for the JWT.
-     *
-     * @return the secret key for the JWT.
-     */
-    public SecretKey getSecretKey() {
-        return this.secretKey;
     }
 
     /**
@@ -77,18 +59,12 @@ public class CredentialsFilter extends UsernamePasswordAuthenticationFilter {
      * @throws AuthenticationException when Authentication object is invalid.
      */
     @Override
-    public Authentication attemptAuthentication(HttpServletRequest request,
-                                                HttpServletResponse response)
-            throws AuthenticationException {
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
         try {
-            CredentialsAuthenticationRequest authenticationRequest = new ObjectMapper()
-                    .readValue(request.getInputStream(), CredentialsAuthenticationRequest.class);
-
-            Authentication authentication =
-                    new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(),
-                    authenticationRequest.getPassword());
-
-            return authenticationManager.authenticate(authentication);
+            JsonNode jsonNode = new ObjectMapper().readTree(request.getInputStream());
+            Authentication auth = new UsernamePasswordAuthenticationToken(jsonNode.get("username").asText(),
+                                                                            jsonNode.get("password").asText());
+            return authenticationManager.authenticate(auth);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -104,18 +80,9 @@ public class CredentialsFilter extends UsernamePasswordAuthenticationFilter {
      * @param authResult the result of the authentication
      */
     @Override
-    protected void successfulAuthentication(HttpServletRequest request,
-                                            HttpServletResponse response,
+    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
                                             FilterChain chain, Authentication authResult) {
-        String token = Jwts.builder()
-                .setSubject(authResult.getName())
-                .claim("authorities", authResult.getAuthorities())
-                .setIssuedAt(new Date())
-                .setExpiration(java.sql.Date.valueOf(LocalDate.now()
-                        .plusDays(jwtConfig.getTokenExpirationAfterMinutes())))
-                .signWith(secretKey)
-                .compact();
-
-        response.addHeader(HttpHeaders.AUTHORIZATION, jwtConfig.getTokenPrefix() + token);
+        String token = jwtTokenUtil.generateToken(authResult);
+        response.addHeader(HttpHeaders.AUTHORIZATION, jwtTokenUtil.getTokenPrefix() + token);
     }
 }

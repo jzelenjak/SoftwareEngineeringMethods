@@ -2,7 +2,6 @@ package nl.tudelft.sem.authentication.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import java.io.IOException;
 import java.util.List;
@@ -25,37 +24,19 @@ import org.springframework.web.filter.OncePerRequestFilter;
 /**
  * The class for verifying JWT token.
  */
-public class JwtTokenVerifier extends OncePerRequestFilter {
-    private final SecretKey secretKey;
-    private final JwtConfig jwtConfig;
+public class JwtTokenFilter extends OncePerRequestFilter {
+    private transient final SecretKey secretKey;
+    private transient final JwtTokenUtil jwtTokenUtil;
 
     /**
      * Instantiates a new JWT token verifier.
      *
      * @param secretKey the secret key for the JWT token
-     * @param jwtConfig the configuration for the JWT token
+     * @param jwtTokenUtil the configuration for the JWT token
      */
-    public JwtTokenVerifier(SecretKey secretKey, JwtConfig jwtConfig) {
+    public JwtTokenFilter(SecretKey secretKey, JwtTokenUtil jwtTokenUtil) {
         this.secretKey = secretKey;
-        this.jwtConfig = jwtConfig;
-    }
-
-    /**
-     * Gets the secret key for the JWT token.
-     *
-     * @return the secret key for the JWT token
-     */
-    public SecretKey getSecretKey() {
-        return this.secretKey;
-    }
-
-    /**
-     * Gets the JWT configuration.
-     *
-     * @return the JWT configuration
-     */
-    public JwtConfig getJwtConfig() {
-        return this.jwtConfig;
+        this.jwtTokenUtil = jwtTokenUtil;
     }
 
     /**
@@ -75,37 +56,34 @@ public class JwtTokenVerifier extends OncePerRequestFilter {
         String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
         if (authorizationHeader == null || authorizationHeader.isEmpty()
-                || !authorizationHeader.startsWith(jwtConfig.getTokenPrefix())) {
+                || !authorizationHeader.startsWith(jwtTokenUtil.getTokenPrefix())) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token = authorizationHeader.replace(jwtConfig.getTokenPrefix(), "");
-
-        try {
-            Jws<Claims> claimsJws = Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
-                    .build()
-                    .parseClaimsJws(token);
-
-            Claims body = claimsJws.getBody();
-            String username = body.getSubject();
-            List<Map<String, String>> authorities =
-                    (List<Map<String, String>>) body.get("authorities");
-
-            Set<SimpleGrantedAuthority> simpleGrantedAuthorities = authorities.stream()
-                    .map(m -> new SimpleGrantedAuthority(m.get("authority")))
-                    .collect(Collectors.toSet());
-
-            Authentication authentication = new UsernamePasswordAuthenticationToken(username,
-                    null, simpleGrantedAuthorities);
+        String token = authorizationHeader.replace(jwtTokenUtil.getTokenPrefix(), "");
 
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+        Jws<Claims> claimsJws = Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token);
 
-        } catch (JwtException e) {
-            throw new IllegalStateException(String.format("Token %s is invalid.", token));
-        }
+        Claims body = claimsJws.getBody();
+        String username = body.getSubject();
+        List<Map<String, String>> authorities =
+                (List<Map<String, String>>) body.get("authorities");
+
+        Set<SimpleGrantedAuthority> simpleGrantedAuthorities = authorities.stream()
+                .map(m -> new SimpleGrantedAuthority(m.get("authority")))
+                .collect(Collectors.toSet());
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(username,
+                null, simpleGrantedAuthorities);
+
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
 
         filterChain.doFilter(request, response);
     }

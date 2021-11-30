@@ -1,14 +1,21 @@
 package nl.tudelft.sem.authentication.jwt;
 
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.Authentication;
+
+import java.time.LocalDate;
+import java.util.Date;
+
 
 /**
  * A class for JTW configuration.
  */
 @Configuration
 @ConfigurationProperties(prefix = "application.jwt")
-public class JwtConfig {
+public class JwtTokenUtil {
     private String secretKey;
     private String tokenPrefix;
     private Integer tokenExpirationAfterMinutes;
@@ -16,7 +23,18 @@ public class JwtConfig {
     /**
      * Instantiates a new JWT configuration object.
      */
-    public JwtConfig() {
+    public JwtTokenUtil() {
+    }
+
+    public String generateToken(Authentication auth) {
+        return Jwts.builder()
+                .setSubject(auth.getName())
+                .claim("authorities", auth.getAuthorities())
+                .setIssuedAt(new Date())
+                .setExpiration(java.sql.Date.valueOf(LocalDate.now()
+                        .plusDays(tokenExpirationAfterMinutes)))
+                .signWith(Keys.hmacShaKeyFor(this.secretKey.getBytes()))
+                .compact();
     }
 
     /**

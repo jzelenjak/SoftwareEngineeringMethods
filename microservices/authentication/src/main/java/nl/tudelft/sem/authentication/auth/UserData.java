@@ -7,6 +7,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -16,12 +17,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 /**
  * A class for storing user data.
  */
-@Entity(name = "user_data")
-@Table(name = "user_data")
+@Entity(name="user_data")
 public class UserData implements UserDetails {
     @Id
-    @Column(name = "netID", length = 50)
-    private final String username;
+    @Column(name = "username", length=50, unique = true, nullable = false)
+    private String username;
 
     @Column(name = "password", length = 128)
     private String password;
@@ -29,19 +29,19 @@ public class UserData implements UserDetails {
     @Column(name = "role")
     private UserRole role;
 
-    @Column(name = "account_non_expired")
     private boolean accountNonExpired;
 
-    @Column(name = "account_non_locked")
     private boolean accountNonLocked;
 
-    @Column(name = "credentials_non_expired")
     private boolean credentialsNonExpired;
 
-    @Column(name = "enabled")
     private boolean enabled;
 
     private static final long serialVersionUID = 25565543525446278L;
+
+    public UserData(){
+
+    }
 
     /**
      * Instantiates a new UserData class.
@@ -100,6 +100,15 @@ public class UserData implements UserDetails {
     @Override
     public String getUsername() {
         return this.username;
+    }
+
+    /**
+     * Sets the username.
+     *
+     * @param username the username
+     */
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     /**
