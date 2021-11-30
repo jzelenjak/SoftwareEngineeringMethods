@@ -6,6 +6,20 @@ import lombok.Data;
 @Data
 public class Registration {
 
-    @NotBlank(message = "Path to a microservice cannot be blank.")
-    private String path;
+    // Hostname of the registered microservice
+    @NotBlank(message = "Host address of microservice cannot be blank.")
+    private String host;
+
+    // Port of the registered microservice
+    private int port;
+
+    /**
+     * Returns the remote address by appending the port to the host name.
+     *
+     * @return remote address.
+     */
+    public String remoteAddress() {
+        return host + ':' + port;
+    }
+
 }
