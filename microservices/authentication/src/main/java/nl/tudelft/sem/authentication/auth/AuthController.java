@@ -4,24 +4,32 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.tudelft.sem.authentication.exceptions.UserAlreadyExistsException;
-import org.springframework.beans.factory.annotation.Autowired;
+import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
+import nl.tudelft.sem.authentication.jwt.JwtTokenUtil;
+import nl.tudelft.sem.authentication.repository.UserDataRepository;
+import nl.tudelft.sem.authentication.security.AuthenticationSecurityConfig;
+import org.h2.engine.User;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.web.bind.annotation.*;
 
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-    private final transient AuthService authService;
+    private final AuthService authService;
     private final transient ObjectMapper objectMapper = new ObjectMapper();
+    private final JwtTokenUtil jwtTokenUtil;
+    private final UserDataRepository users;
 
     /**
      * Controls the authentication.
      *
-     //* @param authenticationManager the authentication manager
      * @param authService     the authentication service.
      */
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, JwtTokenUtil jwtTokenUtil, UserDataRepository users) {
         this.authService = authService;
+        this.jwtTokenUtil = jwtTokenUtil;
+        this.users = users;
     }
 
     /**
@@ -50,20 +58,49 @@ public class AuthController {
      */
     @PutMapping("/change_password")
     public String changePassword(@RequestBody String body) throws JsonProcessingException {
-        JsonNode jsonNode = objectMapper.readTree(body);
-        String username = jsonNode.get("username").asText();
-        //String password = jsonNode.get("password").asText();
-        String newPassword = jsonNode.get("new_password").asText();
-
-        // TODO: Check if user must be authenticated already
-        this.authService.changePassword(username, newPassword);
+//        JsonNode jsonNode = objectMapper.readTree(body);
+//        String username = jsonNode.get("username").asText();
+//        String newPassword = jsonNode.get("password").asText();
+//
+//        // TODO: Check if user must be authenticated already
+//        this.authService.changePassword(username, newPassword);
 
         return "Password changed successfully!";
     }
 
 
-    @GetMapping("/authenticate")
-    public int authenticate(@RequestBody String body) throws JsonProcessingException {
-        return -1;
+    @GetMapping("/login")
+    public String login(@RequestBody String body) throws JsonProcessingException {
+        JsonNode jsonNode = objectMapper.readTree(body);
+        String username = jsonNode.get("username").asText();
+        String token = JwtTokenProvider.createToken(username, this.users.findByUsername(username).get().getRole());
+        return token;
+    }
+
+    /**
+     * Gets auth service.
+     *
+     * @return auth service.
+     */
+    public AuthService getAuthService() {
+        return this.authService;
+    }
+
+    /**
+     * Gets jwt token util.
+     *
+     * @return jwt token util.
+     */
+    public JwtTokenUtil getJwtTokenUtil() {
+        return this.jwtTokenUtil;
+    }
+
+    /**
+     * Gets users.
+     *
+     * @return users.
+     */
+    public UserDataRepository getUsers() {
+        return this.users;
     }
 }

@@ -1,7 +1,11 @@
 package nl.tudelft.sem.authentication.jwt;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import nl.tudelft.sem.authentication.security.UserRole;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
@@ -36,6 +40,7 @@ public class JwtTokenUtil {
                 .signWith(Keys.hmacShaKeyFor(this.secretKey.getBytes()))
                 .compact();
     }
+
 
     /**
      * Gets the secret key for the JWT Token.

@@ -12,18 +12,20 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+//@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
     private final transient AuthService authService;
     private final transient PasswordEncoder passwordEncoder;
@@ -51,17 +53,17 @@ public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
             // Set unauthorized requests exception handler
-            .exceptionHandling()
-                .authenticationEntryPoint((request, response, ex) ->
-                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, ex.getMessage()))
-            .and()
+//            .exceptionHandling()
+//                .authenticationEntryPoint((request, response, ex) ->
+//                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, ex.getMessage()))
+//            .and()
             .addFilter(new CredentialsFilter(authenticationManager(), jwtTokenUtil, this.secretKey))
-            //.addFilterAfter(new JwtTokenFilter(secretKey, jwtTokenUtil), CredentialsFilter.class)
+//            .addFilterAfter(new JwtTokenFilter(secretKey, jwtTokenUtil), CredentialsFilter.class)
             // Set permissions on endpoints
             .authorizeRequests()
                 // Our public endpoints
-                .antMatchers("/auth/register").permitAll()
                 .antMatchers(HttpMethod.POST, "/auth/register").permitAll()
+                .antMatchers( "/auth/login").permitAll()
                 // Our private endpoints
                 .anyRequest()
                 .authenticated();
@@ -71,27 +73,34 @@ public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
 
 
     @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception{
+//        auth.authenticationProvider(authProvider());
         auth.userDetailsService(this.authService);
     }
-
-    /*/**
-     * Configure the authentication provider.
-     *
-     * @return The authentication provider as DaoAuthenticationProvider.
-     */
-
-    /*@Bean
-    public DaoAuthenticationProvider authProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(this.userDetailsService);
-        authProvider.setPasswordEncoder(this.passwordEncoder);
-        return authProvider;
-    }*/
 
     @Override @Bean
     public AuthenticationManager authenticationManagerBean() throws Exception {
         return super.authenticationManagerBean();
     }
+
+
+//    /**
+//     * Configure the authentication provider.
+//     *
+//     * @return The authentication provider as DaoAuthenticationProvider.
+//     */
+//
+//    public DaoAuthenticationProvider authProvider() {
+//        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+//        authProvider.setUserDetailsService(this.authService);
+//        authProvider.setPasswordEncoder(this.passwordEncoder);
+//        return authProvider;
+//    }
+
+
+//    @Bean
+//    public UserDetailsService getUserDetailsService() {
+//        return this.authService;
+//    }
 }
 
