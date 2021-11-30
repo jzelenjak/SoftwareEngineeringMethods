@@ -1,17 +1,38 @@
 package nl.tudelft.sem.authentication.auth;
 
+import nl.tudelft.sem.authentication.exceptions.UserAlreadyExistsException;
 import nl.tudelft.sem.authentication.repository.UserDataRepository;
+import nl.tudelft.sem.authentication.security.UserRole;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-public class AuthService {
+public class AuthService implements UserDetailsService {
     private final transient UserDataRepository userDataRepository;
+    private final transient PasswordEncoder passwordEncoder;
 
-    @Autowired
-    public AuthService(UserDataRepository userDataRepository) {
+    public AuthService(UserDataRepository userDataRepository, PasswordEncoder passwordEncoder) {
         this.userDataRepository = userDataRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    public void registerUser(String username, String password) throws UserAlreadyExistsException {
+        if (this.userDataRepository.findByUsername(username).isPresent()) {
+            throw new UserAlreadyExistsException();
+        }
+        this.userDataRepository.save(new UserData(username, passwordEncoder.encode(password), UserRole.STUDENT));
+    }
+
+    public void changePassword(String username, String newPassword) {
+        UserData userData = loadUserByUsername(username);
+        userData.setPassword(passwordEncoder.encode(newPassword));
+        userDataRepository.save(userData);
     }
 
     /**
@@ -22,7 +43,7 @@ public class AuthService {
      * @return the user, if found.
      * @throws UsernameNotFoundException thrown when user has not been found.
      */
-    //@Override
+    @Override
     public UserData loadUserByUsername(String username) throws UsernameNotFoundException {
         return this.userDataRepository
                 .findByUsername(username)
