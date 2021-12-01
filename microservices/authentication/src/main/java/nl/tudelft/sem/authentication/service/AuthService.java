@@ -1,6 +1,7 @@
-package nl.tudelft.sem.authentication.auth;
+package nl.tudelft.sem.authentication.service;
 
-import nl.tudelft.sem.authentication.repository.UserDataRepository;
+import nl.tudelft.sem.authentication.entities.UserData;
+import nl.tudelft.sem.authentication.repositories.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

@@ -1,7 +1,7 @@
-package nl.tudelft.sem.authentication.repository;
+package nl.tudelft.sem.authentication.repositories;
 
 import java.util.Optional;
-import nl.tudelft.sem.authentication.auth.UserData;
+import nl.tudelft.sem.authentication.entities.UserData;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 

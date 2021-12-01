@@ -1,4 +1,4 @@
-package nl.tudelft.sem.authentication.auth;
+package nl.tudelft.sem.authentication.entities;
 
 import java.util.Collection;
 import java.util.HashSet;

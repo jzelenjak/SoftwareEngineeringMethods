@@ -1,8 +1,9 @@
-package nl.tudelft.sem.authentication.auth;
+package nl.tudelft.sem.authentication.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
+import nl.tudelft.sem.authentication.service.AuthService;
+import nl.tudelft.sem.authentication.jwt.JwtUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,7 +21,7 @@ public class AuthController {
     private final transient String PASSWORD = "password";
     private final transient AuthService authService;
     private final transient ObjectMapper objectMapper = new ObjectMapper();
-    private final transient JwtTokenProvider jwtTokenProvider;
+    private final transient JwtUtils jwtTokenProvider;
     private final transient AuthenticationManager authenticationManager;
 
     /**
@@ -30,7 +31,7 @@ public class AuthController {
      * @param jwtTokenProvider JWT token provider that generates JTW tokens
      * @param authenticationManager the authentication manager
      */
-    public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider,
+    public AuthController(AuthService authService, JwtUtils jwtTokenProvider,
                           AuthenticationManager authenticationManager) {
         this.authService = authService;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -91,11 +92,11 @@ public class AuthController {
         authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(username, password));
 
-        String jwt = jwtTokenProvider.createToken(username,
-                this.authService.loadUserByUsername(username).getRole());
+        String jwt = jwtTokenProvider.createToken(username, this.authService.loadUserByUsername(username).getRole());
+        String jwtPrefixed = String.format("Bearer %s", jwt);
 
         res.setStatus(HttpServletResponse.SC_OK);
-        res.setHeader(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", jwt));
+        res.setHeader(HttpHeaders.AUTHORIZATION, jwtPrefixed);
         res.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
         res.flushBuffer();
     }
