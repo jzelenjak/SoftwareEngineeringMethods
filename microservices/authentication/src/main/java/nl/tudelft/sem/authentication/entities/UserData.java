@@ -202,4 +202,30 @@ public class UserData implements UserDetails {
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
+
+    /**
+     * Checks if an object is equals to this UserData object.
+     *
+     * @param other the object ot compare to
+     * @return true if the other object is also an instance of the UserData
+     *         and if the usernames match. False otherwise
+     */
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof UserData)) return false;
+
+        UserData that = (UserData) other;
+        return this.username.equals(that.username);
+    }
+
+    /**
+     * Returns the hash code of a UserData object.
+     *
+     * @return the hash code of a UserData object.
+     */
+    @Override
+    public int hashCode() {
+        return username.hashCode();
+    }
 }
