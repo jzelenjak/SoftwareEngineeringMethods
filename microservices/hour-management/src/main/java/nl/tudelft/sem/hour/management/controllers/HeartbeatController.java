@@ -2,7 +2,7 @@ package nl.tudelft.sem.hour.management.controllers;
 
 import lombok.Getter;
 import lombok.Setter;
-import nl.tudelft.sem.hour.management.entities.Heartbeat;
+import nl.tudelft.sem.hour.management.dto.Heartbeat;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -11,7 +11,8 @@ import org.springframework.web.server.NotAcceptableStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @EnableScheduling
-@Getter @Setter
+@Getter
+@Setter
 public class HeartbeatController {
     // Create web client for executing asynchronous requests
     private WebClient webClient;
@@ -27,25 +28,25 @@ public class HeartbeatController {
         this.webClient = WebClient.create();
 
         // Determine the destination
-         destination = UriComponentsBuilder.newInstance()
+        destination = UriComponentsBuilder.newInstance()
                 .scheme("http").host("localhost").port("8080")
                 .path("/discovery/register/hour-management")
                 .build().toUriString();
 
         // Determine the discovery path
-         String discoveryPath = UriComponentsBuilder.newInstance()
+        String discoveryPath = UriComponentsBuilder.newInstance()
                 .scheme("http").host("localhost").port("8081")
                 .path("/api/hour-management")
                 .build().toUriString();
 
-         heartbeat = new Heartbeat(discoveryPath);
+        heartbeat = new Heartbeat(discoveryPath);
     }
 
     /**
      * Send a heartbeat to the discovery server every 55 seconds.
      */
     @Scheduled(fixedRate = 55000)
-    public void heartBeat() {
+    public void sendHeartbeat() {
         webClient
                 .post()
                 .uri(destination)

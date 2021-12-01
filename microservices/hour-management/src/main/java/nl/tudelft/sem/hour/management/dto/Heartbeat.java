@@ -1,4 +1,4 @@
-package nl.tudelft.sem.hour.management.entities;
+package nl.tudelft.sem.hour.management.dto;
 
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
