@@ -1,34 +1,26 @@
 package nl.tudelft.sem.authentication.jwt;
 
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.Key;
 
 @Configuration
 public class JwtSecretKey {
-    private final transient JwtTokenUtil jwtTokenUtil;
-
-    /**
-     * Instantiates a new JWT secret key.
-     *
-     * @param jwtTokenUtil the JWT config
-     */
-    @Autowired
-    public JwtSecretKey(JwtTokenUtil jwtTokenUtil) {
-        this.jwtTokenUtil = jwtTokenUtil;
-    }
+    @Value("${jwtSecretKeyString}")
+    private transient String secretKeyString;
 
     /**
      * Creates the secret key for JWT token.
      *
      * @return the secret key
      */
-    @Bean
-    public SecretKey secretKey() {
-        return Keys.hmacShaKeyFor(jwtTokenUtil.getSecretKey().getBytes());
+    @Bean("secretKey")
+    public Key secretKey() {
+        return new SecretKeySpec(this.secretKeyString.getBytes(), SignatureAlgorithm.HS256.getJcaName());
     }
 }
 
