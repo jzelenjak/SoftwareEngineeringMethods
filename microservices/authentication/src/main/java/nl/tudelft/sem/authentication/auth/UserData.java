@@ -17,10 +17,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 /**
  * A class for storing user data.
  */
-@Entity(name="user_data")
+@Entity(name = "user_data")
 public class UserData implements UserDetails {
     @Id
-    @Column(name = "username", length=50, unique = true, nullable = false)
+    @Column(name = "username", length = 50, unique = true, nullable = false)
     private String username;
 
     @Column(name = "password", length = 128)

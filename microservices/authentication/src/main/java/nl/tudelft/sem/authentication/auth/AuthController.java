@@ -5,11 +5,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.tudelft.sem.authentication.exceptions.UserAlreadyExistsException;
 import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
-import nl.tudelft.sem.authentication.jwt.JwtTokenUtil;
 import nl.tudelft.sem.authentication.repository.UserDataRepository;
-import nl.tudelft.sem.authentication.security.AuthenticationSecurityConfig;
-import org.h2.engine.User;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -18,18 +16,22 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     private final AuthService authService;
     private final transient ObjectMapper objectMapper = new ObjectMapper();
-    private final JwtTokenUtil jwtTokenUtil;
+    private final JwtTokenProvider jwtTokenProvider;
     private final UserDataRepository users;
+    private final AuthenticationManager authenticationManager;
 
     /**
      * Controls the authentication.
      *
      * @param authService     the authentication service.
+     * @param authenticationManager
      */
-    public AuthController(AuthService authService, JwtTokenUtil jwtTokenUtil, UserDataRepository users) {
+    public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider,
+                          UserDataRepository users, AuthenticationManager authenticationManager) {
         this.authService = authService;
-        this.jwtTokenUtil = jwtTokenUtil;
+        this.jwtTokenProvider = jwtTokenProvider;
         this.users = users;
+        this.authenticationManager = authenticationManager;
     }
 
     /**
@@ -58,12 +60,14 @@ public class AuthController {
      */
     @PutMapping("/change_password")
     public String changePassword(@RequestBody String body) throws JsonProcessingException {
-//        JsonNode jsonNode = objectMapper.readTree(body);
-//        String username = jsonNode.get("username").asText();
-//        String newPassword = jsonNode.get("password").asText();
-//
-//        // TODO: Check if user must be authenticated already
-//        this.authService.changePassword(username, newPassword);
+        JsonNode jsonNode = objectMapper.readTree(body);
+        String username = jsonNode.get("username").asText();
+        String password = jsonNode.get("password").asText();
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(username, password));
+        String newPassword = jsonNode.get("new_password").asText();
+
+        this.authService.changePassword(username, newPassword);
 
         return "Password changed successfully!";
     }
@@ -71,10 +75,18 @@ public class AuthController {
 
     @GetMapping("/login")
     public String login(@RequestBody String body) throws JsonProcessingException {
-        JsonNode jsonNode = objectMapper.readTree(body);
-        String username = jsonNode.get("username").asText();
-        String token = JwtTokenProvider.createToken(username, this.users.findByUsername(username).get().getRole());
-        return token;
+        try {
+            JsonNode jsonNode = objectMapper.readTree(body);
+            String username = jsonNode.get("username").asText();
+            String password = jsonNode.get("password").asText();
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password));
+            String token = jwtTokenProvider.createToken(username, this.users.findByUsername(username).get().getRole());
+            return token;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Incorrect credentials");
+        }
+
     }
 
     /**
@@ -87,12 +99,12 @@ public class AuthController {
     }
 
     /**
-     * Gets jwt token util.
+     * Gets jwt provider.
      *
-     * @return jwt token util.
+     * @return jwt token provider.
      */
-    public JwtTokenUtil getJwtTokenUtil() {
-        return this.jwtTokenUtil;
+    public JwtTokenProvider getJwtTokenProvider() {
+        return this.jwtTokenProvider;
     }
 
     /**
@@ -102,5 +114,14 @@ public class AuthController {
      */
     public UserDataRepository getUsers() {
         return this.users;
+    }
+
+    /**
+     * Gets authentication manager.
+     *
+     * @return authentication manager.
+     */
+    public AuthenticationManager getAuthenticationManager() {
+        return this.authenticationManager;
     }
 }
