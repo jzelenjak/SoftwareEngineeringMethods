@@ -3,34 +3,34 @@ package nl.tudelft.sem.gateway.discovery;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import java.util.LinkedList;
-import java.util.PriorityQueue;
 import java.util.Queue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.validation.Valid;
-import lombok.Data;
+import lombok.Getter;
+import lombok.SneakyThrows;
 
 /**
  * Class for managing registrations for a single endpoint. Uses time-based eviction methods.
  */
-@Data
 public class DiscoveryRegistry {
 
     // Time at which a cache entry is invalidated
-    private static final int CACHE_EVICTION_TIME_MINUTES = 1;
+    @Getter
+    private final int cacheEvictionTimeMinutes;
 
     // Queue and cache for storing the entries in a FIFO like manner + time-based eviction
-    private Queue<Registration> registrationQueue;
-    private final Cache<String, Registration> registrations;
+    private transient Queue<Registration> registrationQueue;
+    private final transient Cache<String, Registration> registrations;
 
     /**
      * Constructs a discovery registry instance that keeps track of all registrations for a
      * particular endpoint.
      */
-    public DiscoveryRegistry() {
+    public DiscoveryRegistry(int cacheEvictionTimeMinutes) {
+        this.cacheEvictionTimeMinutes = cacheEvictionTimeMinutes;
         this.registrationQueue = new LinkedList<>();
         this.registrations = CacheBuilder.newBuilder()
-                .expireAfterWrite(CACHE_EVICTION_TIME_MINUTES, TimeUnit.MINUTES)
+                .expireAfterWrite(cacheEvictionTimeMinutes, TimeUnit.MINUTES)
                 .build();
     }
 
@@ -41,8 +41,8 @@ public class DiscoveryRegistry {
      *                     to be registered endpoint.
      * @implNote only one thread can call this function at a time.
      */
-    public synchronized void addRegistration(@Valid Registration registration)
-            throws ExecutionException {
+    @SneakyThrows
+    public synchronized void addRegistration(@Valid Registration registration) {
         // Updates the entry in case of a heartbeat. If entry does not exist, load it into the queue
         // and add it to the cache
         registrations.get(registration.remoteAddress(), () -> {
@@ -61,7 +61,7 @@ public class DiscoveryRegistry {
     public synchronized Registration getRegistration() {
         // If cache is empty, then empty the pq as well to avoid doing extra work
         if (registrations.size() == 0) {
-            registrationQueue = new PriorityQueue<>();
+            registrationQueue = new LinkedList<>();
             return null;
         }
 

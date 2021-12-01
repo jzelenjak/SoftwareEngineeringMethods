@@ -1,9 +1,13 @@
 package nl.tudelft.sem.gateway.discovery;
 
 import javax.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@AllArgsConstructor
 @Data
+@NoArgsConstructor
 public class Registration {
 
     // Hostname of the registered microservice
@@ -21,5 +25,4 @@ public class Registration {
     public String remoteAddress() {
         return host + ':' + port;
     }
-
 }

@@ -55,6 +55,9 @@ subprojects {
 
         compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.22'
         annotationProcessor group: 'org.projectlombok', name: 'lombok', version: '1.18.22'
+
+        testImplementation 'com.squareup.okhttp3:mockwebserver'
+        testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
     }
 
     // Code style
