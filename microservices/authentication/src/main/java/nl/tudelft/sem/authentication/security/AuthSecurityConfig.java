@@ -30,7 +30,9 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
         this.passwordEncoder = passwordEncoder;
     }
 
-    /** Configures HTTP security (requests, permissions, authentication, csrf etc)
+    /**
+     * Configures HTTP security (requests, permissions, authentication, csrf etc).
+     *
      * @param http HTTP security object
      * @throws Exception if something goes wrong
      */
@@ -51,7 +53,8 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
 
 
     /**
-     * Configures authentication manager using AuthenticationManagerBuilder
+     * Configures authentication manager using AuthenticationManagerBuilder.
+     *
      * @param auth authentication manager builder
      * @throws Exception if something goes wrong
      */
@@ -63,7 +66,8 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     /**
-     * Creates an authentication manager bean
+     * Creates an authentication manager bean.
+     *
      * @return the authentication manager bean
      * @throws Exception if something goes wrong
      */
