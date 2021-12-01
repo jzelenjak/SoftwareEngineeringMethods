@@ -86,8 +86,7 @@ public class Application {
         }
         Application that = (Application) o;
         return applicationId == that.applicationId && userId == that.userId
-            && courseId == that.courseId && status == that.status
-            && Objects.equals(submissionDate, that.submissionDate);
+            && courseId == that.courseId && status == that.status;
     }
 
     @Override
