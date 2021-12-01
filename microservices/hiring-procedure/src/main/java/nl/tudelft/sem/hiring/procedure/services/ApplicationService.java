@@ -59,4 +59,8 @@ public class ApplicationService {
         Application application = new Application(userId, courseId, currentTime);
         applicationRepository.save(application);
     }
+
+    public List<Application> getAllApplications(long courseId) {
+        return applicationRepository.findAllByCourseId(courseId);
+    }
 }

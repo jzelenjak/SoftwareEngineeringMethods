@@ -1,8 +1,10 @@
 package nl.tudelft.sem.hiring.procedure.controllers;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import javax.management.InstanceNotFoundException;
 import lombok.Data;
+import nl.tudelft.sem.hiring.procedure.entities.Application;
 import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
 import nl.tudelft.sem.hiring.procedure.utils.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +50,6 @@ public class ApplicationController {
         LocalDateTime courseStart;
         Boolean isStudent;
         Mono<LocalDateTime> courseStartMono;
-        // Get course start date
         try {
             isStudent = checkStudent(authHeader);
             if (!isStudent) {
@@ -76,6 +77,24 @@ public class ApplicationController {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found");
             }
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Token not valid");
+        }
+    }
+
+    /**
+     * Endpoint for retrieving all applications for a specific course.
+     *
+     * @param courseId The ID of the course
+     * @return A list of all applications that have been found
+     */
+    @GetMapping("/get-all-applications")
+    @ResponseBody
+    public List<Application> getAllApplications(@RequestParam() long courseId) {
+        try {
+            getCourseStartDate(courseId).block();
+            return applicationService.getAllApplications(courseId);
+        } catch (InstanceNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "Course not found");
         }
     }
 
