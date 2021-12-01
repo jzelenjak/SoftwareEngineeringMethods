@@ -1,127 +1,102 @@
 package nl.tudelft.sem.authentication.auth;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.tudelft.sem.authentication.exceptions.UserAlreadyExistsException;
 import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
-import nl.tudelft.sem.authentication.repository.UserDataRepository;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-    private final AuthService authService;
+    private final transient String USERNAME = "username";
+    private final transient String PASSWORD = "password";
+    private final transient AuthService authService;
     private final transient ObjectMapper objectMapper = new ObjectMapper();
-    private final JwtTokenProvider jwtTokenProvider;
-    private final UserDataRepository users;
-    private final AuthenticationManager authenticationManager;
+    private final transient JwtTokenProvider jwtTokenProvider;
+    private final transient AuthenticationManager authenticationManager;
 
     /**
-     * Controls the authentication.
+     * Instantiates Authentication controller.
      *
      * @param authService     the authentication service.
-     * @param authenticationManager
+     * @param jwtTokenProvider JWT token provider that generates JTW tokens
+     * @param authenticationManager the authentication manager
      */
     public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider,
-                          UserDataRepository users, AuthenticationManager authenticationManager) {
+                          AuthenticationManager authenticationManager) {
         this.authService = authService;
         this.jwtTokenProvider = jwtTokenProvider;
-        this.users = users;
         this.authenticationManager = authenticationManager;
     }
 
-    /**
-     * Registers a new user to the system, if not already.
-     *
-     * @param body JSON body with username and password
-     * @return true if successful.
-     * @throws UserAlreadyExistsException if the user already exists.
-     */
+    //Registers a new user to the system, if not already.
     @PostMapping("/register")
-    public String register(@RequestBody String body) throws JsonProcessingException, UserAlreadyExistsException {
-        JsonNode jsonNode = objectMapper.readTree(body);
-        String uname = jsonNode.get("username").asText();
-        this.authService.registerUser(uname, jsonNode.get("password").asText());
-        return String.format("Greetings to %s from registration", jsonNode.get("username").asText());
+    public void register(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
+        final String username = jsonNode.get(USERNAME).asText();
+        final String password = jsonNode.get(PASSWORD).asText();
+
+        res.resetBuffer();
+        if (!this.authService.registerUser(username, password)) {
+            res.setStatus(HttpServletResponse.SC_CONFLICT);
+            res.getOutputStream()
+                    .print(String.format("{\"message\":\"User with netid %s already exists!\"}", username));
+        } else {
+            res.setStatus(HttpServletResponse.SC_OK);
+            res.getOutputStream()
+                    .print(String.format("{\"message\":\"User with netid %s successfully registered!\"}", username));
+        }
+        res.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+        res.flushBuffer(); // marks response as committed -- if we don't do this the request will go through normally!
     }
 
 
     /**
-     * PLACEHOLDER JAVADOC.
      * Allows the user to change their own credentials if authorized.
      *
-     * @param body JSON body with the credentials and new password
-     *
-     * @return message for now.
      */
     @PutMapping("/change_password")
-    public String changePassword(@RequestBody String body) throws JsonProcessingException {
-        JsonNode jsonNode = objectMapper.readTree(body);
-        String username = jsonNode.get("username").asText();
-        String password = jsonNode.get("password").asText();
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password));
-        String newPassword = jsonNode.get("new_password").asText();
+    public void changePassword(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
+        String username = jsonNode.get(USERNAME).asText();
+        String password = jsonNode.get(PASSWORD).asText();
 
+        authenticationManager
+                .authenticate(new UsernamePasswordAuthenticationToken(username, password));
+
+        String newPassword = jsonNode.get("new_password").asText();
         this.authService.changePassword(username, newPassword);
 
-        return "Password changed successfully!";
+        res.setStatus(HttpServletResponse.SC_OK);
+        res.getOutputStream().print("{\"message\":\"Password successfully changed!\"}");
+        res.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+        res.flushBuffer();
     }
 
 
     @GetMapping("/login")
-    public String login(@RequestBody String body) throws JsonProcessingException {
-        try {
-            JsonNode jsonNode = objectMapper.readTree(body);
-            String username = jsonNode.get("username").asText();
-            String password = jsonNode.get("password").asText();
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(username, password));
-            String token = jwtTokenProvider.createToken(username, this.users.findByUsername(username).get().getRole());
-            return token;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Incorrect credentials");
-        }
+    public void login(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
+        String username = jsonNode.get(USERNAME).asText();
+        String password = jsonNode.get("password").asText();
 
-    }
+        authenticationManager
+                .authenticate(new UsernamePasswordAuthenticationToken(username, password));
 
-    /**
-     * Gets auth service.
-     *
-     * @return auth service.
-     */
-    public AuthService getAuthService() {
-        return this.authService;
-    }
+        String jwt = jwtTokenProvider.createToken(username,
+                this.authService.loadUserByUsername(username).getRole());
 
-    /**
-     * Gets jwt provider.
-     *
-     * @return jwt token provider.
-     */
-    public JwtTokenProvider getJwtTokenProvider() {
-        return this.jwtTokenProvider;
-    }
-
-    /**
-     * Gets users.
-     *
-     * @return users.
-     */
-    public UserDataRepository getUsers() {
-        return this.users;
-    }
-
-    /**
-     * Gets authentication manager.
-     *
-     * @return authentication manager.
-     */
-    public AuthenticationManager getAuthenticationManager() {
-        return this.authenticationManager;
+        res.setStatus(HttpServletResponse.SC_OK);
+        res.setHeader(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", jwt));
+        res.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+        res.flushBuffer();
     }
 }
