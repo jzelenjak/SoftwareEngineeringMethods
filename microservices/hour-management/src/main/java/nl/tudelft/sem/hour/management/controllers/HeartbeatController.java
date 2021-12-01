@@ -14,12 +14,16 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Getter
 @Setter
 public class HeartbeatController {
+
+    private static final int duration = 55000;
+
     // Create web client for executing asynchronous requests
     private WebClient webClient;
 
     private String destination;
 
     private Heartbeat heartbeat;
+
 
     /**
      * Constructs the GatewayController class.
@@ -45,7 +49,7 @@ public class HeartbeatController {
     /**
      * Send a heartbeat to the discovery server every 55 seconds.
      */
-    @Scheduled(fixedRate = 55000)
+    @Scheduled(fixedRate = duration)
     public void sendHeartbeat() {
         webClient
                 .post()

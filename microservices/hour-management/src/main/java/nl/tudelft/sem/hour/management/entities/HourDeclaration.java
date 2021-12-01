@@ -2,17 +2,16 @@ package nl.tudelft.sem.hour.management.entities;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
 public class HourDeclaration {
 
     @Id
@@ -36,41 +35,36 @@ public class HourDeclaration {
     private LocalDateTime declarationDate;
 
     /**
-     * Constructs an HourDeclaration DOA instance.
+     * Construct an HourDeclaration DOA instance.
      *
-     * @param studentId     is the ID of the student.
-     * @param courseId      is the ID of the course.
-     * @param declaredHours is the amount of hours that the student declared.
-     * @implNote All new entries are by default marked as unapproved.
+     * @param hourDeclarationRequest DTO of creating a new HourDeclaration
      */
-    public HourDeclaration(long studentId, long courseId, double declaredHours) {
+    public HourDeclaration(HourDeclarationRequest hourDeclarationRequest) {
         this.declarationId = 0;
-        this.studentId = studentId;
-        this.courseId = courseId;
-        this.declaredHours = declaredHours;
+        this.studentId = hourDeclarationRequest.getStudentId();
+        this.courseId = hourDeclarationRequest.getCourseId();
+        this.declaredHours = hourDeclarationRequest.getDeclaredHours();
 
         this.approved = false;
         this.declarationDate = LocalDateTime.now();
     }
 
     /**
-     * Constructs an HourDeclaration DOA instance.
+     * Construct an HourDeclaration DOA instance for testing purposes.
      *
-     * @param declarationId is the ID of the declaration.
-     * @param studentId     is the ID of the student.
-     * @param courseId      is the ID of the course.
-     * @param declaredHours is the amount of hours that the student declared.
-     * @implNote All new entries are by default marked as unapproved.
+     * @param declarationId id of declaration
+     * @param hourDeclarationRequest DTO of creating a new HourDeclaration
+     * @param approved whether declaration is approved or not
+     * @param declarationDate date of declaration
      */
-    public HourDeclaration(long declarationId, long studentId, long courseId,
-                           double declaredHours) {
+    public HourDeclaration(long declarationId, HourDeclarationRequest hourDeclarationRequest, boolean approved, LocalDateTime declarationDate) {
         this.declarationId = declarationId;
-        this.studentId = studentId;
-        this.courseId = courseId;
-        this.declaredHours = declaredHours;
+        this.studentId = hourDeclarationRequest.getStudentId();
+        this.courseId = hourDeclarationRequest.getCourseId();
+        this.declaredHours = hourDeclarationRequest.getDeclaredHours();
 
-        this.approved = false;
-        this.declarationDate = LocalDateTime.now();
+        this.approved = approved;
+        this.declarationDate = declarationDate;
     }
 
     @Override
