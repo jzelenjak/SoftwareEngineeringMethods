@@ -27,6 +27,14 @@ public class Application {
     @Column(name = "course_id")
     private long courseId;
 
+    /**
+     * Specifies the status of the application.
+     *
+     * @value 0 - In progress
+     * @value 1 - Withdrawn
+     * @value 2 - Accepted
+     * @value 3 - Rejected
+     */
     @Column(name = "status")
     private int status;
 

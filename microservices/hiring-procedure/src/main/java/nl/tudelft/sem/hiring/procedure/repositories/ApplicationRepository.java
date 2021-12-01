@@ -8,14 +8,19 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
+
     @Query
     List<Application> findAllByApplicationId();
+
     @Query
     List<Application> findAllByUserId();
+
     @Query
     List<Application> findAllByCourseId();
+
     @Query
     List<Application> findAllBySubmissionDateAfter();
+
     @Query
     List<Application> findAllBySubmissionDateBefore();
 }
