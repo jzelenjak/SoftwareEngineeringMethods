@@ -1,16 +1,18 @@
 package nl.tudelft.sem.authentication.jwt;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
 import java.security.Key;
-import java.util.*;
-
-import io.jsonwebtoken.*;
+import java.util.Date;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * A class that provides utilities related to JWT
+ * A class that provides utilities related to JWT token.
  */
 @Component
 public class JwtUtils {
@@ -21,7 +23,8 @@ public class JwtUtils {
     private transient long validityInMinutes;
 
     /**
-     * Instantiates JwtUtils object
+     * Instantiates JwtUtils object.
+     *
      * @param hmacKey   The secret key used to sign the token
      */
     public JwtUtils(@Qualifier("secretKey") Key hmacKey) {
@@ -55,7 +58,9 @@ public class JwtUtils {
      * @return The JWT in the request, null if no JWT was found or there is no 'Bearer ' prefix.
      */
     public String resolveToken(String jwtPrefixed) {
-        if (jwtPrefixed == null || !jwtPrefixed.startsWith("Bearer ")) return null;
+        if (jwtPrefixed == null || !jwtPrefixed.startsWith("Bearer ")) {
+            return null;
+        }
         return jwtPrefixed.substring(7);
     }
 
@@ -79,7 +84,7 @@ public class JwtUtils {
     }
 
     /**
-     * Gets the username from a JWT.
+     * Gets the username from the user with a given JWT token.
      *
      * @param token the JWT to get the username from.
      * @return the username from the JWT.
@@ -94,7 +99,9 @@ public class JwtUtils {
     }
 
     /**
-     * Gets the role from JWT token. Assumes that the token is valid (check this with 'validate' method above)
+     * Gets the role from the user with the given JWT token.
+     * Assumes that the provided token is valid (check this with 'validate' method).
+     *
      * @param token the JWT token (assumed to be valid)
      * @return the role from JWT (STUDENT, LECTURER, TA, ADMIN)
      */

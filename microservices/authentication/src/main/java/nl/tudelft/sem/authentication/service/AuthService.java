@@ -18,12 +18,29 @@ public class AuthService implements UserDetailsService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    /**
+     * Registers a new user.
+     *
+     * @param username the username of the new user.
+     * @param password the password of the new user.
+     *
+     * @return true if registration of user is successful, false otherwise.
+     */
     public boolean registerUser(String username, String password) {
-        if (this.userDataRepository.findByUsername(username).isPresent()) return false;
-        this.userDataRepository.save(new UserData(username, passwordEncoder.encode(password), UserRole.STUDENT));
+        if (this.userDataRepository.findByUsername(username).isPresent()) {
+            return false;
+        }
+        this.userDataRepository.save(new UserData(username,
+                passwordEncoder.encode(password), UserRole.STUDENT));
         return true;
     }
 
+    /**
+     * Changes password of existing user.
+     *
+     * @param username    the username of the existing user.
+     * @param newPassword the new password of the existing user.
+     */
     public void changePassword(String username, String newPassword) {
         UserData userData = loadUserByUsername(username);
         userData.setPassword(passwordEncoder.encode(newPassword));

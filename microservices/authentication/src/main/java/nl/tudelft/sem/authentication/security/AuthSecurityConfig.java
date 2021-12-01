@@ -35,10 +35,9 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
             .authorizeRequests()
+                .antMatchers(HttpMethod.GET, "/auth/login").permitAll()
                 .antMatchers(HttpMethod.POST, "/auth/register").permitAll()
-                .antMatchers( "/auth/login").permitAll()
                 .antMatchers(HttpMethod.PUT, "/auth/change_password").permitAll()
-                .antMatchers(HttpMethod.GET, "/auth/attempt").permitAll()
                 .anyRequest()
                 .authenticated();
     }
@@ -51,7 +50,8 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
             .passwordEncoder(this.passwordEncoder);
     }
 
-    @Override @Bean
+    @Bean
+    @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
         return super.authenticationManagerBean();
     }
