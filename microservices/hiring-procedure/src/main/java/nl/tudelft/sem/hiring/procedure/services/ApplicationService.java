@@ -9,33 +9,51 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ApplicationService {
-    private final ApplicationRepository applicationRepository;
+    private final transient ApplicationRepository applicationRepository;
 
     @Autowired
     public ApplicationService(ApplicationRepository applicationRepository) {
         this.applicationRepository = applicationRepository;
     }
 
+    /**
+     * Function for checking if there are any Applications with the same user ID and course ID
+     * that were submitted in the same year.
+     *
+     * @param userId The ID of the user
+     * @param courseId The ID of the course
+     * @return true if there are no overlapping Applications, false otherwise
+     */
     public boolean checkSameApplication(long userId, long courseId) {
-        int currentYear = LocalDateTime.now().getYear();
         List<Application> applications = applicationRepository
             .findAllByUserIdAndAndCourseId(userId, courseId);
-
-        if (applications.size() == 0)
-            return true;
-        for (Application application: applications)
-            if (application.getSubmissionDate().getYear() == currentYear)
+        for (Application application : applications) {
+            if (application.getSubmissionDate().getYear() == LocalDateTime.now().getYear()) {
                 return false;
-
+            }
+        }
         return true;
     }
 
+    /**
+     * Function for checking if the application is within the allowed deadline of 3 weeks before
+     * the course starts.
+     *
+     * @param courseStart The LocalDateTime at which the course starts
+     * @return true if the application is within the deadline, false otherwise
+     */
     public boolean checkDeadline(LocalDateTime courseStart) {
         LocalDateTime currentTime = LocalDateTime.now();
         LocalDateTime deadline = courseStart.minusWeeks(3);
         return currentTime.isBefore(deadline);
     }
 
+    /**
+     * Function for creating an Application object and saving it into the database.
+     *
+     * @param userId The ID of the user
+     * @param courseId The ID of the course
+     */
     public void createApplication(long userId, long courseId) {
         LocalDateTime currentTime = LocalDateTime.now();
         Application application = new Application(userId, courseId, currentTime);

@@ -15,6 +15,9 @@ public class HeartbeatController {
     private String destination;
     private Heartbeat heartbeat;
 
+    /**
+     * Constructor for the HeartbeatController.
+     */
     public HeartbeatController() {
         this.webClient = WebClient.create();
 
@@ -31,6 +34,5 @@ public class HeartbeatController {
             .build().toUriString();
 
         heartbeat = new Heartbeat(discoveryPath);
-
     }
 }
