@@ -20,18 +20,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
     private final transient AuthService authService;
     private final transient PasswordEncoder passwordEncoder;
-    private final transient JwtTokenUtil jwtTokenUtil;
-    private final transient SecretKey secretKey;
 
     /**
      * Configuration for the authentication security.
      */
-    public AuthenticationSecurityConfig(AuthService authService, PasswordEncoder passwordEncoder,
-                                        SecretKey secretKey, JwtTokenUtil jwtTokenUtil) {
+    public AuthenticationSecurityConfig(AuthService authService, PasswordEncoder passwordEncoder) {
         this.authService = authService;
         this.passwordEncoder = passwordEncoder;
-        this.secretKey = secretKey;
-        this.jwtTokenUtil = jwtTokenUtil;
     }
 
     @Override
@@ -49,6 +44,7 @@ public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.POST, "/auth/register").permitAll()
                 .antMatchers( "/auth/login").permitAll()
                 .antMatchers(HttpMethod.PUT, "/auth/change_password").permitAll()
+                .antMatchers(HttpMethod.GET, "/auth/attempt").permitAll()
                 // Our private endpoints
                 .anyRequest()
                 .authenticated();
@@ -57,7 +53,9 @@ public class AuthenticationSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(this.authService);
+        auth
+                .userDetailsService(this.authService)
+                .passwordEncoder(this.passwordEncoder);
     }
 
     @Override @Bean

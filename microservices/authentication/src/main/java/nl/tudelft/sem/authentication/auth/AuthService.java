@@ -1,6 +1,5 @@
 package nl.tudelft.sem.authentication.auth;
 
-import nl.tudelft.sem.authentication.exceptions.UserAlreadyExistsException;
 import nl.tudelft.sem.authentication.repository.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,11 +17,10 @@ public class AuthService implements UserDetailsService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public void registerUser(String username, String password) throws UserAlreadyExistsException {
-        if (this.userDataRepository.findByUsername(username).isPresent()) {
-            throw new UserAlreadyExistsException();
-        }
+    public boolean registerUser(String username, String password) {
+        if (this.userDataRepository.findByUsername(username).isPresent()) return false;
         this.userDataRepository.save(new UserData(username, passwordEncoder.encode(password), UserRole.STUDENT));
+        return true;
     }
 
     public void changePassword(String username, String newPassword) {

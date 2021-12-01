@@ -10,26 +10,27 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.HttpServletRequest;
+
+import nl.tudelft.sem.authentication.auth.AuthService;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
 @Component
 public class JwtTokenProvider {
     @Value("${application.jwt.secretKey:" +
             "securesecuresecuresecuresecuresecuresecuresecuresecuresecuresecure}")
-    private String secretKey;
+    private transient String secretKey;
 
     @Value("${application.jwt.tokenExpirationAfterMinutes:15}")
-    private long validityInMinutes;
+    private transient long validityInMinutes;
 
     @Autowired
-    private UserDetailsService userDetailsService;
+    private transient AuthService authService;
 
     /**
      * Create a new JWT.
@@ -60,14 +61,8 @@ public class JwtTokenProvider {
      * @return the authentication in the JWT.
      */
     public Authentication getAuthentication(String token) {
-        UserDetails userDetails = this.userDetailsService.loadUserByUsername(
-                this.getUsername(token)
-        );
-        return new UsernamePasswordAuthenticationToken(
-                userDetails,
-                "",
-                userDetails.getAuthorities()
-        );
+        UserDetails userDetails = this.authService.loadUserByUsername(this.getUsername(token));
+        return new UsernamePasswordAuthenticationToken(userDetails,"", userDetails.getAuthorities());
     }
 
     /**
@@ -90,7 +85,7 @@ public class JwtTokenProvider {
     public String resolveToken(HttpServletRequest req) {
         String bearerToken = req.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7, bearerToken.length());
+            return bearerToken.substring(7);
         }
         return null;
     }
@@ -105,67 +100,10 @@ public class JwtTokenProvider {
         try {
             Jws<Claims> claims = Jwts.parserBuilder().setSigningKey(secretKey).build()
                     .parseClaimsJws(token);
-            if (claims.getBody().getExpiration().before(new Date())) {
-                return false;
-            }
-            return true;
+            return !claims.getBody().getExpiration().before(new Date());
         } catch (JwtException | IllegalArgumentException e) {
             throw new IllegalArgumentException("Expired or invalid JWT token");
         }
-    }
-
-    /**
-     * Gets user details service.
-     *
-     * @return user details service.
-     */
-    public UserDetailsService getUserDetailsService() {
-        return this.userDetailsService;
-    }
-
-    /**
-     * Sets user details service.
-     *
-     * @param userDetailsService the user details service.
-     */
-    public void setUserDetailsService(UserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
-    }
-
-    /**
-     * Gets secret key.
-     *
-     * @return secret key.
-     */
-    public String getSecretKey() {
-        return this.secretKey;
-    }
-
-    /**
-     * Sets secret key.
-     *
-     * @param secretKey the secret key.
-     */
-    public void setSecretKey(String secretKey) {
-        this.secretKey = secretKey;
-    }
-
-    /**
-     * Gets validity in minutes.
-     *
-     * @return validity in minutes.
-     */
-    public long getValidityInMinutes() {
-        return this.validityInMinutes;
-    }
-
-    /**
-     * Sets validity in minutes.
-     *
-     * @param validityInMinutes the validity in minutes.
-     */
-    public void setValidityInMinutes(long validityInMinutes) {
-        this.validityInMinutes = validityInMinutes;
     }
 }
 
