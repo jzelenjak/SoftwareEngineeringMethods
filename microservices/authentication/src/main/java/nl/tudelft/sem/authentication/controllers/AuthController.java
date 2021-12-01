@@ -7,74 +7,87 @@ import nl.tudelft.sem.authentication.jwt.JwtUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.web.bind.annotation.*;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 
 
+/**
+ * A controller class for authentication.
+ */
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-    private final transient String USERNAME = "username";
-    private final transient String PASSWORD = "password";
+    private final transient String username = "username";
+    private final transient String password = "password";
     private final transient AuthService authService;
-    private final transient ObjectMapper objectMapper = new ObjectMapper();
-    private final transient JwtUtils jwtTokenProvider;
+    private final transient ObjectMapper objectMapper;
+    private final transient JwtUtils jwtUtils;
     private final transient AuthenticationManager authenticationManager;
 
+
     /**
-     * Instantiates Authentication controller.
+     * Instantiates a new authentication controller.
      *
-     * @param authService     the authentication service.
-     * @param jwtTokenProvider JWT token provider that generates JTW tokens
+     * @param authService           the authentication service
+     * @param jwtUtils              the JWT utils class
      * @param authenticationManager the authentication manager
      */
-    public AuthController(AuthService authService, JwtUtils jwtTokenProvider,
-                          AuthenticationManager authenticationManager) {
+    public AuthController(AuthService authService, JwtUtils jwtUtils, AuthenticationManager authenticationManager) {
         this.authService = authService;
-        this.jwtTokenProvider = jwtTokenProvider;
+        this.jwtUtils = jwtUtils;
         this.authenticationManager = authenticationManager;
+        this.objectMapper = new ObjectMapper();
     }
 
-    //Registers a new user to the system, if not already.
+
+    /**
+     * Registers a new user to the system, if not (s)he is not already registered.
+     *
+     * @param req the HTTP request
+     * @param res the HTTP response
+     * @throws IOException IO exception if something goes wrong with the servlets (e.g stream closed)
+     */
     @PostMapping("/register")
     public void register(HttpServletRequest req, HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
-        final String username = jsonNode.get(USERNAME).asText();
-        final String password = jsonNode.get(PASSWORD).asText();
+        final String uname = jsonNode.get(username).asText();
+        final String pwd = jsonNode.get(password).asText();
 
         res.resetBuffer();
-        if (!this.authService.registerUser(username, password)) {
+        if (!this.authService.registerUser(uname, pwd)) {
             res.setStatus(HttpServletResponse.SC_CONFLICT);
             res.getOutputStream()
-                    .print(String.format("{\"message\":\"User with netid %s already exists!\"}", username));
+                    .print(String.format("{\"message\":\"User with netid %s already exists!\"}", uname));
         } else {
             res.setStatus(HttpServletResponse.SC_OK);
             res.getOutputStream()
-                    .print(String.format("{\"message\":\"User with netid %s successfully registered!\"}", username));
+                    .print(String.format("{\"message\":\"User with netid %s successfully registered!\"}", uname));
         }
         res.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-        res.flushBuffer(); // marks response as committed -- if we don't do this the request will go through normally!
+        res.flushBuffer(); // marks response as committed -- if we don't do this the request will go through normally
     }
 
 
     /**
-     * Allows the user to change their own credentials if authorized.
+     * Changes the password of a user if the provided credentials are correct.
      *
+     * @param req the HTTP request
+     * @param res the HTTP response
+     * @throws IOException IO exception if something goes wrong with the servlets (e.g stream closed)
      */
     @PutMapping("/change_password")
     public void changePassword(HttpServletRequest req, HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
-        String username = jsonNode.get(USERNAME).asText();
-        String password = jsonNode.get(PASSWORD).asText();
+        String uname = jsonNode.get(username).asText();
+        String pwd = jsonNode.get(password).asText();
 
         authenticationManager
-                .authenticate(new UsernamePasswordAuthenticationToken(username, password));
+                .authenticate(new UsernamePasswordAuthenticationToken(uname, pwd));
 
         String newPassword = jsonNode.get("new_password").asText();
-        this.authService.changePassword(username, newPassword);
+        this.authService.changePassword(uname, newPassword);
 
         res.setStatus(HttpServletResponse.SC_OK);
         res.getOutputStream().print("{\"message\":\"Password successfully changed!\"}");
@@ -83,16 +96,26 @@ public class AuthController {
     }
 
 
+    /**
+     * Logs in the user.
+     * If the login has been successful, sends back JWT in 'Autorization' header:
+     *
+     * 'Authorization' : 'Bearer <token>'
+     *
+     * @param req the HTTP request
+     * @param res the HTTP response
+     * @throws IOException IO exception if something goes wrong with the servlets (e.g stream closed)
+     */
     @GetMapping("/login")
     public void login(HttpServletRequest req, HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
-        String username = jsonNode.get(USERNAME).asText();
-        String password = jsonNode.get("password").asText();
+        String uname = jsonNode.get(username).asText();
+        String pwd = jsonNode.get(password).asText();
 
         authenticationManager
-                .authenticate(new UsernamePasswordAuthenticationToken(username, password));
+                .authenticate(new UsernamePasswordAuthenticationToken(uname, pwd));
 
-        String jwt = jwtTokenProvider.createToken(username, this.authService.loadUserByUsername(username).getRole());
+        String jwt = jwtUtils.createToken(uname, this.authService.loadUserByUsername(uname).getRole());
         String jwtPrefixed = String.format("Bearer %s", jwt);
 
         res.setStatus(HttpServletResponse.SC_OK);
