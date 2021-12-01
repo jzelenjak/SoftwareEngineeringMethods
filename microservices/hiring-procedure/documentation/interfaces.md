@@ -8,25 +8,34 @@ If the user that has made this request is not a `lecturer`, the response will be
 If the `courseID` is not valid, the response will be a `405 Method Not Allowed` response.<br>
 If the user that has made this request has already applied for that course, the response will be a `405 Method Not Allowed` response.
 
-## `/api/hiring-procedure/hire-TA?selectedID=netID&courseID=courseID`
+## `/api/hiring-procedure/hire-TA?netID=netID&courseID=courseID`
 
 Endpoint for hiring a candidate TA for a specific course. The body of the request should contain the JWT of the user.
-Only users with the `lecturer` permission have access. `courseID` parameter specifies the course for which
-the TA is selected. `selectedID` parameter specifies the netID of the TA to be hired.
-`selectedID` has to be the netID of a candidate TA for that specific course.
+Only users with the `lecturer` permission have access. The `courseID` parameter specifies the course for which
+the TA is selected. The `netID` parameter specifies the netID of the TA to be hired.
+The `netID` has to be the netID of a candidate TA for that specific course.
 
 If the user that has made this request is not a `lecturer`, the response will be a `403 Forbidden` response. <br>
 If the `courseID` is not valid, the response will be a `405 Method Not Allowed` response.<br>
-If the `selectedID` corresponds to a user that is not a candidate TA for that course, 
+If the `netID` corresponds to a user that is not a candidate TA for that course or a non-existing user, 
 the response will be a `405 Method Not Allowed` response.
 
-## `/api/hiring-procedure/get-applications?courseID=courseID`
+## `/api/hiring-procedure/get-all-applications?courseID=courseID`
 
 Endpoint for retrieving all candidate TAs for a specific course. The body of the request should contain the JWT of
 the user. Only users with the `lecturer` permission have access.
 
 If the user that has made this request is not a `lecturer`, the response will be a `403 Forbidden` response. <br>
 If the `courseID` is not valid, the response will be a `405 Method Not Allowed` response.
+
+## `/api/hiring-procedure/get-applications?netID=netID`
+
+Endpoint for retrieving all applications of one specific user. The body of the request should contain the JWT of
+the user. Only users with the `lecturer` permission or the user associated with the `netID` have access.
+
+If the user that has made this request is not a `lecturer` or the user associated with the netID, 
+the response will be a `403 Forbidden` response. <br>
+If the `netID` corresponds to a non-existing user, the response will be a `405 Method Not Allowed` response.
 
 ## `/api/hiring-procedure/get-contract?courseID=courseID`
 
