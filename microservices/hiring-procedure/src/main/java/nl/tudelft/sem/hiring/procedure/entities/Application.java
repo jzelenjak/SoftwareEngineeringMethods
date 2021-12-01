@@ -50,12 +50,13 @@ public class Application {
      *
      * @param userId The userId of the user that sent the request
      * @param courseId The courseId of the course the user wishes to apply to
+     * @param submissionDate The date at which the microservice received the request
      */
-    public Application(long userId, long courseId) {
+    public Application(long userId, long courseId, LocalDateTime submissionDate) {
         this.userId = userId;
         this.courseId = courseId;
         this.status = 0;
-        this.submissionDate = LocalDateTime.now();
+        this.submissionDate = submissionDate;
     }
 
     /**
@@ -64,13 +65,15 @@ public class Application {
      * @param applicationId Specified id for testing purposes
      * @param userId The userId of the user that sent the request
      * @param courseId The courseId of the course the user wishes to apply to
+     * @param submissionDate The date at which the microservice received the request
      */
-    public Application(long applicationId, long userId, long courseId) {
+    public Application(long applicationId, long userId, long courseId,
+                       LocalDateTime submissionDate) {
         this.applicationId = applicationId;
         this.userId = userId;
         this.courseId = courseId;
         this.status = 0;
-        this.submissionDate = LocalDateTime.now();
+        this.submissionDate = submissionDate;
     }
 
     @Override
@@ -84,8 +87,7 @@ public class Application {
         Application that = (Application) o;
         return applicationId == that.applicationId && userId == that.userId
             && courseId == that.courseId && status == that.status
-            && Objects.equals(submissionDate, that.submissionDate)
-            && Objects.equals(lastUpdate, that.lastUpdate);
+            && Objects.equals(submissionDate, that.submissionDate);
     }
 
     @Override
