@@ -13,6 +13,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 
+/**
+ * A class for security configuration.
+ */
 @Configuration
 @EnableWebSecurity
 public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
@@ -20,13 +23,17 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
     private final transient PasswordEncoder passwordEncoder;
 
     /**
-     * Configuration for the authentication security.
+     * Instantiates the security configuration class.
      */
     public AuthSecurityConfig(AuthService authService, PasswordEncoder passwordEncoder) {
         this.authService = authService;
         this.passwordEncoder = passwordEncoder;
     }
 
+    /** Configures HTTP security (requests, permissions, authentication, csrf etc)
+     * @param http HTTP security object
+     * @throws Exception if something goes wrong
+     */
     @Override
     public void configure(HttpSecurity http) throws Exception {
         http
@@ -43,6 +50,11 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
 
+    /**
+     * Configures authentication manager using AuthenticationManagerBuilder
+     * @param auth authentication manager builder
+     * @throws Exception if something goes wrong
+     */
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth
@@ -50,6 +62,11 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
             .passwordEncoder(this.passwordEncoder);
     }
 
+    /**
+     * Creates an authentication manager bean
+     * @return the authentication manager bean
+     * @throws Exception if something goes wrong
+     */
     @Bean
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {

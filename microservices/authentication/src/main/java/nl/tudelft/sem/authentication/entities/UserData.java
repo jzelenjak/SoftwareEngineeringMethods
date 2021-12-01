@@ -45,7 +45,7 @@ public class UserData implements UserDetails {
      * Instantiates a new UserData class.
      *
      * @param username              the netID of the user
-     * @param password              the password  of the user
+     * @param password              the password of the user
      * @param role                  the role of the user
      */
     public UserData(String username, String password, UserRole role) {
@@ -91,9 +91,9 @@ public class UserData implements UserDetails {
     }
 
     /**
-     * Gets the username.
+     * Gets the username (netid) of the user.
      *
-     * @return the username
+     * @return the username of the user
      */
     @Override
     public String getUsername() {
@@ -101,9 +101,9 @@ public class UserData implements UserDetails {
     }
 
     /**
-     * Sets the username.
+     * Sets the username (netid) of the user.
      *
-     * @param username the username
+     * @param username the username of the user
      */
     public void setUsername(String username) {
         this.username = username;
@@ -112,7 +112,7 @@ public class UserData implements UserDetails {
     /**
      * Gets the role of the user.
      *
-     * @return the UserRole.
+     * @return the role of the user.
      */
     public UserRole getRole() {
         return this.role;
