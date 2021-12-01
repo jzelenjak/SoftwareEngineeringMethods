@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * A controller class for authentication.
  */
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
     private final transient String username = "username";
     private final transient String password = "password";
@@ -63,12 +63,18 @@ public class AuthController {
         res.resetBuffer();
         if (!this.authService.registerUser(uname, pwd)) {
             res.setStatus(HttpServletResponse.SC_CONFLICT);
-            res.getOutputStream().print(String.format("{\"message\":\""
-                    + "User with NetID %s already exists!\"}", uname));
+            res
+                .getOutputStream()
+                .print(String
+                        .format("{\"message\":\"User with NetID %s already exists!\"}",
+                                uname));
         } else {
             res.setStatus(HttpServletResponse.SC_OK);
-            res.getOutputStream().print(String.format("{\"message\":\""
-                    + "User with NetID %s successfully registered!\"}", uname));
+            res
+                .getOutputStream()
+                .print(String
+                        .format("{\"message\":\"User with NetID %s successfully registered!\"}",
+                                uname));
         }
         res.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
         res.flushBuffer();
