@@ -9,11 +9,18 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.2',
                 'io.jsonwebtoken:jjwt-jackson:0.11.2'
 
+
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
     implementation 'com.fasterxml.jackson.core:jackson-core:2.13.0'
     developmentOnly 'org.hibernate:hibernate-entitymanager'
 
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.postgresql:postgresql:42.2.23'
+
+    // Utility dependency
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.22'
+    annotationProcessor group: 'org.projectlombok', name: 'lombok', version: '1.18.22'
 
 
     implementation 'org.springframework.boot:spring-boot-starter-web:2.6.0'
