@@ -1,0 +1,3 @@
+group = 'nl.tudelft.cse.sem.users'
+version = '0.0.1-SNAPSHOT'
+mainClassName = 'nl.tudelft.sem.users.UsersMain'
