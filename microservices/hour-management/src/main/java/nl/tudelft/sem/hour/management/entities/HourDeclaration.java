@@ -57,7 +57,8 @@ public class HourDeclaration {
      * @param approved whether declaration is approved or not
      * @param declarationDate date of declaration
      */
-    public HourDeclaration(long declarationId, HourDeclarationRequest hourDeclarationRequest, boolean approved, LocalDateTime declarationDate) {
+    public HourDeclaration(long declarationId, HourDeclarationRequest hourDeclarationRequest,
+                           boolean approved, LocalDateTime declarationDate) {
         this.declarationId = declarationId;
         this.studentId = hourDeclarationRequest.getStudentId();
         this.courseId = hourDeclarationRequest.getCourseId();
