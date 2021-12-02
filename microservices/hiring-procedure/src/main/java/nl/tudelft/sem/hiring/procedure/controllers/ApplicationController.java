@@ -86,7 +86,7 @@ public class ApplicationController {
      * @param courseId The ID of the course
      * @return A list of all applications that have been found
      */
-    @GetMapping("/get-all-applications")
+    @GetMapping("/get-applications")
     @ResponseBody
     public List<Application> getAllApplications(@RequestParam() long courseId) {
         try {
