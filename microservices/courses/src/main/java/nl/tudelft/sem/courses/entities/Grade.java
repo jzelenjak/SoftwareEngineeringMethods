@@ -1,6 +1,8 @@
 package nl.tudelft.sem.courses.entities;
 
 
+import lombok.NoArgsConstructor;
+
 import javax.persistence.*;
 import java.util.Objects;
 
@@ -15,7 +17,6 @@ public class Grade {
 
 
     @ManyToOne(fetch = FetchType.LAZY)
-//    @Column(name = "course")
     public Course course;
 
     @Column(name = "grade")
@@ -25,6 +26,13 @@ public class Grade {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "grades")
     public User user;
+
+    /**
+     *  Empty constructor for Jpa Persistance.
+     */
+    public Grade(){
+
+    }
 
     /**
      * When using this constructor you must provide a course and a user.

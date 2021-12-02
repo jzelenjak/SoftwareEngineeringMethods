@@ -1,5 +1,7 @@
 package nl.tudelft.sem.courses.entities;
 
+import lombok.NoArgsConstructor;
+
 import javax.annotation.processing.Generated;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -16,6 +18,11 @@ import java.util.Set;
 @Entity(name = "Users")
 @Table(name = "users")
 public class User {
+
+    /**
+     * Empty constructor for Jpa Persistance.
+     */
+    public User(){}
 
     /**
      * You must provide an Identification for the user. The courses are added later.

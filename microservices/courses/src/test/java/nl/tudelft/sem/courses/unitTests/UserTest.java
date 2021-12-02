@@ -1,4 +1,4 @@
-package nl.tudelft.sem.courses;
+package nl.tudelft.sem.courses.unitTests;
 
 import nl.tudelft.sem.courses.entities.Role;
 import nl.tudelft.sem.courses.entities.User;
