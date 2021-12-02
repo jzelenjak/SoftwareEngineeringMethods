@@ -8,17 +8,19 @@ import org.junit.jupiter.api.Test;
 
 public class UserTest {
     private transient User user1;
+    private final transient String netId = "S.Tudent@student.tudelft.nl";
+    private final transient String lastName = "Tudent";
 
     @BeforeEach
     public void setup() {
-        user1 = new User("S.Tudent@student.tudelft.nl", "Steve", "Tudent", UserRole.STUDENT);
+        user1 = new User(netId, "Steve", lastName, UserRole.STUDENT);
     }
 
     @Test
     public void constructorTest() {
-        Assertions.assertEquals(user1.getUsername(), "S.Tudent@student.tudelft.nl");
+        Assertions.assertEquals(user1.getUsername(), netId);
         Assertions.assertEquals(user1.getFirstName(), "Steve");
-        Assertions.assertEquals(user1.getLastName(), "Tudent");
+        Assertions.assertEquals(user1.getLastName(), lastName);
         Assertions.assertEquals(user1.getRole(), UserRole.STUDENT);
     }
 
@@ -67,29 +69,29 @@ public class UserTest {
 
     @Test
     public void equalsEqualTest() {
-        User user2 = new User("S.Tudent@student.tudelft.nl",
-                "Steve", "Tudent", UserRole.LECTURER);
+        User user2 = new User(netId,
+                "Steve", lastName, UserRole.LECTURER);
         Assertions.assertEquals(user1, user2);
     }
 
     @Test
     public void equalsDifferentTest() {
-        User user2 = new User("S.Tuudent@student.tudelft.nl",
-                "Steve", "Tudent", UserRole.STUDENT);
+        User user2 = new User("S.Tud@student.tudelft.nl",
+                "Steven", "Tud", UserRole.STUDENT);
         Assertions.assertNotEquals(user1, user2);
     }
 
     @Test
     public void hashCodeEqualTest() {
-        User user2 = new User("S.Tudent@student.tudelft.nl",
-                "Stefan", "Tudent", UserRole.ADMIN);
+        User user2 = new User(netId,
+                "Stefan", lastName, UserRole.ADMIN);
         Assertions.assertEquals(user1.hashCode(), user2.hashCode());
     }
 
     @Test
     public void hashCodeDifferentTest() {
-        User user2 = new User("S.Tuudent@student.tudelft.nl",
-                "Stefan", "Tudent", UserRole.ADMIN);
+        User user2 = new User("S.Tudentin@tudelft.nl", "Stefan",
+                "Tudentin", UserRole.ADMIN);
         Assertions.assertNotEquals(user1.hashCode(), user2.hashCode());
     }
 }
