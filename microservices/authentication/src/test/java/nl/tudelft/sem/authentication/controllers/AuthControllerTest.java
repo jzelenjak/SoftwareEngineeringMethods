@@ -21,7 +21,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-
 @SpringBootTest
 @AutoConfigureMockMvc
 class AuthControllerTest {
@@ -40,7 +39,6 @@ class AuthControllerTest {
 
 
     private final transient ObjectMapper objectMapper = new ObjectMapper();
-
 
     private final transient String url = "/api/auth/%s";
 

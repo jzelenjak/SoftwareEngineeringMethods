@@ -43,7 +43,6 @@ class AuthServiceTest {
         Assertions.assertEquals(UserRole.STUDENT,
                 this.userDataRepository.findByUsername(username).get().getRole(),
                 "The role of the user must not have been changed");
-
         this.userDataRepository.deleteById(username);
     }
 
@@ -69,7 +68,6 @@ class AuthServiceTest {
                 "The new password must be hashed (encoded)");
         Assertions.assertEquals(UserRole.TA, this.userDataRepository.findByUsername(username)
                 .get().getRole(), "The role of the user must not have been changed");
-
         this.userDataRepository.deleteById(username);
     }
 }
