@@ -1,8 +1,12 @@
 package nl.tudelft.sem.courses.entities;
 
 
+import lombok.NoArgsConstructor;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
@@ -17,6 +21,11 @@ import java.util.Set;
 public class Course {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "id")
+    private long id;
+
+
     @Column(name = "courseID")
     public String courseID;
 
@@ -34,11 +43,18 @@ public class Course {
     private Set<Grade> grades;
 
     /**
+     *  Empty constructor for Jpa Persistance.
+     */
+    public Course(){}
+
+
+    /**
      * Constructor for Course. You must specify a course ID when creating the course.
      * This course ID can be changed later.
      * @param courseID
      */
-    public Course(String courseID){
+    public Course(long id, String courseID, LocalDateTime startDate){
+        this.id = id;
         this.courseID = courseID;
         users = new HashSet<>();
     }
@@ -88,12 +104,12 @@ public class Course {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Course course = (Course) o;
-        return courseID.equals(course.courseID) && users.equals(course.users);
+        return courseID.equals(course.courseID) && users.equals(course.users) && id == course.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(courseID, users);
+        return Objects.hash(courseID, users, id);
     }
 
 

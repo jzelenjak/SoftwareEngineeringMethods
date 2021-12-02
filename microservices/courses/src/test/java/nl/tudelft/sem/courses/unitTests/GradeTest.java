@@ -1,10 +1,12 @@
-package nl.tudelft.sem.courses;
+package nl.tudelft.sem.courses.unitTests;
 
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.entities.Role;
 import nl.tudelft.sem.courses.entities.User;
 import org.junit.jupiter.api.Test;
+
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,7 +15,7 @@ public class GradeTest {
 
     @Test
     public void constructorTest(){
-        Course course = new Course("CSE2215");
+        Course course = new Course(1, "CSE2215", LocalDateTime.now());
         User user = new User(1,  Role.STUDENT);
         long id = 1;
         Grade grade = new Grade(id, course, user, 2.0f);
@@ -23,7 +25,7 @@ public class GradeTest {
 
     @Test
     public void testingEqualsMethod(){
-        Course course = new Course("CSE2215");
+        Course course = new Course(1, "CSE2215", LocalDateTime.now());
         User user = new User(1, Role.STUDENT);
         long id = 1;
         long id2 = 2;
