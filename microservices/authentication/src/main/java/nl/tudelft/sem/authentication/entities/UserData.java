@@ -212,7 +212,9 @@ public class UserData implements UserDetails {
      */
     @Override
     public boolean equals(Object other) {
-        if (this == other) return true;
+        if (this == other) {
+            return true;
+        }
         if (!(other instanceof UserData)) {
             return false;
         }

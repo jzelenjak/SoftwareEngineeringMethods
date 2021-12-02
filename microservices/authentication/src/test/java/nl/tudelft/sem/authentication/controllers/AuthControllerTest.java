@@ -1,8 +1,9 @@
 package nl.tudelft.sem.authentication.controllers;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +12,7 @@ import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.jwt.JwtUtils;
 import nl.tudelft.sem.authentication.repositories.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -171,9 +173,9 @@ class AuthControllerTest {
                     .getHeader("Authorization");
 
         jwt = this.jwtUtils.resolveToken(jwt);
-        assertTrue(this.jwtUtils.validateToken(jwt));
-        assertEquals(this.jwtUtils.getUsername(jwt), username);
-        assertEquals(this.jwtUtils.getRole(jwt), UserRole.TA.name());
+        Assertions.assertTrue(this.jwtUtils.validateToken(jwt));
+        Assertions.assertEquals(this.jwtUtils.getUsername(jwt), username);
+        Assertions.assertEquals(this.jwtUtils.getRole(jwt), UserRole.TA.name());
 
 
         this.userDataRepository.deleteById(username);
