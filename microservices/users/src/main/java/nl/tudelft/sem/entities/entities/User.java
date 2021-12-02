@@ -16,9 +16,6 @@ public class User {
     @Column(name = "username", nullable = false)
     private String username; // NetID of the user.
 
-    @Column(name = "password")
-    private String password; // Needs to be hashed before storing.
-
     @Column(name = "first_name")
     private String firstName;
 
@@ -34,13 +31,11 @@ public class User {
      * @param username  the username of the user.
      * @param firstName the first name of the user.
      * @param lastName  the last name of the user.
-     * @param password  the password of the user.
      * @param role      the role of the user.
      */
-    public User(String username, String password, String firstName,
+    public User(String username, String firstName,
                 String lastName, UserRole role) {
         this.username = username;
-        this.password = password;
         this.firstName = firstName;
         this.lastName = lastName;
         this.role = role;
@@ -107,23 +102,6 @@ public class User {
         this.lastName = lastName;
     }
 
-    /**
-     * Gets the password of the user.
-     *
-     * @return the password of the user
-     */
-    public String getPassword() {
-        return this.password;
-    }
-
-    /**
-     * Sets the password of the user.
-     *
-     * @param password the password of the user
-     */
-    public void setPassword(String password) {
-        this.password = password;
-    }
 
     /**
      * Gets the role of the user.

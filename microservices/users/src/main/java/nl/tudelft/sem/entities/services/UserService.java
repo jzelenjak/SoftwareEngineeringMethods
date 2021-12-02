@@ -18,7 +18,7 @@ public class UserService {
         if (this.userRepository.findByUsername(netid).isPresent()) {
             return false;
         }
-        this.userRepository.save(new User(netid, null, name, surname, role));
+        this.userRepository.save(new User(netid, name, surname, role));
         return true;
     }
 }
