@@ -90,14 +90,9 @@ public class AuthController {
                                                HttpServletResponse res) throws IOException {
         try {
             JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
-            String uname = jsonNode.get(username).asText();
-            String pwd = jsonNode.get(password).asText();
-
-            authenticationManager
-                    .authenticate(new UsernamePasswordAuthenticationToken(uname, pwd));
-
+            String jwt = jwtUtils.resolveToken(req);
             String newPassword = jsonNode.get("new_password").asText();
-            this.authService.changePassword(uname, newPassword);
+            this.authService.changePassword(jwtUtils.getUsername(jwt), newPassword);
 
             return "Password successfully changed!";
         } catch (AuthenticationException e) {
@@ -132,10 +127,8 @@ public class AuthController {
                                             .loadUserByUsername(uname).getRole(), new Date());
 
             String jwtPrefixed = String.format("Bearer %s", jwt);
-
             res.setHeader(HttpHeaders.AUTHORIZATION, jwtPrefixed);
             res.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-            res.flushBuffer();
             return "Login successful!";
         } catch (AuthenticationException e) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,

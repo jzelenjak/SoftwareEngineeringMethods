@@ -1,14 +1,18 @@
 package nl.tudelft.sem.authentication.jwt;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import java.security.Key;
 import java.util.Date;
+import javax.servlet.http.HttpServletRequest;
 import nl.tudelft.sem.authentication.security.UserRole;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
 /**
@@ -21,6 +25,9 @@ public class JwtUtils {
 
     @Value("${jwtTokenValidityInMinutes:10}")
     private transient long validityInMinutes;
+
+    @Autowired
+    private transient UserDetailsService userDetailsService;
 
     /**
      * Instantiates JwtUtils object.
@@ -54,14 +61,15 @@ public class JwtUtils {
     /**
      * Gets a JWT from a request's Authorization header.
      *
-     * @param jwtPrefixed JWT token with prefix 'Bearer '
+     * @param req the request.
      * @return The JWT in the request, null if no JWT was found or there is no 'Bearer ' prefix.
      */
-    public String resolveToken(String jwtPrefixed) {
-        if (jwtPrefixed == null || !jwtPrefixed.startsWith("Bearer ")) {
-            return null;
+    public String resolveToken(HttpServletRequest req) {
+        String bearerToken = req.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7, bearerToken.length());
         }
-        return jwtPrefixed.substring(7);
+        return null;
     }
 
     /**
@@ -113,6 +121,19 @@ public class JwtUtils {
                 .build()
                 .parseClaimsJws(token)
                 .getBody().get("role").toString();
+    }
+
+    /**
+     * Gets the authentication of a JWT.
+     *
+     * @param token the JWT to get the authentication from.
+     * @return the authentication in the JWT.
+     */
+    public Authentication getAuthentication(String token) {
+        UserDetails userDetails = this.userDetailsService.loadUserByUsername(
+                this.getUsername(token));
+        return new UsernamePasswordAuthenticationToken(userDetails,
+                "", userDetails.getAuthorities());
     }
 }
 
