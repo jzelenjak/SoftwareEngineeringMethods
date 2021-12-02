@@ -12,8 +12,8 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-@Entity(name = 'Users')
-@Table(name = 'users')
+@Entity(name = "Users")
+@Table(name = "users")
 public class User {
 
     /**
@@ -54,23 +54,23 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = 'id')
+    @Column(name = "id")
     public long id;
 
-    @Column(name = 'first name')
+    @Column(name = "first name")
     public String firstName;
 
-    @Column(name = 'last name')
+    @Column(name = "last name")
     public String lastName;
 
-    @Column(name = 'student number')
+    @Column(name = "student number")
     public int studentNumber;
 
-    @Column(name = 'role')
+    @Column(name = "role")
     public Role role;
 
-    @ManyToMany
-    @Column(name = 'courses', mappedBy = 'course')
+    @ManyToMany(mappedBy = "course")
+    @Column(name = "courses")
     public Set<Course> courses;
 
 

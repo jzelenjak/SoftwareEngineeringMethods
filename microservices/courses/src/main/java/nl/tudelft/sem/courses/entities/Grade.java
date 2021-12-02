@@ -8,20 +8,23 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import java.util.Objects;
 
-@Entity(name = 'Grades')
-@Table(name = 'grade')
+@Entity(name = "Grades")
+@Table(name = "grade")
 public class Grade {
 
 
 
     @Id
-    @OneToOne(name = 'course')
-    @Column(name = 'course')
+    @OneToOne(mappedBy = "course")
+    @Column(name = "course")
     public Course course;
 
+    @Column(name = "grade")
+    public float grade;
+
     @Id
-    @OneToOne(name = 'user')
-    @Column(name = 'user')
+    @OneToOne(mappedBy = "user")
+    @Column(name = "user")
     public User user;
 
     /**
@@ -29,9 +32,10 @@ public class Grade {
      * @param course
      * @param user
      */
-    public Grade(Course course, User user){
+    public Grade(Course course, User user, float grade){
         this.course = course;
         this.user = user;
+        this.grade = grade;
     }
 
     public Course getCourse() {
@@ -55,15 +59,14 @@ public class Grade {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Grade grade = (Grade) o;
-        return course.equals(grade.course) && user.equals(grade.user);
+        Grade grade1 = (Grade) o;
+        return Float.compare(grade1.grade, grade) == 0 && course.equals(grade1.course) && user.equals(grade1.user);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(course, user);
+        return Objects.hash(course, grade, user);
     }
-
 
     @Override
     public String toString() {

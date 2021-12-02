@@ -16,12 +16,12 @@ import java.util.Set;
 public class Course {
 
     @Id
-    @Column(name = 'courseID')
+    @Column(name = "courseID")
     public String courseID;
 
 
-    @Column(name = 'users')
-    @ManyToMany(mappedBy = 'user')
+    @Column(name = "users")
+    @ManyToMany(mappedBy = "user")
     private Set<User> user;
 
     /**
