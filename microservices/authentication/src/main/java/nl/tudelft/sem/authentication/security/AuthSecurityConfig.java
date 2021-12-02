@@ -44,9 +44,9 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
             .authorizeRequests()
-                .antMatchers(HttpMethod.GET, "/auth/login").permitAll()
-                .antMatchers(HttpMethod.POST, "/auth/register").permitAll()
-                .antMatchers(HttpMethod.PUT, "/auth/change_password").permitAll()
+                .antMatchers(HttpMethod.GET, "/api/auth/login").permitAll()
+                .antMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
+                .antMatchers(HttpMethod.PUT, "/api/auth/change_password").permitAll()
                 .anyRequest()
                 .authenticated();
     }
