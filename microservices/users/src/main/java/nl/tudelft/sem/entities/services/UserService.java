@@ -1,12 +1,11 @@
 package nl.tudelft.sem.entities.services;
 
+import java.util.List;
+import java.util.Optional;
 import nl.tudelft.sem.entities.entities.User;
 import nl.tudelft.sem.entities.entities.UserRole;
 import nl.tudelft.sem.entities.repositories.UserRepository;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * A class that represents a User Service.

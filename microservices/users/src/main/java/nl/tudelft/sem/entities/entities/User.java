@@ -137,7 +137,7 @@ public class User {
             return false;
         }
 
-        return username.equals(((User)other).username);
+        return username.equals(((User) other).username);
     }
 
     /**
