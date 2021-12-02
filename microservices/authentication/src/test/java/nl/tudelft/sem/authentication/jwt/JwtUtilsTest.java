@@ -19,24 +19,25 @@ class JwtUtilsTest {
     @Qualifier("secretKey")
     private transient Key hmacKey;
 
-    private JwtUtils jwtUtils;
+    private transient JwtUtils jwtUtils;
+
+    private final transient String prefix = "Bearer ";
 
     @BeforeEach
     void setUp() {
         jwtUtils = new JwtUtils(hmacKey);
+        ReflectionTestUtils.setField(jwtUtils, "validityInMinutes", 10);
     }
 
     @Test
     void createAndResolveValidTokenTest() {
-        ReflectionTestUtils.setField(jwtUtils, "validityInMinutes", 10);
-
         Date date = new Date();
         String jwt = jwtUtils.createToken("amogus", UserRole.STUDENT, date);
-        String jwtPrefixed = "Bearer " + jwt;
+        String jwtPrefixed = prefix + jwt;
 
         String tokenBody = jwtUtils.resolveToken(jwtPrefixed);
 
-        assertFalse(tokenBody.startsWith("Bearer "),
+        assertFalse(tokenBody.startsWith(prefix),
                 "The resolved token must not start with the prefix 'Bearer '");
         assertTrue(jwtUtils.validateToken(tokenBody),
                 "Invalid or expired token");
@@ -50,15 +51,14 @@ class JwtUtilsTest {
 
     @Test
     void createAndResolveInValidTokenExpiredTest() {
-        ReflectionTestUtils.setField(jwtUtils, "validityInMinutes", 10);
 
         Date date = new Date(new Date().getTime() - 10 * 60000);
-        String jwt = jwtUtils.createToken("amogus", UserRole.STUDENT, date);
-        String jwtPrefixed = "Bearer " + jwt;
+        String jwt = jwtUtils.createToken("amongus", UserRole.STUDENT, date);
+        String jwtPrefixed = prefix + jwt;
 
         String tokenBody = jwtUtils.resolveToken(jwtPrefixed);
 
-        assertFalse(tokenBody.startsWith("Bearer "),
+        assertFalse(tokenBody.startsWith(prefix),
                 "The resolved token must not start with the prefix 'Bearer '");
         assertFalse(jwtUtils.validateToken(tokenBody),
                 "The token must be invalid or expired");
@@ -69,8 +69,8 @@ class JwtUtilsTest {
         ReflectionTestUtils.setField(jwtUtils, "validityInMinutes", 0);
 
         Date date = new Date();
-        String jwt = jwtUtils.createToken("amogus", UserRole.STUDENT, date);
-        String jwtPrefixed = "Bearer " + jwt;
+        String jwt = jwtUtils.createToken("amongus", UserRole.STUDENT, date);
+        String jwtPrefixed = prefix + jwt;
 
         String tokenBody = jwtUtils.resolveToken(jwtPrefixed);
 
@@ -87,8 +87,7 @@ class JwtUtilsTest {
 
     @Test
     void resolveTokenNotStartsWithBearerTest() {
-        ReflectionTestUtils.setField(jwtUtils, "validityInMinutes", 0);
-        String jwt = jwtUtils.createToken("amogus", UserRole.ADMIN, new Date());
+        String jwt = jwtUtils.createToken("amog us", UserRole.ADMIN, new Date());
 
         assertNull(jwtUtils.resolveToken(jwtUtils.resolveToken(jwt)));
     }

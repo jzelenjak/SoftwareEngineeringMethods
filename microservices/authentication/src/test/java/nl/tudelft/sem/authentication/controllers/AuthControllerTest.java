@@ -14,8 +14,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Date;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -43,6 +41,12 @@ class AuthControllerTest {
 
     private final transient String url = "/api/auth/%s";
 
+    private final transient String usernameStr = "username";
+
+    private final transient String passwordStr = "password";
+
+    private final transient String utf8Str = "utf-8";
+
     /**
      * A helper method to generate request body
      * @param args key-value pairs
@@ -64,8 +68,8 @@ class AuthControllerTest {
         this.mockMvc
             .perform(post(String.format(url, "register"))
                 .contentType(APPLICATION_JSON)
-                .content(createJSON("username","amongus", "password", "kindasusngl"))
-                .characterEncoding("utf-8"))
+                .content(createJSON(usernameStr,"amongus", passwordStr, "kindasusngl"))
+                .characterEncoding(utf8Str))
             .andExpect(status().isOk());
 
         this.userDataRepository.deleteById("amongus");
@@ -74,75 +78,85 @@ class AuthControllerTest {
     @Test
     @WithMockUser(username = "AMONGAS", password = "impostor")
     void registerUnsuccessfullyTest() throws Exception {
-        this.userDataRepository.save(new UserData("AMONGAS", "impostor", UserRole.LECTURER));
+        String username = "AMONGAS";
+        String password = "impostor";
+        this.userDataRepository.save(new UserData(username, password, UserRole.LECTURER));
 
         this.mockMvc
             .perform(post(String.format(url, "register"))
                     .contentType(APPLICATION_JSON)
-                    .content(createJSON("username","AMONGAS", "password", "impostor"))
-                    .characterEncoding("utf-8"))
+                    .content(createJSON(usernameStr, username, passwordStr, password))
+                    .characterEncoding(utf8Str))
             .andExpect(status().isConflict());
 
-        this.userDataRepository.deleteById("AMONGAS");
+        this.userDataRepository.deleteById(username);
     }
 
 
     @Test
     @WithMockUser(username = "AMOOOGUS", password = "suuuuuus")
     void changePasswordSuccessfullyTest() throws Exception {
-        this.userDataRepository.save(new UserData("AMOOOGUS",
-                                        this.passwordEncoder.encode("suuuuuus"), UserRole.STUDENT));
+        String username = "AMOOOGUS";
+        String password = "suuuuuus";
+        this.userDataRepository.save(new UserData(username,
+                                        this.passwordEncoder.encode(password), UserRole.STUDENT));
 
         this.mockMvc
             .perform(put(String.format(url, "change_password"))
                     .contentType(APPLICATION_JSON)
-                    .content(createJSON("username","AMOOOGUS","password", "suuuuuus", "new_password", "sssuss"))
-                    .characterEncoding("utf-8"))
+                    .content(createJSON(usernameStr, username, passwordStr, password, "new_password", "sssuss"))
+                    .characterEncoding(utf8Str))
                 .andExpect(status().isOk());
 
-        this.userDataRepository.deleteById("AMOOOGUS");
+        this.userDataRepository.deleteById(username);
     }
 
     @Test
     @WithMockUser(username = "GUS", password = "sas")
     void changePasswordNoUserTest() throws Exception {
+        String username = "GUS";
+        String password = "sas";
         this.mockMvc
             .perform(put(String.format(url,"change_password"))
                 .contentType(APPLICATION_JSON)
-                .content(createJSON("username","GUS", "password", "sas", "new_password", "sssasss"))
-                .characterEncoding("utf-8"))
+                .content(createJSON(usernameStr,username, passwordStr, password, "new_password", "sssasss"))
+                .characterEncoding(utf8Str))
             .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(username = "AMOGUSAMOGUS", password = "nglngl")
     void changePasswordBadCredentialsTest() throws Exception {
-        this.userDataRepository.save(new UserData("AMOGUSAMOGUS",
-                                        this.passwordEncoder.encode("nglngl"), UserRole.STUDENT));
+        String username = "AMOGUSAMOGUS";
+        String password = "nglngl";
+        this.userDataRepository.save(new UserData(username,
+                                        this.passwordEncoder.encode(password), UserRole.STUDENT));
 
         this.mockMvc
             .perform(put(String.format(url,"change_password"))
                 .contentType(APPLICATION_JSON)
-                .content(createJSON("username","AMOGUSAMOGUS", "password", "!nglngl", "new_password", "sssasss"))
-                .characterEncoding("utf-8"))
+                .content(createJSON(usernameStr,username, passwordStr, "!nglngl", "new_password", "sssasss"))
+                .characterEncoding(utf8Str))
             .andExpect(status().isForbidden());
 
-        this.userDataRepository.deleteById("AMOGUSAMOGUS");
+        this.userDataRepository.deleteById(username);
     }
 
 
     @Test
     @WithMockUser(username = "AMGUS", password = "amooooogus")
     void loginSuccessfullyTest() throws Exception {
-        this.userDataRepository.save(new UserData("AMGUS",
-                                        this.passwordEncoder.encode("amooooogus"), UserRole.TA));
+        String username = "AMGUS";
+        String password = "amooooogus";
+        this.userDataRepository.save(new UserData(username,
+                                        this.passwordEncoder.encode(password), UserRole.TA));
 
         String jwt =
                 this.mockMvc
                     .perform(get(String.format(url, "login"))
                         .contentType(APPLICATION_JSON)
-                        .content(createJSON("username", "AMGUS", "password", "amooooogus"))
-                        .characterEncoding("utf-8"))
+                        .content(createJSON(usernameStr, username, passwordStr, password))
+                        .characterEncoding(utf8Str))
                     .andExpect(status().isOk())
                     .andReturn()
                     .getResponse()
@@ -150,37 +164,41 @@ class AuthControllerTest {
 
         jwt = this.jwtUtils.resolveToken(jwt);
         assertTrue(this.jwtUtils.validateToken(jwt));
-        assertEquals(this.jwtUtils.getUsername(jwt), "AMGUS");
+        assertEquals(this.jwtUtils.getUsername(jwt), username);
         assertEquals(this.jwtUtils.getRole(jwt), UserRole.TA.name());
 
 
-        this.userDataRepository.deleteById("AMGUS");
+        this.userDataRepository.deleteById(username);
     }
 
     @Test
     @WithMockUser(username = "AAMOGUS", password = "sass")
     void loginNoUserTest() throws Exception {
+        String username = "AAMOGUS";
+        String password = "sass";
         this.mockMvc
             .perform(get(String.format(url,"login"))
                 .contentType(APPLICATION_JSON)
-                .content(createJSON("username", "AAMOGUS", "password", "sass"))
-                .characterEncoding("utf-8"))
+                .content(createJSON(usernameStr, username, passwordStr, password))
+                .characterEncoding(utf8Str))
             .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(username = "AMMOGUS", password = "susngl")
     void loginBadCredentialsTest() throws Exception {
-        this.userDataRepository.save(new UserData("AMMOGUS",
-                                        this.passwordEncoder.encode("susngl"), UserRole.ADMIN));
+        String username = "AMMOGUS";
+        String password = "susngl";
+        this.userDataRepository.save(new UserData(username,
+                                        this.passwordEncoder.encode(password), UserRole.ADMIN));
 
         this.mockMvc
             .perform(get(String.format(url,"login"))
                 .contentType(APPLICATION_JSON)
-                .content(createJSON("username", "AMMOGUS", "password", "!susngl"))
-                .characterEncoding("utf-8"))
+                .content(createJSON(usernameStr, username, passwordStr, "!susngl"))
+                .characterEncoding(utf8Str))
             .andExpect(status().isForbidden());
 
-        this.userDataRepository.deleteById("AMMOGUS");
+        this.userDataRepository.deleteById(username);
     }
 }

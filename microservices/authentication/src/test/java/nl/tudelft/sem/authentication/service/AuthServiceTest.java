@@ -35,39 +35,41 @@ class AuthServiceTest {
 
     @Test
     void registerUserNotYesExistsTest() {
-        assertTrue(this.authService.registerUser("impostor", "password2"),
+        String username = "impostor";
+        assertTrue(this.authService.registerUser(username, "password2"),
                 "The user must have been registered");
-        assertTrue(this.userDataRepository.findByUsername("impostor").isPresent(),
+        assertTrue(this.userDataRepository.findByUsername(username).isPresent(),
                 "The user must have been loaded");
         assertEquals(UserRole.STUDENT,
-                this.userDataRepository.findByUsername("impostor").get().getRole(),
+                this.userDataRepository.findByUsername(username).get().getRole(),
                 "The role of the user must not have been changed");
 
-        this.userDataRepository.deleteById("impostor");
+        this.userDataRepository.deleteById(username);
     }
 
     @Test
     void loadUserNotFoundTest() {
         assertThrows(UsernameNotFoundException.class,
-                () -> this.authService.loadUserByUsername("jegor"),
+                () -> this.authService.loadUserByUsername("jegorka"),
                 "The user must not have been loaded from the repository");
     }
 
     @Test
     void changePasswordTest() {
-        this.userDataRepository.save(new UserData("red_kinda_sus_ngl",
+        String username = "red_kinda_sus_ngl";
+        this.userDataRepository.save(new UserData(username,
                 this.passwordEncoder.encode("sus"), UserRole.TA));
 
-        this.authService.changePassword("red_kinda_sus_ngl", "ngl");
+        this.authService.changePassword(username, "ngl");
 
-        assertTrue(this.userDataRepository.findByUsername("red_kinda_sus_ngl").isPresent(),
+        assertTrue(this.userDataRepository.findByUsername(username).isPresent(),
                 "The user must be present in the repository");
         assertTrue(this.passwordEncoder.matches("ngl",
-                this.userDataRepository.findByUsername("red_kinda_sus_ngl").get().getPassword()),
+                this.userDataRepository.findByUsername(username).get().getPassword()),
                 "The new password must be hashed (encoded)");
-        assertEquals(UserRole.TA,this.userDataRepository.findByUsername("red_kinda_sus_ngl")
+        assertEquals(UserRole.TA,this.userDataRepository.findByUsername(username)
                 .get().getRole(), "The role of the user must not have been changed");
 
-        this.userDataRepository.deleteById("red_kinda_sus_ngl");
+        this.userDataRepository.deleteById(username);
     }
 }
