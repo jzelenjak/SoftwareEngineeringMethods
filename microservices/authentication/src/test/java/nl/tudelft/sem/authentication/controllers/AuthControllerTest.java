@@ -1,5 +1,10 @@
 package nl.tudelft.sem.authentication.controllers;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import nl.tudelft.sem.authentication.entities.UserData;
@@ -14,10 +19,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -48,15 +49,16 @@ class AuthControllerTest {
     private final transient String utf8Str = "utf-8";
 
     /**
-     * A helper method to generate request body
+     * A helper method to generate request body.
+     *
      * @param args key-value pairs
      * @return  the JSON string with the specified key-values
      */
-    private String createJSON(String... args) {
+    private String createJson(String... args) {
         ObjectNode node = objectMapper.createObjectNode();
 
         for (int i = 0; i < args.length; i += 2) {
-            node.put(args[i], args[i+1]);
+            node.put(args[i], args[i + 1]);
         }
         return node.toString();
     }
@@ -68,7 +70,7 @@ class AuthControllerTest {
         this.mockMvc
             .perform(post(String.format(url, "register"))
                 .contentType(APPLICATION_JSON)
-                .content(createJSON(usernameStr,"amongus", passwordStr, "kindasusngl"))
+                .content(createJson(usernameStr, "amongus", passwordStr, "kindasusngl"))
                 .characterEncoding(utf8Str))
             .andExpect(status().isOk());
 
@@ -85,7 +87,7 @@ class AuthControllerTest {
         this.mockMvc
             .perform(post(String.format(url, "register"))
                     .contentType(APPLICATION_JSON)
-                    .content(createJSON(usernameStr, username, passwordStr, password))
+                    .content(createJson(usernameStr, username, passwordStr, password))
                     .characterEncoding(utf8Str))
             .andExpect(status().isConflict());
 
@@ -98,13 +100,15 @@ class AuthControllerTest {
     void changePasswordSuccessfullyTest() throws Exception {
         String username = "AMOOOGUS";
         String password = "suuuuuus";
-        this.userDataRepository.save(new UserData(username,
-                                        this.passwordEncoder.encode(password), UserRole.STUDENT));
+        this.userDataRepository
+                .save(new UserData(username,
+                        this.passwordEncoder.encode(password), UserRole.STUDENT));
 
         this.mockMvc
             .perform(put(String.format(url, "change_password"))
                     .contentType(APPLICATION_JSON)
-                    .content(createJSON(usernameStr, username, passwordStr, password, "new_password", "sssuss"))
+                    .content(createJson(usernameStr, username,
+                            passwordStr, password, "new_password", "sssuss"))
                     .characterEncoding(utf8Str))
                 .andExpect(status().isOk());
 
@@ -117,9 +121,10 @@ class AuthControllerTest {
         String username = "GUS";
         String password = "sas";
         this.mockMvc
-            .perform(put(String.format(url,"change_password"))
+            .perform(put(String.format(url, "change_password"))
                 .contentType(APPLICATION_JSON)
-                .content(createJSON(usernameStr,username, passwordStr, password, "new_password", "sssasss"))
+                .content(createJson(usernameStr, username,
+                        passwordStr, password, "new_password", "sssasss"))
                 .characterEncoding(utf8Str))
             .andExpect(status().isForbidden());
     }
@@ -129,13 +134,15 @@ class AuthControllerTest {
     void changePasswordBadCredentialsTest() throws Exception {
         String username = "AMOGUSAMOGUS";
         String password = "nglngl";
-        this.userDataRepository.save(new UserData(username,
-                                        this.passwordEncoder.encode(password), UserRole.STUDENT));
+        this.userDataRepository
+                .save(new UserData(username,
+                        this.passwordEncoder.encode(password), UserRole.STUDENT));
 
         this.mockMvc
-            .perform(put(String.format(url,"change_password"))
+            .perform(put(String.format(url, "change_password"))
                 .contentType(APPLICATION_JSON)
-                .content(createJSON(usernameStr,username, passwordStr, "!nglngl", "new_password", "sssasss"))
+                .content(createJson(usernameStr, username,
+                        passwordStr, "!nglngl", "new_password", "sssasss"))
                 .characterEncoding(utf8Str))
             .andExpect(status().isForbidden());
 
@@ -148,14 +155,15 @@ class AuthControllerTest {
     void loginSuccessfullyTest() throws Exception {
         String username = "AMGUS";
         String password = "amooooogus";
-        this.userDataRepository.save(new UserData(username,
-                                        this.passwordEncoder.encode(password), UserRole.TA));
+        this.userDataRepository
+                .save(new UserData(username,
+                        this.passwordEncoder.encode(password), UserRole.TA));
 
         String jwt =
                 this.mockMvc
                     .perform(get(String.format(url, "login"))
                         .contentType(APPLICATION_JSON)
-                        .content(createJSON(usernameStr, username, passwordStr, password))
+                        .content(createJson(usernameStr, username, passwordStr, password))
                         .characterEncoding(utf8Str))
                     .andExpect(status().isOk())
                     .andReturn()
@@ -177,9 +185,9 @@ class AuthControllerTest {
         String username = "AAMOGUS";
         String password = "sass";
         this.mockMvc
-            .perform(get(String.format(url,"login"))
+            .perform(get(String.format(url, "login"))
                 .contentType(APPLICATION_JSON)
-                .content(createJSON(usernameStr, username, passwordStr, password))
+                .content(createJson(usernameStr, username, passwordStr, password))
                 .characterEncoding(utf8Str))
             .andExpect(status().isForbidden());
     }
@@ -189,13 +197,14 @@ class AuthControllerTest {
     void loginBadCredentialsTest() throws Exception {
         String username = "AMMOGUS";
         String password = "susngl";
-        this.userDataRepository.save(new UserData(username,
-                                        this.passwordEncoder.encode(password), UserRole.ADMIN));
+        this.userDataRepository
+                .save(new UserData(username,
+                        this.passwordEncoder.encode(password), UserRole.ADMIN));
 
         this.mockMvc
-            .perform(get(String.format(url,"login"))
+            .perform(get(String.format(url, "login"))
                 .contentType(APPLICATION_JSON)
-                .content(createJSON(usernameStr, username, passwordStr, "!susngl"))
+                .content(createJson(usernameStr, username, passwordStr, "!susngl"))
                 .characterEncoding(utf8Str))
             .andExpect(status().isForbidden());
 

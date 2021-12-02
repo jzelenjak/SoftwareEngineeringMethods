@@ -1,14 +1,14 @@
 package nl.tudelft.sem.authentication.entities;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.HashSet;
+import java.util.Set;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class UserDataTest {
     private transient UserData userData;

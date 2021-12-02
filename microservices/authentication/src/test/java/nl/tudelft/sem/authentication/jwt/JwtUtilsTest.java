@@ -1,5 +1,9 @@
 package nl.tudelft.sem.authentication.jwt;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.security.Key;
+import java.util.Date;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,10 +12,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.security.Key;
-import java.util.Date;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class JwtUtilsTest {

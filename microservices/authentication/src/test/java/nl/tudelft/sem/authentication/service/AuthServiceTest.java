@@ -1,5 +1,7 @@
 package nl.tudelft.sem.authentication.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.repositories.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
@@ -9,7 +11,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class AuthServiceTest {

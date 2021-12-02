@@ -1,6 +1,5 @@
 package nl.tudelft.sem.authentication.controllers;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.http.HttpStatus;
@@ -63,10 +62,5 @@ public class HeartbeatController {
                     throw new NotAcceptableStatusException("There has been a problem!");
                 });
     }
-}
-
-@Data
-class Heartbeat {
-    private final String path;
 }
 
