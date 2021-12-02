@@ -1,3 +1,17 @@
 group = 'nl.tudelft.cse.sem.authentication'
 version = '0.0.1-SNAPSHOT'
 mainClassName = 'nl.tudelft.sem.authentication.AuthenticationMain'
+
+dependencies {
+    // Spring Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.security:spring-security-test'
+
+    // JWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.2'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.2',
+                'io.jsonwebtoken:jjwt-jackson:0.11.2'
+
+    // Jackson for JSON parsing
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.13.0'
+}
