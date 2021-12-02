@@ -68,18 +68,17 @@ public class JwtUtils {
      * Validates a JWT.
      *
      * @param token JWT to validate
-     * @param date the date of issuing
      * @return true if the token is valid (not expired and not corrupted)
      *         false otherwise
      */
-    public boolean validateToken(String token, Date date) {
+    public boolean validateToken(String token) {
         try {
-            Jws<Claims> claims = Jwts
-                    .parserBuilder()
-                    .setSigningKey(this.hmacKey)
-                    .build()
-                    .parseClaimsJws(token);
-            return !claims.getBody().getExpiration().before(date);
+            Jwts
+                .parserBuilder()
+                .setSigningKey(this.hmacKey)
+                .build()
+                .parseClaimsJws(token);
+            return true;
         } catch (Exception e) {
             return false;
         }

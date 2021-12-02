@@ -149,7 +149,7 @@ class AuthControllerTest {
                     .getHeader("Authorization");
 
         jwt = this.jwtUtils.resolveToken(jwt);
-        assertTrue(this.jwtUtils.validateToken(jwt, new Date()));
+        assertTrue(this.jwtUtils.validateToken(jwt));
         assertEquals(this.jwtUtils.getUsername(jwt), "AMGUS");
         assertEquals(this.jwtUtils.getRole(jwt), UserRole.TA.name());
 

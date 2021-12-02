@@ -121,6 +121,11 @@ class UserDataTest {
     }
 
     @Test
+    void equalsOtherObjectTest() {
+        assertNotEquals(userData, "userData");
+    }
+
+    @Test
     void equalsEqualTest() {
         UserData otherUserData = new UserData("jegor", "password2", UserRole.TA);
         assertEquals(userData, otherUserData);

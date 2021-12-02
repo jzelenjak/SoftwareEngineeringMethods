@@ -38,7 +38,7 @@ class JwtUtilsTest {
 
         assertFalse(tokenBody.startsWith("Bearer "),
                 "The resolved token must not start with the prefix 'Bearer '");
-        assertTrue(jwtUtils.validateToken(tokenBody, date),
+        assertTrue(jwtUtils.validateToken(tokenBody),
                 "Invalid or expired token");
         assertEquals("amogus", jwtUtils.getUsername(tokenBody),
                 "Decoded username does not match the original one");
@@ -60,7 +60,7 @@ class JwtUtilsTest {
 
         assertFalse(tokenBody.startsWith("Bearer "),
                 "The resolved token must not start with the prefix 'Bearer '");
-        assertFalse(jwtUtils.validateToken(tokenBody, date),
+        assertFalse(jwtUtils.validateToken(tokenBody),
                 "The token must be invalid or expired");
     }
 
@@ -76,7 +76,20 @@ class JwtUtilsTest {
 
         assertFalse(tokenBody.startsWith("Bearer "),
                 "The resolved token must not start with the prefix 'Bearer '");
-        assertFalse(jwtUtils.validateToken(tokenBody, date),
+        assertFalse(jwtUtils.validateToken(tokenBody),
                 "The token must be invalid or expired");
+    }
+
+    @Test
+    void resolveTokenNullTest() {
+        assertNull(jwtUtils.resolveToken(null));
+    }
+
+    @Test
+    void resolveTokenNotStartsWithBearerTest() {
+        ReflectionTestUtils.setField(jwtUtils, "validityInMinutes", 0);
+        String jwt = jwtUtils.createToken("amogus", UserRole.ADMIN, new Date());
+
+        assertNull(jwtUtils.resolveToken(jwtUtils.resolveToken(jwt)));
     }
 }
