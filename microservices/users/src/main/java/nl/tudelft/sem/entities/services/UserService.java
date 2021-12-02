@@ -36,12 +36,15 @@ public class UserService {
      * @return true is a user has been successfully registered;
      *         false if a user with the same netID already exists
      */
-    public boolean registerUser(String netId, String firstName, String lastName, UserRole role) {
+    public long registerUser(String netId, String firstName, String lastName, UserRole role) {
         if (this.userRepository.findByUsername(netId).isPresent()) {
-            return false;
+            return -1;
         }
         this.userRepository.save(new User(netId, firstName, lastName, role));
-        return true;
+
+        Optional<User> user = this.userRepository.findByUsername(netId);
+        assert user.isPresent();
+        return user.get().getUserId();
     }
 
     /**
@@ -55,16 +58,14 @@ public class UserService {
     }
 
     /**
-     * Gets users by the first name and last name.
+     * Gets the user by his/her userID.
      *
-     * @param firstName the first name
-     * @param lastName  the last name
-     * @return the users who have the given first name and last name
+     * @param userId the userID
+     * @return the user with the provided userID if found
      */
-    public List<User> getUsersByFirstNameAndLastName(String firstName, String lastName) {
-        return this.userRepository.findAllByFirstNameAndLastName(firstName, lastName);
+    public Optional<User> getUserByUserId(long userId) {
+        return this.userRepository.findByUserId(userId);
     }
-
     /**
      * Gets users by their role.
      *
