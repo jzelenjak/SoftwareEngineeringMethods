@@ -24,7 +24,6 @@ class UserDataTest {
     void getAuthoritiesTest() {
         Set<SimpleGrantedAuthority> expected = new HashSet<>();
         expected.add(new SimpleGrantedAuthority(UserRole.ADMIN.name()));
-
         Assertions.assertEquals(expected, userData.getAuthorities());
     }
 
