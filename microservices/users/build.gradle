@@ -7,7 +7,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-core:2.13.0'
     developmentOnly 'org.hibernate:hibernate-entitymanager'
 
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    //implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.postgresql:postgresql:42.2.23'
 
     implementation 'org.springframework.boot:spring-boot-starter-web:2.6.0'
