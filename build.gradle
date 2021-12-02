@@ -1,97 +1,120 @@
 buildscript {
-	repositories {
-		mavenCentral()
-		//Needed only for SNAPSHOT versions
-		//maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
-	}
-	dependencies {
-		classpath 'info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.5.2'
-	}
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.5.2'
+        classpath 'io.spring.gradle:dependency-management-plugin:1.0.10.RELEASE'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.3.5.RELEASE'
+    }
 }
 
-plugins {
-	id 'org.springframework.boot' version '2.3.5.RELEASE'
-	id 'io.spring.dependency-management' version '1.0.10.RELEASE'
-	id 'java'
-	// Test coverage
-	id 'jacoco'
+subprojects {
+    // Ignore microservice folder that acts as parent for all microservices, and is, in itself, not a project
+    if (name == 'microservices') return
 
-	// Code style
-	id 'checkstyle'
+    repositories {
+        mavenCentral()
+    }
 
-	// PMD
-	id 'pmd'
+    // General/Spring
+    apply plugin: 'java'
+    apply plugin: 'application'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
 
-	// PITest
-	id 'info.solidsoft.pitest' version '1.5.2'
-}
+    // Code style
+    apply plugin: 'checkstyle'
 
-group = 'nl.tudelft.cse.sem.template'
-version = '0.0.1-SNAPSHOT'
-sourceCompatibility = 11
-targetCompatibility = 11
+    // Testing/Coverage
+    apply plugin: 'pmd'
+    apply plugin: 'jacoco'
+    apply plugin: 'info.solidsoft.pitest'
 
-repositories {
-	mavenCentral()
-}
+    // Java version
+    sourceCompatibility = 11
+    targetCompatibility = 11
 
-dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter'
-	testImplementation('org.springframework.boot:spring-boot-starter-test') {
-		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
-	}
-	testImplementation('org.junit.jupiter:junit-jupiter:5.5.2')
-	testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.1.0'
-	testImplementation('org.assertj:assertj-core:3.14.0')
-}
+    // Dependencies
+    dependencies {
+        implementation 'com.google.code.gson:gson:2.8.9'
 
-test {
-	useJUnitPlatform()
-	jacoco {
-		enabled = true
-		includes = ['nl.tudelft.sem.template.*']
-		excludes = []
-	}
-}
+        implementation 'org.apache.commons:commons-lang3:3.0'
 
-repositories {
-	mavenCentral()
-}
+        implementation 'org.springframework.boot:spring-boot-starter'
+        implementation 'org.springframework.boot:spring-boot-starter-web'
+        implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+        implementation 'org.springframework.boot:spring-boot-starter-validation'
+        implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
-jacocoTestCoverageVerification() {
-	dependsOn test
-	violationRules {
-		rule {
-			enabled = true
-			element = 'CLASS'
-			includes = ['nl.tudelft.sem.template.*']
+        testImplementation('org.springframework.boot:spring-boot-starter-test') {
+            exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+        }
+        testImplementation('org.junit.jupiter:junit-jupiter:5.5.2')
+        testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.1.0'
+        testImplementation('org.assertj:assertj-core:3.14.0')
 
-			limit {
-				counter = 'BRANCH'
-				value = 'COVEREDRATIO'
-				minimum = 0.1
-			}
-		}
-	}
-}
+        // H2 For testing
+        implementation 'com.h2database:h2'
+        developmentOnly 'org.hibernate:hibernate-entitymanager'
 
-checkstyle {
-	toolVersion "8.37"
-	configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
-}
+        // Postgres
+        implementation 'org.postgresql:postgresql:42.3.1'
 
-pmd {
-	incrementalAnalysis = true
-}
+        // Utility dependency
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.22'
+        annotationProcessor group: 'org.projectlombok', name: 'lombok', version: '1.18.22'
 
-apply plugin: 'info.solidsoft.pitest'
-pitest {
-	//adds dependency to org.pitest:pitest-junit5-plugin and sets "testPlugin" to "junit5"
-	junit5PluginVersion = '0.12'
+        testImplementation 'com.squareup.okhttp3:mockwebserver'
+        testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+    }
 
-	targetClasses = ['nl.tudelft.sem.template.*']  //by default "${project.group}.*"
-	pitestVersion = '1.5.1' //not needed when a default PIT version should be used
-	threads = 4
-	outputFormats = ['XML', 'HTML']
-	timestampedReports = false
+    // Code style
+    checkstyle {
+        toolVersion "8.37"
+        configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
+    }
+
+    // Testing-related
+    test {
+        useJUnitPlatform()
+        jacoco {
+            enabled = true
+            includes = ['nl.tudelft.sem.*']
+            excludes = []
+        }
+    }
+
+    jacocoTestCoverageVerification() {
+        dependsOn test
+        violationRules {
+            rule {
+                enabled = true
+                element = 'CLASS'
+                includes = ['nl.tudelft.sem.*']
+
+                limit {
+                    counter = 'BRANCH'
+                    value = 'COVEREDRATIO'
+                    minimum = 0.1
+                }
+            }
+        }
+    }
+
+    pmd {
+        incrementalAnalysis = true
+    }
+
+    apply plugin: 'info.solidsoft.pitest'
+    pitest {
+        //adds dependency to org.pitest:pitest-junit5-plugin and sets "testPlugin" to "junit5"
+        junit5PluginVersion = '0.12'
+
+        targetClasses = ['nl.tudelft.sem.*']  //by default "${project.group}.*"
+        pitestVersion = '1.5.1' //not needed when a default PIT version should be used
+        threads = 4
+        outputFormats = ['XML', 'HTML']
+        timestampedReports = false
+    }
 }
