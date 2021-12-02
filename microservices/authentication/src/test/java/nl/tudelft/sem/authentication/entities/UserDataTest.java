@@ -136,6 +136,8 @@ class UserDataTest {
     void equalsDifferentTest() {
         UserData otherUserData = new UserData("jegorka", password2, UserRole.LECTURER);
         Assertions.assertNotEquals(userData, otherUserData);
+        Integer notUserData = 42;
+        Assertions.assertNotEquals(userData, notUserData);
     }
 
     @Test
