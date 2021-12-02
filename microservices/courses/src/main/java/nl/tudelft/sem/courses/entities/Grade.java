@@ -1,11 +1,7 @@
 package nl.tudelft.sem.courses.entities;
 
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.util.Objects;
 
 @Entity(name = "Grades")
@@ -13,18 +9,21 @@ import java.util.Objects;
 public class Grade {
 
 
-
     @Id
-    @OneToOne(mappedBy = "course")
-    @Column(name = "course")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public long id;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+//    @Column(name = "course")
     public Course course;
 
     @Column(name = "grade")
     public float grade;
 
-    @Id
-    @OneToOne(mappedBy = "user")
-    @Column(name = "user")
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "grades")
     public User user;
 
     /**
@@ -32,7 +31,8 @@ public class Grade {
      * @param course
      * @param user
      */
-    public Grade(Course course, User user, float grade){
+    public Grade(long id, Course course, User user, float grade){
+        this.id = id;
         this.course = course;
         this.user = user;
         this.grade = grade;
@@ -60,18 +60,19 @@ public class Grade {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Grade grade1 = (Grade) o;
-        return Float.compare(grade1.grade, grade) == 0 && course.equals(grade1.course) && user.equals(grade1.user);
+        return Float.compare(grade1.grade, grade) == 0 && course.equals(grade1.course) && user.equals(grade1.user) || id == grade1.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(course, grade, user);
+        return Objects.hash(id, course, grade, user);
     }
 
     @Override
     public String toString() {
         return "Grade{" +
-                "course=" + course +
+                "id = " + id +
+                ", course=" + course +
                 ", user=" + user +
                 '}';
     }

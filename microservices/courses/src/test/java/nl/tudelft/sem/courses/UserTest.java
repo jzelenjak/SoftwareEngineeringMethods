@@ -10,16 +10,16 @@ public class UserTest {
 
     @Test
     public void testingConstructor(){
-        User user = new User(1, "bob", "mark", Role.STUDENT);
+        User user = new User(1, Role.STUDENT);
         assertNotNull(user);
     }
 
     @Test
     public void testinigEqualsMethod(){
-        User user = new User(1, "bob", "mark", Role.STUDENT);
-        User user2 = new User(1, "john", "mark", Role.STUDENT);
-        User user3 = new User(1, "bob", "mark", Role.STUDENT);
-        User user4 = new User(1, "bob", "mark", Role.LECTURER);
+        User user = new User(1,  Role.STUDENT);
+        User user2 = new User(2,  Role.STUDENT);
+        User user3 = new User(1,  Role.STUDENT);
+        User user4 = new User(3,  Role.LECTURER);
 
 
 
