@@ -1,19 +1,22 @@
 package nl.tudelft.sem.entities.entities;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+
+import javax.persistence.*;
 
 
 /**
  * A class that represents a user.
  */
-@Table(name = "users")
+@Table(name="users")
 @Entity
+@SequenceGenerator(name="seq", initialValue=55555, allocationSize=3)
 public class User {
     @Id
-    @Column(name = "username", nullable = false)
+    @GeneratedValue(strategy=GenerationType.SEQUENCE, generator="seq")
+    @Column(name = "user_id")
+    private long userId;
+
+    @Column(name = "username", nullable = false, unique = true)
     private String username; // NetID of the user.
 
     @Column(name = "first_name")
@@ -47,6 +50,14 @@ public class User {
     public User() {
     }
 
+    /**
+     * Gets the user id.
+     *
+     * @return the user id
+     */
+    public long getUserId() {
+        return this.userId;
+    }
 
     /**
      * Gets the username of the user.
@@ -137,7 +148,7 @@ public class User {
             return false;
         }
 
-        return username.equals(((User) other).username);
+        return username.equals(((User)other).username) && this.userId == ((User)other).userId;
     }
 
     /**
