@@ -1,4 +1,4 @@
-package nl.tudelft.sem.users.entities;
+package nl.tudelft.sem.entities.entities;
 
 public enum UserRole {
     STUDENT,

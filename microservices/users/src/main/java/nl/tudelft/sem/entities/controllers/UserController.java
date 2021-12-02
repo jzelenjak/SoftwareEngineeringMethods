@@ -1,4 +1,4 @@
-package nl.tudelft.sem.users.controllers;
+package nl.tudelft.sem.entities.controllers;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

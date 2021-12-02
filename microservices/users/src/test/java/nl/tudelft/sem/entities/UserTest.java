@@ -1,12 +1,12 @@
-package nl.tudelft.sem.users;
+package nl.tudelft.sem.entities;
 
-import nl.tudelft.sem.users.entities.User;
-import nl.tudelft.sem.users.entities.UserRole;
+import nl.tudelft.sem.entities.entities.User;
+import nl.tudelft.sem.entities.entities.UserRole;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class UsersTest {
+public class UserTest {
     private transient User user1;
 
 
@@ -60,5 +60,43 @@ public class UsersTest {
         Assertions.assertEquals(user1.getRole(), UserRole.TA);
         user1.setRole(UserRole.CANDIDATE_TA);
         Assertions.assertEquals(user1.getRole(), UserRole.CANDIDATE_TA);
+    }
+
+    @Test
+    public void equalsSameTest() {
+        Assertions.assertEquals(user1, user1);
+    }
+
+    @Test
+    public void equalsDifferentClassTest() {
+        Assertions.assertNotEquals(user1, "Forty-two");
+    }
+
+    @Test
+    public void equalsEqualTest() {
+        User user2 = new User("S.Tudent@student.tudelft.nl", "ThisIsMyPassword41",
+                "Steve", "Tudent", UserRole.LECTURER);
+        Assertions.assertEquals(user1, user2);
+    }
+
+    @Test
+    public void equalsDifferentTest() {
+        User user2 = new User("S.Tuudent@student.tudelft.nl", "ThisIsMyPassword42",
+                "Steve", "Tudent", UserRole.STUDENT);
+        Assertions.assertNotEquals(user1, user2);
+    }
+
+    @Test
+    public void hashCodeEqualTest() {
+        User user2 = new User("S.Tudent@student.tudelft.nl", "ThisIsMyPassword40",
+                "Stefan", "Tudent", UserRole.ADMIN);
+        Assertions.assertEquals(user1.hashCode(), user2.hashCode());
+    }
+
+    @Test
+    public void hashCodeDifferentTest() {
+        User user2 = new User("S.Tuudent@student.tudelft.nl", "ThisIsMyPassword39",
+                "Stefan", "Tudent", UserRole.ADMIN);
+        Assertions.assertNotEquals(user1.hashCode(), user2.hashCode());
     }
 }
