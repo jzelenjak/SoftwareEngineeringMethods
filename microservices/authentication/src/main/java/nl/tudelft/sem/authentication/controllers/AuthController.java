@@ -3,6 +3,7 @@ package nl.tudelft.sem.authentication.controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.Date;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import nl.tudelft.sem.authentication.jwt.JwtUtils;
@@ -125,8 +126,10 @@ public class AuthController {
         authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(uname, pwd));
 
-        String jwt = jwtUtils.createToken(uname,
-                this.authService.loadUserByUsername(uname).getRole());
+        String jwt = jwtUtils
+                .createToken(uname, this.authService
+                                        .loadUserByUsername(uname).getRole(), new Date());
+
         String jwtPrefixed = String.format("Bearer %s", jwt);
 
         res.setStatus(HttpServletResponse.SC_OK);

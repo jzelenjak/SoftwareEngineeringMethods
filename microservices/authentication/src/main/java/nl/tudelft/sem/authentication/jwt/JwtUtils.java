@@ -19,7 +19,7 @@ public class JwtUtils {
 
     private final transient Key hmacKey;
 
-    @Value("${jwtTokenValidityInMinutes}")
+    @Value("${jwtTokenValidityInMinutes:10}")
     private transient long validityInMinutes;
 
     /**
@@ -36,16 +36,16 @@ public class JwtUtils {
      *
      * @param username the username of the user
      * @param role     the role of the user (STUDENT, LECTURER, TA, ADMIN)
+     * @param date     the date of issue of the token
      * @return signed JWT
      */
-    public String createToken(String username, UserRole role) {
+    public String createToken(String username, UserRole role, Date date) {
         Claims claims = Jwts.claims().setSubject(username);
         claims.put("role", role);
-        Date now = new Date();
-        Date validity = new Date(now.getTime() + validityInMinutes * 60000);
+        Date validity = new Date(date.getTime() + validityInMinutes * 60000);
         return Jwts.builder()
                 .setClaims(claims)
-                .setIssuedAt(now)
+                .setIssuedAt(date)
                 .setExpiration(validity)
                 .signWith(this.hmacKey)
                 .compact();
@@ -68,17 +68,19 @@ public class JwtUtils {
      * Validates a JWT.
      *
      * @param token JWT to validate
-     * @return True if the token is valid, false otherwise
+     * @param date the date of issuing
+     * @return true if the token is valid (not expired and not corrupted)
+     *         false otherwise
      */
-    public boolean validateToken(String token) {
+    public boolean validateToken(String token, Date date) {
         try {
             Jws<Claims> claims = Jwts
                     .parserBuilder()
                     .setSigningKey(this.hmacKey)
                     .build()
                     .parseClaimsJws(token);
-            return !claims.getBody().getExpiration().before(new Date());
-        } catch (JwtException | IllegalArgumentException e) {
+            return !claims.getBody().getExpiration().before(date);
+        } catch (Exception e) {
             return false;
         }
     }

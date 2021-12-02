@@ -19,7 +19,7 @@ class UserDataTest {
     }
 
     @Test
-    void getAuthorities() {
+    void getAuthoritiesTest() {
         Set<SimpleGrantedAuthority> expected = new HashSet<>();
         expected.add(new SimpleGrantedAuthority(UserRole.ADMIN.name()));
 
@@ -27,12 +27,12 @@ class UserDataTest {
     }
 
     @Test
-    void getPassword() {
+    void getPasswordTest() {
         assertEquals("password1", userData.getPassword());
     }
 
     @Test
-    void setPassword() {
+    void setPasswordTest() {
         // Cover empty constructor as well
         UserData user = new UserData();
         String before = user.getPassword();
@@ -42,12 +42,12 @@ class UserDataTest {
     }
 
     @Test
-    void getUsername() {
+    void getUsernameTest() {
         assertEquals("jegor", userData.getUsername());
     }
 
     @Test
-    void setUsername() {
+    void setUsernameTest() {
         String before = userData.getUsername();
         userData.setUsername("amogus");
         assertNotEquals(before, userData.getUsername());
@@ -55,12 +55,12 @@ class UserDataTest {
     }
 
     @Test
-    void getRole() {
+    void getRoleTest() {
         assertEquals(UserRole.ADMIN, userData.getRole());
     }
 
     @Test
-    void setRole() {
+    void setRoleTest() {
         UserRole before = userData.getRole();
         userData.setRole(UserRole.TA);
         assertNotEquals(before, userData.getRole());
@@ -68,78 +68,78 @@ class UserDataTest {
     }
 
     @Test
-    void isAccountNonExpired() {
+    void isAccountNonExpiredTest() {
         assertTrue(userData.isAccountNonExpired());
     }
 
     @Test
-    void setAccountNonExpired() {
+    void setAccountNonExpiredTest() {
         boolean before = userData.isAccountNonExpired();
         userData.setAccountNonExpired(!before);
         assertEquals(!before, userData.isAccountNonExpired());
     }
 
     @Test
-    void isAccountNonLocked() {
+    void isAccountNonLockedTest() {
         assertTrue(userData.isAccountNonLocked());
     }
 
     @Test
-    void setAccountNonLocked() {
+    void setAccountNonLockedTest() {
         boolean before = userData.isAccountNonLocked();
         userData.setAccountNonLocked(!before);
         assertEquals(!before, userData.isAccountNonLocked());
     }
 
     @Test
-    void isCredentialsNonExpired() {
+    void isCredentialsNonExpiredTest() {
         assertTrue(userData.isCredentialsNonExpired());
     }
 
     @Test
-    void setCredentialsNonExpired() {
+    void setCredentialsNonExpiredTest() {
         boolean before = userData.isCredentialsNonExpired();
         userData.setCredentialsNonExpired(!before);
         assertEquals(!before, userData.isCredentialsNonExpired());
     }
 
     @Test
-    void isEnabled() {
+    void isEnabledTest() {
         assertTrue(userData.isEnabled());
     }
 
     @Test
-    void setEnabled() {
+    void setEnabledTest() {
         boolean before = userData.isEnabled();
         userData.setEnabled(!before);
         assertEquals(!before, userData.isEnabled());
     }
 
     @Test
-    void equalsSame() {
+    void equalsSameTest() {
         assertEquals(userData, userData);
     }
 
     @Test
-    void equalsEqual() {
+    void equalsEqualTest() {
         UserData otherUserData = new UserData("jegor", "password2", UserRole.TA);
         assertEquals(userData, otherUserData);
     }
 
     @Test
-    void equalsDifferent() {
+    void equalsDifferentTest() {
         UserData otherUserData = new UserData("jegorka", "password2", UserRole.LECTURER);
         assertNotEquals(userData, otherUserData);
     }
 
     @Test
-    void hashCodeSame() {
+    void hashCodeSameTest() {
         UserData otherUserData = new UserData("jegor", "password2", UserRole.TA);
         assertEquals(userData.hashCode(), otherUserData.hashCode());
     }
 
     @Test
-    void hashCodeDifferent() {
+    void hashCodeDifferentTest() {
         UserData otherUserData = new UserData("jegorka", "password2", UserRole.LECTURER);
         assertNotEquals(userData.hashCode(), otherUserData.hashCode());
     }
