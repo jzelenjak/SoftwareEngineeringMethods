@@ -1,10 +1,9 @@
 package nl.tudelft.sem.authentication.jwt;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.security.Key;
 import java.util.Date;
 import nl.tudelft.sem.authentication.security.UserRole;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,13 +36,13 @@ class JwtUtilsTest {
 
         String tokenBody = jwtUtils.resolveToken(jwtPrefixed);
 
-        assertFalse(tokenBody.startsWith(prefix),
+        Assertions.assertFalse(tokenBody.startsWith(prefix),
                 "The resolved token must not start with the prefix 'Bearer '");
-        assertTrue(jwtUtils.validateToken(tokenBody),
+        Assertions.assertTrue(jwtUtils.validateToken(tokenBody),
                 "Invalid or expired token");
-        assertEquals("amogus", jwtUtils.getUsername(tokenBody),
+        Assertions.assertEquals("amogus", jwtUtils.getUsername(tokenBody),
                 "Decoded username does not match the original one");
-        assertEquals(UserRole.STUDENT.name(), jwtUtils.getRole(tokenBody),
+        Assertions.assertEquals(UserRole.STUDENT.name(), jwtUtils.getRole(tokenBody),
                 "Decoded role does not match the original one");
     }
 
@@ -58,9 +57,9 @@ class JwtUtilsTest {
 
         String tokenBody = jwtUtils.resolveToken(jwtPrefixed);
 
-        assertFalse(tokenBody.startsWith(prefix),
+        Assertions.assertFalse(tokenBody.startsWith(prefix),
                 "The resolved token must not start with the prefix 'Bearer '");
-        assertFalse(jwtUtils.validateToken(tokenBody),
+        Assertions.assertFalse(jwtUtils.validateToken(tokenBody),
                 "The token must be invalid or expired");
     }
 
@@ -74,21 +73,21 @@ class JwtUtilsTest {
 
         String tokenBody = jwtUtils.resolveToken(jwtPrefixed);
 
-        assertFalse(tokenBody.startsWith("Bearer "),
+        Assertions.assertFalse(tokenBody.startsWith("Bearer "),
                 "The resolved token must not start with the prefix 'Bearer '");
-        assertFalse(jwtUtils.validateToken(tokenBody),
+        Assertions.assertFalse(jwtUtils.validateToken(tokenBody),
                 "The token must be invalid or expired");
     }
 
     @Test
     void resolveTokenNullTest() {
-        assertNull(jwtUtils.resolveToken(null));
+        Assertions.assertNull(jwtUtils.resolveToken(null));
     }
 
     @Test
     void resolveTokenNotStartsWithBearerTest() {
         String jwt = jwtUtils.createToken("amog us", UserRole.ADMIN, new Date());
 
-        assertNull(jwtUtils.resolveToken(jwtUtils.resolveToken(jwt)));
+        Assertions.assertNull(jwtUtils.resolveToken(jwtUtils.resolveToken(jwt)));
     }
 }

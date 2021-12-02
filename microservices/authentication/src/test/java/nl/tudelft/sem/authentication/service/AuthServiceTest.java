@@ -1,10 +1,9 @@
 package nl.tudelft.sem.authentication.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.repositories.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,7 +27,7 @@ class AuthServiceTest {
         this.userDataRepository.save(new UserData("jegor",
                 this.passwordEncoder.encode("amogus"), UserRole.TA));
 
-        assertFalse(this.authService.registerUser("jegor", "password2"),
+        Assertions.assertFalse(this.authService.registerUser("jegor", "password2"),
                 "The user must not have been registered");
 
         this.userDataRepository.deleteById("jegor");
@@ -37,20 +36,19 @@ class AuthServiceTest {
     @Test
     void registerUserNotYesExistsTest() {
         String username = "impostor";
-        assertTrue(this.authService.registerUser(username, "password2"),
+        Assertions.assertTrue(this.authService.registerUser(username, "password2"),
                 "The user must have been registered");
-        assertTrue(this.userDataRepository.findByUsername(username).isPresent(),
+        Assertions.assertTrue(this.userDataRepository.findByUsername(username).isPresent(),
                 "The user must have been loaded");
-        assertEquals(UserRole.STUDENT,
+        Assertions.assertEquals(UserRole.STUDENT,
                 this.userDataRepository.findByUsername(username).get().getRole(),
                 "The role of the user must not have been changed");
-
         this.userDataRepository.deleteById(username);
     }
 
     @Test
     void loadUserNotFoundTest() {
-        assertThrows(UsernameNotFoundException.class,
+        Assertions.assertThrows(UsernameNotFoundException.class,
                 () -> this.authService.loadUserByUsername("jegorka"),
                 "The user must not have been loaded from the repository");
     }
@@ -63,14 +61,13 @@ class AuthServiceTest {
 
         this.authService.changePassword(username, "ngl");
 
-        assertTrue(this.userDataRepository.findByUsername(username).isPresent(),
+        Assertions.assertTrue(this.userDataRepository.findByUsername(username).isPresent(),
                 "The user must be present in the repository");
-        assertTrue(this.passwordEncoder.matches("ngl",
+        Assertions.assertTrue(this.passwordEncoder.matches("ngl",
                 this.userDataRepository.findByUsername(username).get().getPassword()),
                 "The new password must be hashed (encoded)");
-        assertEquals(UserRole.TA,this.userDataRepository.findByUsername(username)
+        Assertions.assertEquals(UserRole.TA,this.userDataRepository.findByUsername(username)
                 .get().getRole(), "The role of the user must not have been changed");
-
         this.userDataRepository.deleteById(username);
     }
 }
