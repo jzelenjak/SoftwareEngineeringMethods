@@ -4,10 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import nl.tudelft.sem.authentication.jwt.JwtUtils;
+import nl.tudelft.sem.authentication.security.UserRole;
 import nl.tudelft.sem.authentication.service.AuthService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -62,8 +65,9 @@ public class AuthController {
      */
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody String register(HttpServletRequest req,
-                                         HttpServletResponse res) throws IOException {
+    public @ResponseBody
+    String register(HttpServletRequest req,
+                    HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         final String uname = jsonNode.get(username).asText();
         final String pwd = jsonNode.get(password).asText();
@@ -86,8 +90,9 @@ public class AuthController {
      */
     @PutMapping("/change_password")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody String changePassword(HttpServletRequest req,
-                                               HttpServletResponse res) throws IOException {
+    public @ResponseBody
+    String changePassword(HttpServletRequest req,
+                          HttpServletResponse res) throws IOException {
         try {
             JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
             String jwt = jwtUtils.resolveToken(req);
@@ -112,8 +117,9 @@ public class AuthController {
      */
     @GetMapping("/login")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody String login(HttpServletRequest req,
-                                      HttpServletResponse res) throws IOException {
+    public @ResponseBody
+    String login(HttpServletRequest req,
+                 HttpServletResponse res) throws IOException {
         try {
             JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
             String uname = jsonNode.get(username).asText();
@@ -124,7 +130,7 @@ public class AuthController {
 
             String jwt = jwtUtils
                     .createToken(uname, this.authService
-                                            .loadUserByUsername(uname).getRole(), new Date());
+                            .loadUserByUsername(uname).getRole(), new Date());
 
             String jwtPrefixed = String.format("Bearer %s", jwt);
             res.setHeader(HttpHeaders.AUTHORIZATION, jwtPrefixed);
@@ -133,6 +139,64 @@ public class AuthController {
         } catch (AuthenticationException e) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Invalid credentials");
+        }
+    }
+
+    /**
+     * Changes the password of a user if the provided credentials are correct.
+     *
+     * @param req the HTTP request
+     * @param res the HTTP response
+     * @throws IOException IO exception if something goes wrong with the servlets.
+     */
+    @PutMapping("/change_role")
+    @ResponseStatus(HttpStatus.OK)
+    public @ResponseBody
+    String changeRole(HttpServletRequest req,
+                      HttpServletResponse res) throws IOException {
+        try {
+            String jwt = jwtUtils.resolveToken(req);
+            String roleOfRequester = jwtUtils.getRole(jwt).toUpperCase(Locale.ROOT);
+            if (!roleOfRequester.equals("ADMIN") || !roleOfRequester.equals("LECTURER")) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        String.format("You are not allowed to do that! %s", jwtUtils.getRole(jwt)));
+            }
+            UserRole newRole;
+            JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
+            if (roleOfRequester.equals("LECTURER")) {
+                newRole = UserRole.TA;
+            } else {
+                String newRoleInput = jsonNode.get("role").asText();
+                newRole = getRole(newRoleInput);
+            }
+
+            this.authService.changeRole(jsonNode.get(username).asText(), newRole);
+
+            return "Role successfully changed!";
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You need to login to do that!");
+        }
+    }
+
+    /**
+     * Gets role for a given string.
+     *
+     * @param newRoleInput the new role input.
+     * @return role for the given string as enum.
+     */
+    public UserRole getRole(String newRoleInput) {
+        switch (newRoleInput.toUpperCase(Locale.ROOT)) {
+            case "ADMIN":
+                return UserRole.ADMIN;
+            case "STUDENT":
+                return UserRole.STUDENT;
+            case "LECTURER":
+                return UserRole.LECTURER;
+            case "TA":
+                return UserRole.TA;
+            default:
+                return null;
         }
     }
 }
