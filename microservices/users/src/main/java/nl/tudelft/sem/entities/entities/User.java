@@ -60,6 +60,15 @@ public class User {
     }
 
     /**
+     * Sets the user id.
+     *
+     * @param userId the new user id
+     */
+    public void setUserId(long userId) {
+        this.userId = userId;
+    }
+
+    /**
      * Gets the username of the user.
      *
      * @return the username of the user
@@ -112,7 +121,6 @@ public class User {
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
-
 
     /**
      * Gets the role of the user.
