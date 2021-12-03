@@ -1,9 +1,8 @@
 package nl.tudelft.sem.hiring.procedure.utils;
 
+import io.jsonwebtoken.*;
 import java.security.Key;
 import java.util.*;
-
-import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

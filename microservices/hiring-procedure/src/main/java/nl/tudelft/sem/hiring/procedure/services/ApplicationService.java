@@ -59,4 +59,45 @@ public class ApplicationService {
         Application application = new Application(userId, courseId, currentTime);
         applicationRepository.save(application);
     }
+
+    public List<Application> getAllApplications(long courseId) {
+        return applicationRepository.findAllByCourseId(courseId);
+    }
+
+    /**
+     * Checks whether a user is a viable candidate to that course. This is the case when they have
+     * applied and their application is "in progress".
+     *
+     * @param userId The ID of the user to be checked
+     * @param courseId The ID of the course for which the user should be checked
+     * @return true if the user is a viable candidate, false otherwise
+     */
+    public boolean checkCandidate(long userId, long courseId) {
+        List<Application> applications = applicationRepository
+            .findAllByUserIdAndAndCourseId(userId, courseId);
+        for (Application application : applications) {
+            if (application.getSubmissionDate().getYear() == LocalDateTime.now().getYear()) {
+                return application.getStatus() == 0;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Function for setting the status of the most recent application of a user to a course to
+     * "Accepted".
+     *
+     * @param userId The ID of the user to be hired
+     * @param courseId The ID of the course that the user should be hired to
+     */
+    public void hire(long userId, long courseId) {
+        List<Application> applications = applicationRepository
+            .findAllByUserIdAndAndCourseId(userId, courseId);
+        for (Application application : applications) {
+            if (application.getSubmissionDate().getYear() == LocalDateTime.now().getYear()) {
+                application.setStatus(2);
+                applicationRepository.save(application);
+            }
+        }
+    }
 }
