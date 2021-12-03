@@ -13,10 +13,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface UserRepository extends CrudRepository<User, Long> {
     /**
-     * Finds a user by the username (netId).
+     * Finds a user by the username (netID).
      *
-     * @param username the username (netId)
-     * @return the user who has the given username (netId)
+     * @param username the username (netID)
+     * @return the user who has the given username (netID)
      */
     Optional<User> findByUsername(String username);
 
@@ -24,7 +24,7 @@ public interface UserRepository extends CrudRepository<User, Long> {
     /**
      * Finds a user by the user id.
      *
-     * @param userId the user id (netId)
+     * @param userId the user id (netID)
      * @return the user who has the given user id
      */
     Optional<User> findByUserId(long userId);
@@ -36,5 +36,12 @@ public interface UserRepository extends CrudRepository<User, Long> {
      * @return the list of users who have the given role
      */
     List<User> findAllByRole(UserRole role);
+
+    /**
+     * Deletes the user with the given username (netID)
+     *
+     * @param username the username (netID)
+     */
+    void deleteByUsername(String username);
 }
 

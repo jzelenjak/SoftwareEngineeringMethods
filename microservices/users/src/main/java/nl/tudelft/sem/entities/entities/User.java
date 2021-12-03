@@ -136,7 +136,7 @@ public class User {
      * Checks if the other object is equal to this object.
      *
      * @param other the other object to compare to
-     * @return true if the other object is also a User and if the netID's match,
+     * @return true if the other object is also a User and if the netID's and user IDs match,
      *         false otherwise
      */
     @Override
