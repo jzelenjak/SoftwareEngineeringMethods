@@ -113,7 +113,8 @@ public class UserService {
     }
 
     /**
-     * Deletes the user by their username (netID)
+     * Deletes the user by their username (netID).
+     *
      * @param netId         the username (netID) of the user
      * @param requesterRole the role of the requester
      * @return true if the operation has been successful,

@@ -1,25 +1,32 @@
 package nl.tudelft.sem.entities.controllers;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import nl.tudelft.sem.entities.entities.User;
 import nl.tudelft.sem.entities.entities.UserRole;
 import nl.tudelft.sem.entities.services.UserService;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Controller class for users that provides the API.
  */
 @RestController
 @RequestMapping("/api/users")
+@SuppressWarnings("PMD")
 public class UserController {
 
     private final transient UserService userService;
@@ -54,7 +61,7 @@ public class UserController {
         String username = jsonNode.get("username").asText();
         String firstName = jsonNode.get("firstName").asText();
         String lastName = jsonNode.get("lastName").asText();
-        String password = jsonNode.get("password").asText();
+        //String password = jsonNode.get("password").asText();
 
         long userId = this.userService.registerUser(username, firstName, lastName);
         if (userId == -1) {
@@ -103,13 +110,11 @@ public class UserController {
     public @ResponseBody
     String getUserByUserId(HttpServletRequest req, HttpServletResponse res) throws IOException {
         JsonNode jsonNode = mapper.readTree(req.getInputStream());
-        long userId;
 
-        try {
-            userId = Long.parseLong(jsonNode.get("user_id").asText());
-        } catch (NumberFormatException e) {
+        long userId = parseUserId(jsonNode.get("user_id").asText());
+        if (userId == -1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Provided user ID is not a valid number");
+                    "Provided user ID is not a valid number");
         }
 
         Optional<User> user = this.userService.getUserByUserId(userId);
@@ -160,17 +165,15 @@ public class UserController {
         String netId = jsonNode.get("username").asText();
         String newRoleStr = jsonNode.get("newRole").asText();
 
-        UserRole newRole;
-        //TODO: get the requester's role from the JWT token
-        UserRole requesterRole = UserRole.STUDENT;
-
-        try {
-            newRole = UserRole.valueOf(newRoleStr);
-        } catch (IllegalArgumentException e) {
+        UserRole newRole = parseRole(newRoleStr);
+        if (newRole == null) {
             String reason = String.format("Role must be one of the following: %s, %s, %s, %s, %s",
                     "STUDENT", "CANDIDATE_TA", "TA", "LECTURER", "ADMIN");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
         }
+
+        //TODO: get the requester's role from the JWT token
+        UserRole requesterRole = UserRole.STUDENT;
 
         Optional<User> optUser = this.userService.getUserByNetId(netId);
         if (optUser.isEmpty()) {
@@ -180,7 +183,8 @@ public class UserController {
 
         UserRole oldRole = optUser.get().getRole();
 
-        if (!this.userService.changeRole(netId, newRole, requesterRole)) {
+        boolean success = this.userService.changeRole(netId, newRole, requesterRole);
+        if (!success) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
         }
 
@@ -201,22 +205,52 @@ public class UserController {
      */
     @DeleteMapping("/delete")
     public @ResponseBody
-    String deleteUserByUsername(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    String deleteUserByUsername(HttpServletRequest req,
+                                HttpServletResponse res)throws IOException {
         JsonNode jsonNode = mapper.readTree(req.getInputStream());
         String netId = jsonNode.get("username").asText();
 
         // TODO: get the role from the token
         UserRole requesterRole = UserRole.STUDENT;
 
-        if (this.userService.getUserByNetId(netId).isEmpty()) {
+        boolean notFound = this.userService.getUserByNetId(netId).isEmpty();
+        if (notFound) {
             String reason = String.format("User with NetID %s not found!", netId);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, reason);
         }
 
-        if (!this.userService.deleteUserByUsername(netId, requesterRole)) {
+        boolean success = this.userService.deleteUserByUsername(netId, requesterRole);
+        if (!success) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
         }
         return String.format("The user with the netID %s has been deleted successfully!", netId);
     }
 
+    /**
+     * A helper method to parse userID from string to long.
+     *
+     * @param userIdStr the user ID string
+     * @return the user ID long, or -1 if impossible to parse
+     */
+    private long parseUserId(String userIdStr) {
+        try {
+            return Long.parseLong(userIdStr);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    /**
+     * A helper method to parse the user role from string to UserRole.
+     *
+     * @param roleStr   the user role string
+     * @return the user role UserRole, or null if the provided role has been invalid
+     */
+    private UserRole parseRole(String roleStr) {
+        try {
+            return UserRole.valueOf(roleStr);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
 }

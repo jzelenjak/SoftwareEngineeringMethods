@@ -1,18 +1,25 @@
 package nl.tudelft.sem.entities.entities;
 
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
+import javax.persistence.Table;
+
 
 
 /**
  * A class that represents a user.
  */
-@Table(name="users")
+@Table(name = "users")
 @Entity
-@SequenceGenerator(name="seq", initialValue=55555, allocationSize=3)
+@SequenceGenerator(name = "seq", initialValue = 55555, allocationSize = 3)
 public class User {
     @Id
-    @GeneratedValue(strategy=GenerationType.SEQUENCE, generator="seq")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq")
     @Column(name = "user_id")
     private long userId;
 
@@ -156,7 +163,7 @@ public class User {
             return false;
         }
 
-        return username.equals(((User)other).username) && this.userId == ((User)other).userId;
+        return username.equals(((User) other).username) && this.userId == ((User) other).userId;
     }
 
     /**
