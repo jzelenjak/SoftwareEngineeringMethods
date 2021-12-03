@@ -1,10 +1,6 @@
 group = 'nl.tudelft.cse.sem.heartbeat'
 version = '0.0.1-SNAPSHOT'
 
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-autoconfigure'
-}
-
 jar {
     enabled = true
 }
