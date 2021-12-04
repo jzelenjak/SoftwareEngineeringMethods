@@ -11,5 +11,8 @@ dependencies {
     implementation 'org.postgresql:postgresql:42.2.23'
 
     implementation 'org.springframework.boot:spring-boot-starter-web:2.6.0'
+
+    implementation project(':libs:heartbeat')
+    implementation project(':libs:jwt')
 }
 

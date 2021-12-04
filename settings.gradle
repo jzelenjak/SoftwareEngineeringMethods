@@ -5,3 +5,5 @@ include 'microservices:hiring-procedure', 'microservices:hour-management', 'micr
 
 // Utility libraries
 include 'libs:heartbeat'
+include 'libs:jwt'
+

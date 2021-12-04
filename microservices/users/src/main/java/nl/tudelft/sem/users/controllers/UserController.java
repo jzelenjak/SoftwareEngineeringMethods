@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import nl.tudelft.sem.jwt.JwtUtils;
 import nl.tudelft.sem.users.entities.User;
 import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.services.UserService;
@@ -33,14 +34,17 @@ public class UserController {
 
     private final transient ObjectMapper mapper = new ObjectMapper();
 
+    private final transient JwtUtils jwtUtils;
+
 
     /**
      * Instantiates a new User controller object.
      *
      * @param userService the user service
      */
-    public UserController(UserService userService) {
+    public UserController(UserService userService, JwtUtils jwtUtils) {
         this.userService = userService;
+        this.jwtUtils = jwtUtils;
     }
 
 
@@ -134,6 +138,7 @@ public class UserController {
      * @throws IOException when something goes wrong with servlets
      */
     @GetMapping("/by_role")
+    @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     String getUsersByRole(HttpServletRequest req, HttpServletResponse res) throws IOException {
         JsonNode jsonNode = mapper.readTree(req.getInputStream());
@@ -159,6 +164,7 @@ public class UserController {
      * @throws IOException when something goes wrong with servlets
      */
     @PutMapping("/change_role")
+    @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     String changeRole(HttpServletRequest req, HttpServletResponse res) throws IOException {
         JsonNode jsonNode = mapper.readTree(req.getInputStream());
@@ -209,6 +215,7 @@ public class UserController {
      * @throws IOException when something goes wrong with servlets
      */
     @DeleteMapping("/delete")
+    @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     String deleteUserByUsername(HttpServletRequest req,
                                 HttpServletResponse res)throws IOException {
@@ -235,6 +242,17 @@ public class UserController {
         }
         return String.format("The user with the user ID %s has been deleted successfully!", userId);
     }
+
+    //    //Test method
+    //    @GetMapping("/test")
+    //    @ResponseStatus(HttpStatus.OK)
+    //    public @ResponseBody
+    //    String test(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    //        String token = req.getHeader(HttpHeaders.AUTHORIZATION);
+    //
+    //        return "Received token " + token + "; will sign it with the key string: "
+    //          + this.jwtUtils.secretKey.toString();
+    //    }
 
     /**
      * A helper method to parse userID from string to long.
@@ -263,4 +281,6 @@ public class UserController {
             return null;
         }
     }
+
+
 }
