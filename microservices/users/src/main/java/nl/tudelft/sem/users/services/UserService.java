@@ -126,8 +126,14 @@ public class UserService {
 
         Optional<User> optionalUser = this.userRepository.findByUserId(userId);
         assert optionalUser.isPresent();
-
         User user = optionalUser.get();
+
+        // Only an admin can downgrade another admin
+        if (user.getRole().equals(UserRole.ADMIN) && !newRole.equals(UserRole.ADMIN)
+                && !requesterRole.equals(UserRole.ADMIN)) {
+            return false;
+        }
+
         user.setRole(newRole);
         this.userRepository.save(user);
         return true;
