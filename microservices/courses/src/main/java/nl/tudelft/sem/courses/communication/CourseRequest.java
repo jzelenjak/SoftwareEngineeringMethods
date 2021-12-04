@@ -7,8 +7,8 @@ public class CourseRequest {
     public String courseId;
     public LocalDateTime startDate;
 
-    public CourseRequest(String courseID, LocalDateTime startDate) {
-        this.courseId = courseID;
+    public CourseRequest(String courseId, LocalDateTime startDate) {
+        this.courseId = courseId;
         this.startDate = startDate;
     }
 

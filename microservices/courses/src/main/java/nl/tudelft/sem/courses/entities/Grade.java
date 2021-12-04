@@ -1,8 +1,16 @@
 package nl.tudelft.sem.courses.entities;
 
 
-import javax.persistence.*;
 import java.util.Objects;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+
 
 @Entity(name = "Grades")
 @Table(name = "grade")
@@ -22,8 +30,8 @@ public class Grade {
 
 
 
-    @Column(name = "userID")
-    public long userID;
+    @Column(name = "userId")
+    public long userId;
 
     /**
      *  Empty constructor for Jpa Persistance.
@@ -34,13 +42,14 @@ public class Grade {
 
     /**
      * When using this constructor you must provide a course and a user.
-     * @param course
-     * @param userID
+     *
+     * @param course Acceps a course object
+     * @param userId accepts a user id
      */
-    public Grade(long id, Course course, long userID, float gradeValue){
+    public Grade(long id, Course course, long userId, float gradeValue) {
         this.id = id;
         this.course = course;
-        this.userID = userID;
+        this.userId = userId;
         this.gradeValue = gradeValue;
     }
 
@@ -68,33 +77,39 @@ public class Grade {
         this.gradeValue = gradeValue;
     }
 
-    public long getUserID() {
-        return userID;
+    public long getUserId() {
+        return userId;
     }
 
-    public void setUserID(long userID) {
-        this.userID = userID;
+    public void setUserId(long userId) {
+        this.userId = userId;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Grade grade1 = (Grade) o;
-        return Float.compare(grade1.gradeValue, gradeValue) == 0 && course.equals(grade1.course) && userID == grade1.userID || id == grade1.id;
+        return Float.compare(grade1.gradeValue, gradeValue) == 0
+                && course.equals(grade1.course) && userId == grade1.userId
+                || id == grade1.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, course, gradeValue, userID);
+        return Objects.hash(id, course, gradeValue, userId);
     }
 
     @Override
     public String toString() {
-        return "Grade{" +
-                "id = " + id +
-                ", course=" + course +
-                ", user=" + userID +
-                '}';
+        return "Grade{"
+                + "id = " + id
+                + ", course=" + course
+                + ", user=" + userId
+                + '}';
     }
 }

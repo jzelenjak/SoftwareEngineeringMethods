@@ -2,11 +2,19 @@ package nl.tudelft.sem.courses.entities;
 
 
 
-import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+
 
 @Entity(name = "Courses")
 @Table(name = "course")
@@ -18,8 +26,8 @@ public class Course {
     private long id;
 
 
-    @Column(name = "courseID")
-    public String courseID;
+    @Column(name = "courseId")
+    public String courseId;
 
 
     @Column(name = "startDate")
@@ -32,17 +40,18 @@ public class Course {
     /**
      *  Empty constructor for Jpa Persistence.
      */
-    public Course(){}
+    public Course() {}
 
 
     /**
      * Constructor for Course. You must specify a course ID when creating the course.
      * This course ID can be changed later.
-     * @param courseID - Course ID in a string format
+     *
+     * @param courseId - Course ID in a string format
      */
-    public Course(long id, String courseID, LocalDateTime startDate){
+    public Course(long id, String courseId, LocalDateTime startDate) {
         this.id = id;
-        this.courseID = courseID;
+        this.courseId = courseId;
         this.startDate = startDate;
         grades = new HashSet<>();
     }
@@ -55,12 +64,12 @@ public class Course {
         this.id = id;
     }
 
-    public String getCourseID() {
-        return courseID;
+    public String getCourseId() {
+        return courseId;
     }
 
-    public void setCourseID(String courseID) {
-        this.courseID = courseID;
+    public void setCourseId(String courseId) {
+        this.courseId = courseId;
     }
 
     public LocalDateTime getStartDate() {
@@ -81,23 +90,27 @@ public class Course {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Course course = (Course) o;
-        return courseID.equals(course.courseID) && id == course.id;
+        return courseId.equals(course.courseId) && id == course.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(courseID, grades , id);
+        return Objects.hash(courseId, grades, id);
     }
 
 
     @Override
     public String toString() {
-        return "Course{" +
-                "courseID='" + courseID + '\'' +
-                ", users=" + grades.toString() +
-                '}';
+        return "Course{"
+                + "courseID='" + courseId + '\''
+                + ", users=" + grades.toString()
+                + '}';
     }
 }
