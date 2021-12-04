@@ -5,7 +5,6 @@ import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
-import nl.tudelft.sem.courses.respositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.validation.Valid;
 import java.util.Optional;
 
 @RestController
@@ -25,13 +23,12 @@ import java.util.Optional;
 public class CourseController {
 
     @Autowired
-    private CourseRepository courseRepository;
+    private transient CourseRepository courseRepository;
 
     @Autowired
     private GradeRepository gradeRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+
 
     @GetMapping
     public @ResponseBody String getHelloWorld(){

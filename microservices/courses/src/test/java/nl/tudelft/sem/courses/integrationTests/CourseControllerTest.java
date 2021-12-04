@@ -1,11 +1,9 @@
 package nl.tudelft.sem.courses.integrationTests;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
-import nl.tudelft.sem.courses.respositories.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,14 +34,12 @@ public class CourseControllerTest {
     @Autowired
     private CourseRepository courseRepository;
 
-    @Autowired
-    private UserRepository userRepository;
 
     @Autowired
     private GradeRepository gradeRepository;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private transient ObjectMapper objectMapper;
 
 
     @Test
@@ -51,7 +47,7 @@ public class CourseControllerTest {
         CourseRequest courseRequest = new CourseRequest("CSE2215", LocalDateTime.now());
 
         mockMvc.perform(post("/api/courses/create")
-                .contentType("application/json")
+                .contentType(jsonContentHeader)
                 .content(objectMapper.writeValueAsString(courseRequest)))
                 .andExpect(status().isOk());
 
@@ -59,15 +55,15 @@ public class CourseControllerTest {
 
     @Test
     void testCourseCreationWithConflictingCourses() throws Exception{
-        CourseRequest courseRequest = new CourseRequest("CSE2215", LocalDateTime.now());
+        CourseRequest courseRequest = new CourseRequest("CSE2216", LocalDateTime.now());
 
         mockMvc.perform(post("/api/courses/create")
-                        .contentType("application/json")
+                        .contentType(jsonContentHeader)
                         .content(objectMapper.writeValueAsString(courseRequest)))
                         .andExpect(status().isOk());
 
         mockMvc.perform(post("/api/courses/create")
-                        .contentType("application/json")
+                        .contentType(jsonContentHeader)
                         .content(objectMapper.writeValueAsString(courseRequest)))
                         .andExpect(status().isBadRequest());
 

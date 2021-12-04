@@ -1,13 +1,10 @@
 package nl.tudelft.sem.courses.unitTests;
 
 import nl.tudelft.sem.courses.entities.Course;
-import nl.tudelft.sem.courses.entities.User;
 import org.junit.jupiter.api.Test;
 
 
-import javax.validation.constraints.Null;
 import java.time.LocalDateTime;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
