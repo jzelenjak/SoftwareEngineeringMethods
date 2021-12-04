@@ -5,6 +5,7 @@ import java.util.Optional;
 import nl.tudelft.sem.entities.entities.User;
 import nl.tudelft.sem.entities.entities.UserRole;
 import nl.tudelft.sem.entities.repositories.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 /**
@@ -27,24 +28,41 @@ public class UserService {
 
 
     /**
-     * Registers a new user if (s)he does not already exist.
+     * Registers a new user if (s)he does not already exist and if the provided data are valid.
+     * The role is initially set to STUDENT for all users.
      *
      * @param netId         the netID (username) of the user
      * @param firstName     the name of the user
      * @param lastName      the surname of the user
      * @return true is a user has been successfully registered;
      *         false if a user with the same netID already exists
+     * @throws DataIntegrityViolationException if netID already exists
+     *          and if any of the netID, first name and last name are blank, empty or null
      */
-    public long registerUser(String netId, String firstName, String lastName) {
-        if (this.userRepository.findByUsername(netId).isPresent()) {
-            return -1;
-        }
-        this.userRepository.save(new User(netId, firstName, lastName, UserRole.STUDENT));
+    public long registerUser(String netId, String firstName, String lastName)
+            throws DataIntegrityViolationException {
 
-        Optional<User> userFromRepo = this.userRepository.findByUsername(netId);
-        assert userFromRepo.isPresent();
-        return userFromRepo.get().getUserId();
+        if (netId == null || netId.isBlank() || netId.isEmpty()) {
+            throw new DataIntegrityViolationException("Please specify the netID!");
+        }
+
+        if (this.userRepository.findByUsername(netId).isPresent()) {
+            String msg = String.format("User with netID %s already exist", netId);
+            throw new DataIntegrityViolationException(msg);
+        }
+
+        if (firstName == null || firstName.isBlank() || firstName.isEmpty()) {
+            throw new DataIntegrityViolationException("Please specify the first name!");
+        }
+
+        if (lastName == null || lastName.isBlank() || lastName.isEmpty()) {
+            throw new DataIntegrityViolationException("Please specify the last name!");
+        }
+
+        User user = this.userRepository.save(new User(netId, firstName, lastName, UserRole.STUDENT));
+        return user.getUserId();
     }
+
 
     /**
      * Gets the user by his/her netID.
@@ -56,6 +74,7 @@ public class UserService {
         return this.userRepository.findByUsername(netId);
     }
 
+
     /**
      * Gets the user by his/her userID.
      *
@@ -65,6 +84,7 @@ public class UserService {
     public Optional<User> getUserByUserId(long userId) {
         return this.userRepository.findByUserId(userId);
     }
+
 
     /**
      * Gets users by their role.
@@ -76,8 +96,9 @@ public class UserService {
         return this.userRepository.findAllByRole(role);
     }
 
+
     /**
-     * Changes the role of a user to another role if the requester has permissions for that.
+     * Changes the role of a user to another role if the requester has permissions to do that.
      *
      * @param netId         the netID of the user
      * @param newRole       the new role of the user
@@ -111,6 +132,7 @@ public class UserService {
         this.userRepository.save(user);
         return true;
     }
+
 
     /**
      * Deletes the user by their username (netID).
