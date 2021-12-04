@@ -1,9 +1,9 @@
-package nl.tudelft.sem.entities.repositories;
+package nl.tudelft.sem.users.repositories;
 
 import java.util.List;
 import java.util.Optional;
-import nl.tudelft.sem.entities.entities.User;
-import nl.tudelft.sem.entities.entities.UserRole;
+import nl.tudelft.sem.users.User;
+import nl.tudelft.sem.users.UserRole;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 

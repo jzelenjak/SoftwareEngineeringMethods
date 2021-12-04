@@ -1,4 +1,4 @@
-package nl.tudelft.sem.entities.controllers;
+package nl.tudelft.sem.users.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import nl.tudelft.sem.entities.entities.User;
-import nl.tudelft.sem.entities.entities.UserRole;
-import nl.tudelft.sem.entities.services.UserService;
+import nl.tudelft.sem.users.User;
+import nl.tudelft.sem.users.UserRole;
+import nl.tudelft.sem.users.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;

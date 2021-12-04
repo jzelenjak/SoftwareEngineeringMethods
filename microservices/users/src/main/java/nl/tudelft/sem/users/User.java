@@ -1,4 +1,4 @@
-package nl.tudelft.sem.entities.entities;
+package nl.tudelft.sem.users;
 
 
 import javax.persistence.Column;
@@ -19,7 +19,7 @@ import javax.validation.constraints.NotNull;
 @Table(name = "users")
 @Entity
 @SequenceGenerator(name = "uid_gen", sequenceName = "uid_seq",
-        initialValue = 3001001, allocationSize = 7)
+        initialValue = 3001001)
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "uid_gen")

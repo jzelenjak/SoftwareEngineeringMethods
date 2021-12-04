@@ -1,10 +1,10 @@
-package nl.tudelft.sem.entities.services;
+package nl.tudelft.sem.users.services;
 
 import java.util.List;
 import java.util.Optional;
-import nl.tudelft.sem.entities.entities.User;
-import nl.tudelft.sem.entities.entities.UserRole;
-import nl.tudelft.sem.entities.repositories.UserRepository;
+import nl.tudelft.sem.users.User;
+import nl.tudelft.sem.users.UserRole;
+import nl.tudelft.sem.users.repositories.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
