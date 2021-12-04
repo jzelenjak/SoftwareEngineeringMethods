@@ -162,9 +162,14 @@ public class UserController {
     public @ResponseBody
     String changeRole(HttpServletRequest req, HttpServletResponse res) throws IOException {
         JsonNode jsonNode = mapper.readTree(req.getInputStream());
-        String netId = jsonNode.get("username").asText();
-        String newRoleStr = jsonNode.get("newRole").asText();
 
+        long userId = parseUserId(jsonNode.get("userId").asText());
+        if (userId == -1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Provided user ID is not a valid number");
+        }
+
+        String newRoleStr = jsonNode.get("newRole").asText();
         UserRole newRole = parseRole(newRoleStr);
         if (newRole == null) {
             String reason = String.format("Role must be one of the following: %s, %s, %s, %s, %s",
@@ -175,23 +180,23 @@ public class UserController {
         //TODO: get the requester's role from the JWT token
         UserRole requesterRole = UserRole.STUDENT;
 
-        Optional<User> optUser = this.userService.getUserByNetId(netId);
+        Optional<User> optUser = this.userService.getUserByUserId(userId);
         if (optUser.isEmpty()) {
-            String reason = String.format("User with NetID %s not found!", netId);
+            String reason = String.format("User with user ID %s not found!", userId);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, reason);
         }
 
         UserRole oldRole = optUser.get().getRole();
 
-        boolean success = this.userService.changeRole(netId, newRole, requesterRole);
+        boolean success = this.userService.changeRole(userId, newRole, requesterRole);
         if (!success) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
         }
 
         // TODO: send a request to the Authentication server
 
-        return String.format("The role of user %s has been changed from %s to %s.",
-                             netId, oldRole, newRole);
+        return String.format("The role of user with user ID %s has been changed from %s to %s.",
+                             userId, oldRole, newRole);
     }
 
 
@@ -208,22 +213,27 @@ public class UserController {
     String deleteUserByUsername(HttpServletRequest req,
                                 HttpServletResponse res)throws IOException {
         JsonNode jsonNode = mapper.readTree(req.getInputStream());
-        String netId = jsonNode.get("username").asText();
+
+        long userId = parseUserId(jsonNode.get("userId").asText());
+        if (userId == -1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Provided user ID is not a valid number");
+        }
 
         // TODO: get the role from the token
         UserRole requesterRole = UserRole.STUDENT;
 
-        boolean notFound = this.userService.getUserByNetId(netId).isEmpty();
+        boolean notFound = this.userService.getUserByUserId(userId).isEmpty();
         if (notFound) {
-            String reason = String.format("User with NetID %s not found!", netId);
+            String reason = String.format("User with user ID %s not found!", userId);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, reason);
         }
 
-        boolean success = this.userService.deleteUserByUsername(netId, requesterRole);
+        boolean success = this.userService.deleteUserByUserId(userId, requesterRole);
         if (!success) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
         }
-        return String.format("The user with the netID %s has been deleted successfully!", netId);
+        return String.format("The user with the user ID %s has been deleted successfully!", userId);
     }
 
     /**

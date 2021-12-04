@@ -100,13 +100,13 @@ public class UserService {
     /**
      * Changes the role of a user to another role if the requester has permissions to do that.
      *
-     * @param netId         the netID of the user
+     * @param userId        the user ID of the user
      * @param newRole       the new role of the user
      * @param requesterRole the role of the requester
      * @return true if the operation has been successful,
      *         false if the requester does not have the required permissions
      */
-    public boolean changeRole(String netId, UserRole newRole, UserRole requesterRole) {
+    public boolean changeRole(long userId, UserRole newRole, UserRole requesterRole) {
         // Only admins and lecturers can change permissions
         if (!requesterRole.equals(UserRole.ADMIN) && !requesterRole.equals(UserRole.LECTURER)) {
             return false;
@@ -124,7 +124,7 @@ public class UserService {
 
         // Both lecturers and admins can make someone else a TA, CANDIDATE_TA or STUDENT
 
-        Optional<User> optionalUser = this.userRepository.findByUsername(netId);
+        Optional<User> optionalUser = this.userRepository.findByUserId(userId);
         assert optionalUser.isPresent();
 
         User user = optionalUser.get();
@@ -137,17 +137,17 @@ public class UserService {
     /**
      * Deletes the user by their username (netID).
      *
-     * @param netId         the username (netID) of the user
+     * @param userId        the user ID of the user
      * @param requesterRole the role of the requester
      * @return true if the operation has been successful,
      *         false if the requester does not have the required permissions (is not an admin)
      */
-    public boolean deleteUserByUsername(String netId, UserRole requesterRole) {
+    public boolean deleteUserByUserId(long userId, UserRole requesterRole) {
         if (!requesterRole.equals(UserRole.ADMIN)) {
             return false;
         }
 
-        this.userRepository.deleteByUsername(netId);
+        this.userRepository.deleteByUserId(userId);
         return true;
     }
 }

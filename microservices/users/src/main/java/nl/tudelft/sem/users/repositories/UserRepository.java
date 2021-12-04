@@ -38,10 +38,10 @@ public interface UserRepository extends CrudRepository<User, Long> {
     List<User> findAllByRole(UserRole role);
 
     /**
-     * Deletes the user with the given username (netID).
+     * Deletes the user with the given user ID.
      *
-     * @param username the username (netID)
+     * @param userId the user ID
      */
-    void deleteByUsername(String username);
+    void deleteByUserId(long userId);
 }
 
