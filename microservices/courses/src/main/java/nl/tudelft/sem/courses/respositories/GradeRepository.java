@@ -1,15 +1,16 @@
 package nl.tudelft.sem.courses.respositories;
 
+
+import java.util.Optional;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
 
 @Repository
 public interface GradeRepository extends CrudRepository<Grade, Long> {
 
 
-    Optional<Grade> findByUserIDAndCourse(long userID, Course course);
+    Optional<Grade> findByUserIdAndCourse(long userId, Course course);
 }

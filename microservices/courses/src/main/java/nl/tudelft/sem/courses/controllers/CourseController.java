@@ -31,26 +31,28 @@ public class CourseController {
 
 
     @GetMapping
-    public @ResponseBody String getHelloWorld(){
+    public @ResponseBody String getHelloWorld() {
         return "Hello world";
     }
 
 
     /**
-     * Creates a new course. The request must provide a CourseRequest Object. We assume that the front end creates this object and sends it to the user.     *
-     * @param request
-     * @return
+     * Creates a new course. The request must provide a CourseRequest Object.
+     * We assume that the front end creates this object and sends it to the user.
+     *
+     * @param request request object that must be supplied by the front end.
+     * @return returns a http success or bad request
      */
-    @PostMapping("/create" )
-    public String createNewCourse(@RequestBody CourseRequest request){
-        Optional<Course> course = courseRepository.findByCourseID(request.courseId);
+    @PostMapping("/create")
+    public String createNewCourse(@RequestBody CourseRequest request) {
+        Optional<Course> course = courseRepository.findByCourseId(request.courseId);
 
-        if(course.isPresent()){
+        if (course.isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
 
         Course newCourse = new Course();
-        newCourse.setCourseID(request.courseId);
+        newCourse.setCourseId(request.courseId);
         newCourse.setStartDate(request.startDate);
         courseRepository.save(newCourse);
 
@@ -58,12 +60,17 @@ public class CourseController {
 
     }
 
-
+    /**
+     * This method edits the course if it finds it in the directory.
+     *
+     * @param request Course request object
+     * @return returns a http success or bad request
+     */
     @PostMapping("/edit")
-    public String editCourse(@PathVariable CourseRequest request){
-        Optional<Course> course = courseRepository.findByCourseID(request.courseId);
-        if (course.isEmpty()){
-            return "Failed. No Course Found";
+    public String editCourse(@PathVariable CourseRequest request) {
+        Optional<Course> course = courseRepository.findByCourseId(request.courseId);
+        if (course.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
 
         return "Success. Edited Course";
