@@ -2,7 +2,6 @@ package nl.tudelft.sem.entities.entities;
 
 import nl.tudelft.sem.entities.repositories.UserRepository;
 import org.assertj.core.api.Assertions;
-import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class UserTest {
@@ -98,10 +96,10 @@ class UserTest {
 
     @Test
     void setUsernameMustBeUniqTest() {
-        User user2 = new User(netId, "amogus", "sus", UserRole.CANDIDATE_TA);
 
         Assertions
-                .assertThatThrownBy(() -> this.repo.save(user2))
+                .assertThatThrownBy(() ->
+                        this.repo.save(new User(netId, "amogus", "sus", UserRole.CANDIDATE_TA)))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -162,7 +160,7 @@ class UserTest {
 
     @Test
     void testEqualsEqualTest() {
-        User user2 = new User("ddelft@tudelft.nl", "delft", "delft", UserRole.LECTURER);
+        User user2 = new User("ddelft@tudelft.nl", "delta", "delft", UserRole.LECTURER);
         user2.setUserId(user1.getUserId());
 
         Assertions
@@ -179,7 +177,7 @@ class UserTest {
 
     @Test
     void testEqualsDifferentTest() {
-        User user2 = new User("ddelft@tudelft.nl", "delft", "delft", UserRole.LECTURER);
+        User user2 = new User("ddelft@tudelft.nl", "delta", "delft", UserRole.LECTURER);
         user2 = this.repo.save(user2);
 
         Assertions
@@ -191,7 +189,7 @@ class UserTest {
 
     @Test
     void testEqualsDifferentButSameNetIdTest() {
-        User user2 = new User("ddelft@tudelft.nl", "delft", "delft", UserRole.LECTURER);
+        User user2 = new User("ddelft@tudelft.nl", "delta", "delft", UserRole.LECTURER);
         user2 = this.repo.save(user2);
         user2.setUsername(netId);
 
@@ -214,7 +212,8 @@ class UserTest {
 
     @Test
     void testHashCodeDifferentTest() {
-        User user2 = new User("S" + netId, user1.getFirstName(), user1.getLastName(), UserRole.STUDENT);
+        User user2 = new User("S" + netId, user1.getFirstName(),
+                user1.getLastName(), UserRole.STUDENT);
         this.repo.save(user2);
 
         Assertions
