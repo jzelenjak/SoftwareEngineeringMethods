@@ -8,7 +8,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 
 /**
@@ -16,20 +17,25 @@ import javax.persistence.Table;
  */
 @Table(name = "users")
 @Entity
-@SequenceGenerator(name = "seq", initialValue = 55555, allocationSize = 3)
+@SequenceGenerator(name = "uid_gen", sequenceName = "uid_seq",
+        initialValue = 3001001, allocationSize = 7)
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq")
-    @Column(name = "user_id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "uid_gen")
+    @Column(name = "user_id", updatable = false)
     private long userId;
 
-    @Column(name = "username", nullable = false, unique = true)
-    private String username; // NetID of the user.
+    @Column(name = "username", unique = true)
+    @NotNull @NotBlank
+    // NetID of the user
+    private String username;
 
     @Column(name = "first_name")
+    @NotNull @NotBlank
     private String firstName;
 
     @Column(name = "last_name")
+    @NotNull @NotBlank
     private String lastName;
 
     @Column(name = "role")
@@ -68,6 +74,7 @@ public class User {
 
     /**
      * Sets the user id.
+     * Cannot be updated (otherwise DataIntegrityViolationException will be thrown).
      *
      * @param userId the new user id
      */
@@ -86,6 +93,7 @@ public class User {
 
     /**
      * Sets the username of the user.
+     * Must be unique (otherwise DataIntegrityViolationException will be thrown).
      *
      * @param username the username of the user
      */
@@ -148,10 +156,10 @@ public class User {
     }
 
     /**
-     * Checks if the other object is equal to this object.
+     * Checks if another object is equal to this object.
      *
      * @param other the other object to compare to
-     * @return true if the other object is also a User and if the netID's and user IDs match,
+     * @return true if the other object is also a User and if their user IDs are equal,
      *         false otherwise
      */
     @Override
@@ -163,7 +171,7 @@ public class User {
             return false;
         }
 
-        return username.equals(((User) other).username) && this.userId == ((User) other).userId;
+        return this.userId == ((User) other).userId;
     }
 
     /**
@@ -173,6 +181,6 @@ public class User {
      */
     @Override
     public int hashCode() {
-        return username.hashCode();
+        return Long.valueOf(this.userId).hashCode();
     }
 }
