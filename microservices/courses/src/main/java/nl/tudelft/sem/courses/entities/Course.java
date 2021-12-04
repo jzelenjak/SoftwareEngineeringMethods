@@ -3,14 +3,7 @@ package nl.tudelft.sem.courses.entities;
 
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.ManyToMany;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Objects;
@@ -30,17 +23,12 @@ public class Course {
     public String courseID;
 
 
-    @Column(name = "users")
-    @ManyToMany
-    private Set<User> users;
-
-
     @Column(name = "startDate")
     private LocalDateTime startDate;
 
     @Column(name = "grades")
-    @OneToMany(mappedBy = "course")
-    private Set<Grade> grades;
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    public Set<Grade> grades;
 
     /**
      *  Empty constructor for Jpa Persistance.
@@ -56,7 +44,15 @@ public class Course {
     public Course(long id, String courseID, LocalDateTime startDate){
         this.id = id;
         this.courseID = courseID;
-        users = new HashSet<>();
+        grades = new HashSet<>();
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     public String getCourseID() {
@@ -65,22 +61,6 @@ public class Course {
 
     public void setCourseID(String courseID) {
         this.courseID = courseID;
-    }
-
-    public Set<User> getUser() {
-        return users;
-    }
-
-    public void setUser(Set<User> user) {
-        this.users = user;
-    }
-
-    public Set<User> getUsers() {
-        return users;
-    }
-
-    public void setUsers(Set<User> users) {
-        this.users = users;
     }
 
     public LocalDateTime getStartDate() {
@@ -104,12 +84,12 @@ public class Course {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Course course = (Course) o;
-        return courseID.equals(course.courseID) && users.equals(course.users) && id == course.id;
+        return courseID.equals(course.courseID) && id == course.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(courseID, users, id);
+        return Objects.hash(courseID, grades , id);
     }
 
 
@@ -117,7 +97,7 @@ public class Course {
     public String toString() {
         return "Course{" +
                 "courseID='" + courseID + '\'' +
-                ", users=" + users.toString() +
+                ", users=" + grades.toString() +
                 '}';
     }
 }

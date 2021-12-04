@@ -12,5 +12,19 @@ public class CourseRequest {
         this.startDate = startDate;
     }
 
+    public String getCourseID() {
+        return courseID;
+    }
 
+    public void setCourseID(String courseID) {
+        this.courseID = courseID;
+    }
+
+    public LocalDateTime getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDateTime startDate) {
+        this.startDate = startDate;
+    }
 }
