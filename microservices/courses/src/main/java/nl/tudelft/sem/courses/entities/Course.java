@@ -1,7 +1,6 @@
 package nl.tudelft.sem.courses.entities;
 
 
-import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -31,7 +30,7 @@ public class Course {
     public Set<Grade> grades;
 
     /**
-     *  Empty constructor for Jpa Persistance.
+     *  Empty constructor for Jpa Persistence.
      */
     public Course(){}
 
@@ -39,11 +38,12 @@ public class Course {
     /**
      * Constructor for Course. You must specify a course ID when creating the course.
      * This course ID can be changed later.
-     * @param courseID
+     * @param courseID - Course ID in a string format
      */
     public Course(long id, String courseID, LocalDateTime startDate){
         this.id = id;
         this.courseID = courseID;
+        this.startDate = startDate;
         grades = new HashSet<>();
     }
 

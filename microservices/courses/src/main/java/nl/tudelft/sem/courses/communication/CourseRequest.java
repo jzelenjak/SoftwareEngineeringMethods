@@ -4,20 +4,20 @@ import java.time.LocalDateTime;
 
 public class CourseRequest {
 
-    public String courseID;
+    public String courseId;
     public LocalDateTime startDate;
 
-    public CourseRequest(String courseID, LocalDateTime startDate){
-        this.courseID = courseID;
+    public CourseRequest(String courseID, LocalDateTime startDate) {
+        this.courseId = courseID;
         this.startDate = startDate;
     }
 
-    public String getCourseID() {
-        return courseID;
+    public String getCourseId() {
+        return courseId;
     }
 
-    public void setCourseID(String courseID) {
-        this.courseID = courseID;
+    public void setCourseId(String courseId) {
+        this.courseId = courseId;
     }
 
     public LocalDateTime getStartDate() {

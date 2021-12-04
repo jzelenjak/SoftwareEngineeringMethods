@@ -1,6 +1,6 @@
 package nl.tudelft.sem.courses.controllers;
 
-
+import java.util.Optional;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Optional;
+
 
 @RestController
 @RequestMapping("/api/courses")
@@ -43,14 +43,14 @@ public class CourseController {
      */
     @PostMapping("/create" )
     public String createNewCourse(@RequestBody CourseRequest request){
-        Optional<Course> course = courseRepository.findByCourseID(request.courseID);
+        Optional<Course> course = courseRepository.findByCourseID(request.courseId);
 
         if(course.isPresent()){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
 
         Course newCourse = new Course();
-        newCourse.setCourseID(request.courseID);
+        newCourse.setCourseID(request.courseId);
         newCourse.setStartDate(request.startDate);
         courseRepository.save(newCourse);
 
@@ -61,7 +61,7 @@ public class CourseController {
 
     @PostMapping("/edit")
     public String editCourse(@PathVariable CourseRequest request){
-        Optional<Course> course = courseRepository.findByCourseID(request.courseID);
+        Optional<Course> course = courseRepository.findByCourseID(request.courseId);
         if (course.isEmpty()){
             return "Failed. No Course Found";
         }

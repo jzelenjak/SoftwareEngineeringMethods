@@ -1,6 +1,10 @@
-package nl.tudelft.sem.courses.integrationTests;
+package nl.tudelft.sem.courses.integrationtests;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
@@ -12,12 +16,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
-
-import java.time.LocalDateTime;
-
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 @ExtendWith(SpringExtension.class)
@@ -43,7 +41,7 @@ public class CourseControllerTest {
 
 
     @Test
-    void testCourseCreationWithNoConflictingCourses() throws Exception{
+    void testCourseCreationWithNoConflictingCourses() throws Exception {
         CourseRequest courseRequest = new CourseRequest("CSE2215", LocalDateTime.now());
 
         mockMvc.perform(post("/api/courses/create")
@@ -54,7 +52,7 @@ public class CourseControllerTest {
     }
 
     @Test
-    void testCourseCreationWithConflictingCourses() throws Exception{
+    void testCourseCreationWithConflictingCourses() throws Exception {
         CourseRequest courseRequest = new CourseRequest("CSE2216", LocalDateTime.now());
 
         mockMvc.perform(post("/api/courses/create")
