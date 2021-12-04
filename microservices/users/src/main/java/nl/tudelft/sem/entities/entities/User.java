@@ -9,6 +9,7 @@ import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
 
@@ -26,16 +27,16 @@ public class User {
     private long userId;
 
     @Column(name = "username", unique = true)
-    @NotNull @NotBlank
+    @NotNull @NotBlank @NotEmpty
     // NetID of the user
     private String username;
 
     @Column(name = "first_name")
-    @NotNull @NotBlank
+    @NotNull @NotBlank @NotEmpty
     private String firstName;
 
     @Column(name = "last_name")
-    @NotNull @NotBlank
+    @NotNull @NotBlank @NotEmpty
     private String lastName;
 
     @Column(name = "role")
