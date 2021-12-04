@@ -2,8 +2,8 @@ package nl.tudelft.sem.users.services;
 
 import java.util.List;
 import java.util.Optional;
-import nl.tudelft.sem.users.User;
-import nl.tudelft.sem.users.UserRole;
+import nl.tudelft.sem.users.entities.User;
+import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.repositories.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -59,7 +59,8 @@ public class UserService {
             throw new DataIntegrityViolationException("Please specify the last name!");
         }
 
-        User user = this.userRepository.save(new User(netId, firstName, lastName, UserRole.STUDENT));
+        User user = this.userRepository
+                .save(new User(netId, firstName, lastName, UserRole.STUDENT));
         return user.getUserId();
     }
 

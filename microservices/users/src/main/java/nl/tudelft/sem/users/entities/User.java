@@ -1,4 +1,4 @@
-package nl.tudelft.sem.users;
+package nl.tudelft.sem.users.entities;
 
 
 import javax.persistence.Column;

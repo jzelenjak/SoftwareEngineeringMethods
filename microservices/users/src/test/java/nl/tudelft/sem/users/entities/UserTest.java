@@ -1,7 +1,5 @@
 package nl.tudelft.sem.users.entities;
 
-import nl.tudelft.sem.users.User;
-import nl.tudelft.sem.users.UserRole;
 import nl.tudelft.sem.users.repositories.UserRepository;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;

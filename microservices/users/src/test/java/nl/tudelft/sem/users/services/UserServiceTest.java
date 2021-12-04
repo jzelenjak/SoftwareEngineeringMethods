@@ -1,7 +1,10 @@
 package nl.tudelft.sem.users.services;
 
-import nl.tudelft.sem.users.User;
-import nl.tudelft.sem.users.UserRole;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import nl.tudelft.sem.users.entities.User;
+import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.repositories.UserRepository;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,19 +13,14 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.dao.DataIntegrityViolationException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-
 class UserServiceTest {
     private transient UserRepository userRepository;
 
     private transient UserService userService;
 
-    private transient final String netId = "amogus@student.tudelft.nl";
-    private transient final long userId = 4558965L;
-    private transient final User user = new User(netId, "a", "mogus", UserRole.TA);
+    private final transient String netId = "amogus@student.tudelft.nl";
+    private final transient long userId = 4558965L;
+    private final transient User user = new User(netId, "a", "mogus", UserRole.TA);
 
     @Mock
     private transient User userMock;
@@ -246,14 +244,15 @@ class UserServiceTest {
     @Test
     void registerUserSuccessfulTest() {
         User savedUser =
-                new User(user.getUsername(), user.getFirstName(),user.getLastName(), UserRole.TA);
+                new User(user.getUsername(), user.getFirstName(), user.getLastName(), UserRole.TA);
         savedUser.setUserId(3453211L);
 
         mockFindByUsername(netId, null);
         mockSave(user, savedUser);
 
 
-        long id = userService.registerUser(user.getUsername(), user.getFirstName(),user.getLastName());
+        long id = userService
+                .registerUser(user.getUsername(), user.getFirstName(), user.getLastName());
 
         Assertions
             .assertThat(id)
@@ -437,7 +436,7 @@ class UserServiceTest {
     }
 
     @Test
-    void changeRoleOnlyAdminCanMakeOthersALecturerFalseTest() {
+    void changeRoleOnlyAdminCanMakeOthersA_LecturerFalseTest() {
         Assertions
             .assertThat(userService.changeRole(userId, UserRole.LECTURER, UserRole.LECTURER))
             .isFalse();
@@ -446,7 +445,7 @@ class UserServiceTest {
     }
 
     @Test
-    void changeRoleOnlyAdminCanMakeOthersALecturerTrueTest() {
+    void changeRoleOnlyAdminCanMakeOthersA_LecturerTrueTest() {
         User userFromRepo = new User(netId, "ammmmmm", "ogggggus", UserRole.TA);
         userFromRepo.setUserId(userId);
 
@@ -511,7 +510,7 @@ class UserServiceTest {
         userSaved.setUserId(userId);
 
         mockFindByUserId(userId, userFromRepo);
-        mockSave(userSaved,userSaved);
+        mockSave(userSaved, userSaved);
 
         Assertions
             .assertThat(userService.changeRole(userId, UserRole.CANDIDATE_TA, UserRole.ADMIN))
