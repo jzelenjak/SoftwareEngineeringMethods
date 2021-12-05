@@ -3,16 +3,13 @@ package nl.tudelft.sem.authentication.controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.rmi.RemoteException;
 import java.util.Date;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.jwt.JwtUtils;
 import nl.tudelft.sem.authentication.security.UserRole;
 import nl.tudelft.sem.authentication.service.AuthService;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -79,7 +76,6 @@ public class AuthController {
                     String.format("User with NetID %s already exists!", username));
         }
         return String.format("User with NetID %s successfully registered!", uname);
-        // marks response as committed -- if we don't do this the request will go through normally
     }
 
 
@@ -95,21 +91,22 @@ public class AuthController {
     public @ResponseBody
     String changePassword(HttpServletRequest req,
                           HttpServletResponse res) throws IOException {
-        try {
-            String jwt = jwtUtils.resolveToken(req);
-            if (jwt == null || jwt.equals("Bearer ")) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                        "You need to login to change your password!");
-            }
-            JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
-            String newPassword = jsonNode.get("new_password").asText();
-            this.authService.changePassword(jwtUtils.getUsername(jwt), newPassword);
-
-            return "Password successfully changed!";
-        } catch (AuthenticationException e) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    String.format("You are not %s and cannot change the credentials.", username));
+        String jwt = jwtUtils.resolveToken(req);
+        if (jwt == null || jwt.equals("Bearer ")) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                    "You need to login to change your password!");
         }
+        JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
+        String target = jsonNode.get(username).asText();
+        if (!target.equals(jwtUtils.getUsername(jwt))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    String.format("You are not %s and are not allowed to change password!",
+                            target));
+        }
+        String newPassword = jsonNode.get("new_password").asText();
+        this.authService.changePassword(target, newPassword);
+
+        return "Password successfully changed!";
     }
 
     /**
@@ -160,18 +157,34 @@ public class AuthController {
     public @ResponseBody
     String changeRole(HttpServletRequest req,
                       HttpServletResponse res) throws IOException {
-        try {
-            JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
+        // Get JWT from the requester.
+        String jwt = jwtUtils.resolveToken(req);
+        String roleOfRequester = jwtUtils.getRole(jwt);
+
+        // Check if requester is a lecturer.
+        JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
+        String target = jsonNode.get(username).asText();
+        if (getRole(roleOfRequester) == UserRole.LECTURER) {
+            // Lecturer can only change a student's role to TA.
+            if (authService.loadUserByUsername(target).getRole() != UserRole.STUDENT) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "You are not allowed to do that as a lecturer!");
+            }
+            // Lecturer can only change role to TA
             String newRoleInput = jsonNode.get("role").asText();
             UserRole newRole = getRole(newRoleInput);
+            if (newRole != UserRole.TA) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "You are not allowed to do that as a lecturer!");
+            }
 
-            this.authService.changeRole(username, newRole);
-
-            return "Role successfully changed!";
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "You need to login to do that!");
         }
+        String newRoleInput = jsonNode.get("role").asText();
+        UserRole newRole = getRole(newRoleInput);
+        this.authService.changeRole(target, newRole);
+
+        return "Role successfully changed!";
+
     }
 
     /**
@@ -191,7 +204,8 @@ public class AuthController {
             case "TA":
                 return UserRole.TA;
             default:
-                return null;
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Please enter a valid role.");
         }
     }
 }

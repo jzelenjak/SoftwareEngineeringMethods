@@ -24,7 +24,7 @@ public class UserData implements UserDetails {
     @Column(name = "password", length = 128)
     private String password;
 
-    @Column(name = "role")
+    @Column(name = "role", nullable = false)
     private UserRole role;
 
     private boolean accountNonExpired;
