@@ -65,11 +65,15 @@ public class JwtUtils {
      */
     public Jws<Claims> validateAndParseClaims(String token) {
         try {
-            return Jwts
+            Jws<Claims> claims =
+                    Jwts
                     .parserBuilder()
                     .setSigningKey(this.secretKey)
                     .build()
                     .parseClaimsJws(token);
+
+            Long.parseLong(claims.getBody().getSubject());
+            return claims;
         } catch (Exception e) {
             return null;
         }
@@ -82,12 +86,10 @@ public class JwtUtils {
      *     Call validateAndParseClaims method above first.
      *
      * @param claims    parsed JWS claims.
-     * @return the username from the parsed JWS claims.
+     * @return the userId from the parsed JWS claims.
      */
-    public String getUsername(Jws<Claims> claims) {
-        return claims
-                .getBody()
-                .getSubject();
+    public long getUserId(Jws<Claims> claims) {
+        return Long.parseLong(claims.getBody().getSubject());
     }
 
     /**

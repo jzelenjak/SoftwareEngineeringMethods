@@ -18,20 +18,20 @@ class JwtUtilsTest {
     private final transient Key secretKey = new SecretKeySpec(secretKeyString.getBytes(),
             SignatureAlgorithm.HS256.getJcaName());
 
-    private final transient String username = "amogus";
+    private final transient long userId = 5465321L;
 
 
     /**
      * A helper method to create a JWT token.
      *
-     * @param username          the username of the user
+     * @param userId            the user ID of the user
      * @param role              the role of the user
      * @param date              the date the token has been issued on
      * @param validityInMinutes the validity of the token in minutes
      * @return the created and signed JWT token
      */
-    private String createToken(String username, String role, Date date, long validityInMinutes) {
-        Claims claims = Jwts.claims().setSubject(username);
+    private String createToken(long userId, String role, Date date, long validityInMinutes) {
+        Claims claims = Jwts.claims().setSubject(String.valueOf(userId));
         claims.put("role", role);
         Date validity = new Date(date.getTime() + validityInMinutes * 60000);
         return Jwts.builder()
@@ -45,7 +45,7 @@ class JwtUtilsTest {
 
     @Test
     void resolveTokenNoPrefixTest() {
-        String jwt = createToken(username + "amogus", "STUDENT", new Date(), 10);
+        String jwt = createToken(userId - 1L, "STUDENT", new Date(), 10);
 
         Assertions
             .assertThat(jwtUtils.resolveToken("Bear " + jwt))
@@ -61,7 +61,7 @@ class JwtUtilsTest {
 
     @Test
     void resolveTokenCorrectTest() {
-        String jwt = createToken(username, "TA", new Date(), 11);
+        String jwt = createToken(userId, "TA", new Date(), 11);
 
         Assertions
             .assertThat(jwtUtils.resolveToken("Bearer " + jwt))
@@ -70,7 +70,7 @@ class JwtUtilsTest {
 
     @Test
     void validateAndParseClaimsExpiredTest() {
-        String jwt = createToken(username, "STUDENT", new Date(), 0);
+        String jwt = createToken(userId, "STUDENT", new Date(), 0);
 
         Assertions
             .assertThat(jwtUtils.validateAndParseClaims(jwt))
@@ -79,7 +79,7 @@ class JwtUtilsTest {
 
     @Test
     void validateAndParseClaimsCorruptedTest() {
-        String jwt = createToken(username, "LECTURER", new Date(), 20);
+        String jwt = createToken(userId, "LECTURER", new Date(), 20);
 
         Assertions
             .assertThat(jwtUtils.validateAndParseClaims("sus" + jwt))
@@ -88,7 +88,7 @@ class JwtUtilsTest {
 
     @Test
     void validateAndParseValidTest() {
-        String jwt = createToken(username, "CANDIDATE_TA", new Date(), 15);
+        String jwt = createToken(userId, "CANDIDATE_TA", new Date(), 15);
 
         Assertions
             .assertThat(jwtUtils.validateAndParseClaims(jwt))
@@ -96,18 +96,18 @@ class JwtUtilsTest {
     }
 
     @Test
-    void getUsernameTest() {
-        String jwt = createToken(username, "TA", new Date(), 5);
+    void getUserIdTest() {
+        String jwt = createToken(userId, "TA", new Date(), 5);
         Jws<Claims> claimsJws = jwtUtils.validateAndParseClaims(jwt);
 
         Assertions
-            .assertThat(jwtUtils.getUsername(claimsJws))
-            .isEqualTo(username);
+            .assertThat(jwtUtils.getUserId(claimsJws))
+            .isEqualTo(userId);
     }
 
     @Test
     void getRoleTest() {
-        String jwt = createToken(username, "ADMIN", new Date(), 40);
+        String jwt = createToken(userId, "ADMIN", new Date(), 40);
         Jws<Claims> claimsJws = jwtUtils.validateAndParseClaims(jwt);
 
         Assertions
