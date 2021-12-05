@@ -32,7 +32,6 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @RestController
 @RequestMapping("/api/users")
-//@SuppressWarnings("PMD")
 public class UserController {
 
     private final transient UserService userService;
@@ -68,17 +67,16 @@ public class UserController {
      *
      *           If the user with the provided netID already exists in the database,
      *             then 409 CONFLICT status is sent back.
-     * @throws IOException when something goes wrong with servlets
      */
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    long registerUser(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        JsonNode jsonNode = mapper.readTree(req.getInputStream());
-        String username = jsonNode.get("username").asText();
-        String firstName = jsonNode.get("firstName").asText();
-        String lastName = jsonNode.get("lastName").asText();
-        //String password = jsonNode.get("password").asText();
+    long registerUser(HttpServletRequest req, HttpServletResponse res) {
+        JsonNode jsonNode = getJsonNode(req);
+        String username = parseJsonField(jsonNode, "username");
+        String firstName = parseJsonField(jsonNode, "firstName");
+        String lastName = parseJsonField(jsonNode, "lastName");
+        //String password = parseJsonField(jsonNode, "password");
 
         long userId = attemptToRegister(username, firstName, lastName);
 
@@ -105,9 +103,8 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     String getByUsername(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        JsonNode jsonNode = mapper.readTree(req.getInputStream());
-        return new ObjectMapper()
-                    .writeValueAsString(getUserByUsername(jsonNode.get("username").asText()));
+        String username = parseJsonField(getJsonNode(req), "username");
+        return mapper.writeValueAsString(getUserByUsername(username));
     }
 
 
@@ -125,11 +122,8 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     String getByUserId(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        JsonNode jsonNode = mapper.readTree(req.getInputStream());
-
-        long userId = parseUserId(jsonNode.get("user_id").asText());
-
-        return new ObjectMapper().writeValueAsString(getUserByUserId(userId));
+        long userId = parseUserId(parseJsonField(getJsonNode(req), "userId"));
+        return mapper.writeValueAsString(getUserByUserId(userId));
     }
 
     /**
@@ -145,15 +139,14 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     String getByRole(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        JsonNode jsonNode = mapper.readTree(req.getInputStream());
+        UserRole role = parseRole(parseJsonField(getJsonNode(req), "role").toUpperCase(Locale.US));
 
-        UserRole role = parseRole(jsonNode.get("role").asText().toUpperCase(Locale.US));
         List<User> users = this.userService.getUsersByRole(role);
         if (users.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     String.format("No users having role '%s' are found!", role));
         }
-        return new ObjectMapper().writeValueAsString(users);
+        return mapper.writeValueAsString(users);
     }
 
 
@@ -168,16 +161,16 @@ public class UserController {
      *         If the user does not exist, then 404 NOT FOUND status is sent.
      *         If the operation is not allowed (no privileges),
      *           then 401 UNAUTHORIZED status is sent back.
-     * @throws IOException when something goes wrong with servlets
      */
     @PutMapping("/change_role")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    String changeRole(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        JsonNode jsonNode = mapper.readTree(req.getInputStream());
+    String changeRole(HttpServletRequest req, HttpServletResponse res) {
+        JsonNode jsonNode = getJsonNode(req);
 
-        long userId = parseUserId(jsonNode.get("userId").asText());
-        UserRole newRole = parseRole(jsonNode.get("newRole").asText().toUpperCase(Locale.US));
+        long userId = parseUserId(parseJsonField(jsonNode, "userId"));
+        UserRole newRole =
+                parseRole(parseJsonField(getJsonNode(req), "role").toUpperCase(Locale.US));
 
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
         UserRole requesterRole = parseRole(claimsJws);
@@ -205,27 +198,65 @@ public class UserController {
      *           then 404 NOT FOUND is sent back.
      *         If the requester does not have enough permissions,
      *           then 401 UNAUTHORIZED status is sent back.
-     * @throws IOException when something goes wrong with servlets
      */
     @DeleteMapping("/delete")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     String deleteByUserId(HttpServletRequest req,
-                                HttpServletResponse res) throws IOException {
-        JsonNode jsonNode = mapper.readTree(req.getInputStream());
+                                HttpServletResponse res) {
 
-        long userId = parseUserId(jsonNode.get("userId").asText());
+        long userId = parseUserId(parseJsonField(getJsonNode(req), "userId"));
 
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
         UserRole requesterRole = parseRole(claimsJws);
 
         getUserByUserId(userId);
-        //boolean success = this.userService.deleteUserByUserId(userId, requesterRole);
+
         if (!this.userService.deleteUserByUserId(userId, requesterRole)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
         }
         return String
                 .format("The user with the user ID %s has been deleted successfully!", userId);
+    }
+
+
+    /*
+     * Helper methods to reduce code duplication.
+     */
+
+    /**
+     * A helper method to get jsonNode from HTTP request input stream
+     *   and handle potential exceptions.
+     *
+     * @param req   HTTP request.
+     * @return jsonNode if successful, otherwise ResponseStatusException is thrown.
+     */
+    private JsonNode getJsonNode(HttpServletRequest req) {
+        try {
+            return mapper.readTree(req.getInputStream());
+        } catch (IOException e) {
+            String reason = "Error with servlets while parsing the input";
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
+        }
+    }
+
+    /**
+     * A helper method to extract the value from a JSON object field
+     *   and handle potential exceptions.
+     *
+     * @param jsonNode  jsonNode with JSON object.
+     * @param field     the field which value is to be extracted.
+     * @return the extracted value of the field if successful.
+     *         If not, ResponseStatusException is thrown.
+     */
+    private String parseJsonField(JsonNode jsonNode, String field) {
+        try {
+            return jsonNode.get(field).asText();
+        } catch (Exception e) {
+            String reason =
+                "Error while parsing JSON. The body is corrupted or required fields are missing";
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
+        }
     }
 
     /**
