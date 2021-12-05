@@ -32,7 +32,7 @@ import org.springframework.context.annotation.PropertySource;
 @PropertySource(value = "classpath:jwt_default.properties")
 public class JwtUtils {
 
-    public final transient Key secretKey;
+    private final transient Key secretKey;
 
     @Autowired
     public JwtUtils(@Value("${jwt.secretKeyString}") String secretKeyString) {
