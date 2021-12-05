@@ -185,8 +185,6 @@ public class UserController {
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
         UserRole requesterRole = parseRole(claimsJws);
 
-        UserRole oldRole = getUserByUserId(userId).getRole();
-
         //boolean success = this.userService.changeRole(userId, newRole, requesterRole);
         if (!this.userService.changeRole(userId, newRole, requesterRole)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
@@ -195,8 +193,7 @@ public class UserController {
         // TODO: send a request to the Authentication server
 
         return String
-                .format("The role of user with user ID %s has been changed from %s to %s.",
-                        userId, oldRole, newRole);
+                .format("The role of user with user ID %s has been changed to %s.", userId, newRole);
     }
 
 
@@ -226,15 +223,13 @@ public class UserController {
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
         UserRole requesterRole = parseRole(claimsJws);
 
-        User user = getUserByUserId(userId);
-
+        getUserByUserId(userId);
         //boolean success = this.userService.deleteUserByUserId(userId, requesterRole);
         if (!this.userService.deleteUserByUserId(userId, requesterRole)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
         }
         return String
-                .format("The user with the user ID %s and netID %s has been deleted successfully!",
-                        userId, user.getUsername());
+                .format("The user with the user ID %s has been deleted successfully!", userId);
     }
 
     /**
