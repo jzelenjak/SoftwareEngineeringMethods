@@ -30,7 +30,7 @@ public class DiscoveryRegistry {
         this.cacheEvictionTimeMinutes = cacheEvictionTimeMinutes;
         this.registrationQueue = new LinkedList<>();
         this.registrations = CacheBuilder.newBuilder()
-                .expireAfterWrite(cacheEvictionTimeMinutes, TimeUnit.MINUTES)
+                .expireAfterAccess(cacheEvictionTimeMinutes, TimeUnit.MINUTES)
                 .build();
     }
 
