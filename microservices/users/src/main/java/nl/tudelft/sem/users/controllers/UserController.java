@@ -6,14 +6,15 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import nl.tudelft.sem.jwt.JwtUtils;
 import nl.tudelft.sem.users.entities.User;
 import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.services.UserService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -79,11 +80,7 @@ public class UserController {
         String lastName = jsonNode.get("lastName").asText();
         //String password = jsonNode.get("password").asText();
 
-        long userId = this.userService.registerUser(username, firstName, lastName);
-        if (userId == -1) {
-            String reason = String.format("User with NetID %s already exists!", username);
-            throw new ResponseStatusException(HttpStatus.CONFLICT, reason);
-        }
+        long userId = attemptToRegister(username, firstName, lastName);
 
         // TODO: register with Authentication Server,
         //       forward the JWT token in the response
@@ -149,9 +146,9 @@ public class UserController {
     public @ResponseBody
     String getByRole(HttpServletRequest req, HttpServletResponse res) throws IOException {
         JsonNode jsonNode = mapper.readTree(req.getInputStream());
-        String role = jsonNode.get("role").asText();
 
-        List<User> users = this.userService.getUsersByRole(UserRole.valueOf(role));
+        UserRole role = parseRole(jsonNode.get("role").asText().toUpperCase(Locale.US));
+        List<User> users = this.userService.getUsersByRole(role);
         if (users.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     String.format("No users having role '%s' are found!", role));
@@ -180,20 +177,19 @@ public class UserController {
         JsonNode jsonNode = mapper.readTree(req.getInputStream());
 
         long userId = parseUserId(jsonNode.get("userId").asText());
-        UserRole newRole = parseRole(jsonNode.get("newRole").asText());
+        UserRole newRole = parseRole(jsonNode.get("newRole").asText().toUpperCase(Locale.US));
 
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
         UserRole requesterRole = parseRole(claimsJws);
 
-        //boolean success = this.userService.changeRole(userId, newRole, requesterRole);
         if (!this.userService.changeRole(userId, newRole, requesterRole)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
         }
 
         // TODO: send a request to the Authentication server
 
-        return String
-                .format("The role of user with user ID %s has been changed to %s.", userId, newRole);
+        return String.format("The role of user with user ID %s has been changed to %s.",
+                                userId, newRole);
     }
 
 
@@ -272,7 +268,7 @@ public class UserController {
      */
     private UserRole parseRole(Jws<Claims> claimsJws) {
         try {
-            return UserRole.valueOf(jwtUtils.getRole(claimsJws));
+            return UserRole.valueOf(jwtUtils.getRole(claimsJws).toUpperCase(Locale.US));
         } catch (IllegalArgumentException e) {
             String reason = String.format("Role must be one of the following: %s, %s, %s, %s, %s",
                     "STUDENT", "CANDIDATE_TA", "TA", "LECTURER", "ADMIN");
@@ -298,6 +294,7 @@ public class UserController {
         return user.get();
     }
 
+
     /**
      * A helper method to check if a user with the given user ID exists.
      *   If not, ResponseStatusException is thrown.
@@ -319,7 +316,7 @@ public class UserController {
     /**
      * A helper method to parse and check the validity of a JWT token.
      *
-     * @param       jwtPrefixed the prefixed JWT token
+     * @param       jwtPrefixed the prefixed JWT token.
      *                          (after it has been extracted from 'Authorization' header.
      * @return parsed JWS claims if successful.
      *         If not, ResponseStatusException is thrown.
@@ -339,5 +336,25 @@ public class UserController {
         }
 
         return claimsJws;
+    }
+
+
+    /**
+     * A helper method to attempt to register a user and deal with exceptions.
+     *
+     * @param netId     the netID of the user.
+     * @param firstName the first name of the user.
+     * @param lastName  the last name of the user.
+     * @return the created user ID if successful,
+     *         if not (user with the same netID already exists),
+     *           then ResponseStatusException is thrown.
+     */
+    private long attemptToRegister(String netId, String firstName, String lastName) {
+        try {
+            return this.userService.registerUser(netId, firstName, lastName);
+        } catch (DataIntegrityViolationException e) {
+            String reason = String.format("User with NetID %s already exists!", netId);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, reason);
+        }
     }
 }
