@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -69,7 +68,6 @@ public class UserController {
      *             then 409 CONFLICT status is sent back.
      */
     @PostMapping("/register")
-    @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     long registerUser(HttpServletRequest req, HttpServletResponse res) {
         JsonNode jsonNode = getJsonNode(req);
@@ -100,7 +98,6 @@ public class UserController {
      * @throws IOException when something goes wrong with servlets
      */
     @GetMapping("/by_username")
-    @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     String getByUsername(HttpServletRequest req, HttpServletResponse res) throws IOException {
         String username = parseJsonField(getJsonNode(req), "username");
@@ -119,7 +116,6 @@ public class UserController {
      * @throws IOException when something goes wrong with servlets
      */
     @GetMapping("/by_userid")
-    @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     String getByUserId(HttpServletRequest req, HttpServletResponse res) throws IOException {
         long userId = parseUserId(parseJsonField(getJsonNode(req), "userId"));
@@ -136,7 +132,6 @@ public class UserController {
      * @throws IOException when something goes wrong with servlets
      */
     @GetMapping("/by_role")
-    @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     String getByRole(HttpServletRequest req, HttpServletResponse res) throws IOException {
         UserRole role = parseRole(parseJsonField(getJsonNode(req), "role").toUpperCase(Locale.US));
@@ -163,14 +158,13 @@ public class UserController {
      *           then 401 UNAUTHORIZED status is sent back.
      */
     @PutMapping("/change_role")
-    @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     String changeRole(HttpServletRequest req, HttpServletResponse res) {
         JsonNode jsonNode = getJsonNode(req);
 
         long userId = parseUserId(parseJsonField(jsonNode, "userId"));
         UserRole newRole =
-                parseRole(parseJsonField(getJsonNode(req), "role").toUpperCase(Locale.US));
+                parseRole(parseJsonField(jsonNode, "role").toUpperCase(Locale.US));
 
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
         UserRole requesterRole = parseRole(claimsJws);
@@ -200,7 +194,6 @@ public class UserController {
      *           then 401 UNAUTHORIZED status is sent back.
      */
     @DeleteMapping("/delete")
-    @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     String deleteByUserId(HttpServletRequest req,
                                 HttpServletResponse res) {
@@ -299,7 +292,8 @@ public class UserController {
      */
     private UserRole parseRole(Jws<Claims> claimsJws) {
         try {
-            return UserRole.valueOf(jwtUtils.getRole(claimsJws).toUpperCase(Locale.US));
+            String role = jwtUtils.getRole(claimsJws);
+            return UserRole.valueOf(role.toUpperCase(Locale.US));
         } catch (IllegalArgumentException e) {
             String reason = String.format("Role must be one of the following: %s, %s, %s, %s, %s",
                     "STUDENT", "CANDIDATE_TA", "TA", "LECTURER", "ADMIN");
