@@ -96,12 +96,12 @@ public class AuthController {
     String changePassword(HttpServletRequest req,
                           HttpServletResponse res) throws IOException {
         try {
-            JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
             String jwt = jwtUtils.resolveToken(req);
             if (jwt == null || jwt.equals("Bearer ")) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                         "You need to login to change your password!");
             }
+            JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
             String newPassword = jsonNode.get("new_password").asText();
             this.authService.changePassword(jwtUtils.getUsername(jwt), newPassword);
 
