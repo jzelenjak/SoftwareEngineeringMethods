@@ -4,15 +4,11 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import java.security.Key;
+import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.spec.SecretKeySpec;
-import java.security.Key;
 
 
 /**
@@ -22,7 +18,8 @@ import java.security.Key;
  * <p><b>Important:</b> To be able to use these utilities:</p>
  * <ul>
  *     <li>
- *         Add <i>implementation project(':libs:jwt')</i> into the build.gradle file in your microservice
+ *         Add <i>implementation project(':libs:jwt')</i>
+ *              into the build.gradle file in your microservice
  *     </li>
  *     <li>
  *         Add <i>@Import(HeartbeatConfig.class)</i> above your Main Application class.
