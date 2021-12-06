@@ -184,6 +184,7 @@ class JwtUtilsTest {
                                 .characterEncoding(utf))
                         .andReturn()
                         .getRequest();
+        Assertions.assertNull(jwtUtils.getAuthentication("a.b.c"));
         Assertions.assertNull(jwtUtils.resolveToken(request));
     }
 }

@@ -130,6 +130,9 @@ public class JwtUtils {
      * @return the authentication in the JWT.
      */
     public Authentication getAuthentication(String token) {
+        if (!validateToken(token)) {
+            return null;
+        }
         UserDetails userDetails = this.userDetailsService.loadUserByUsername(
                 this.getUsername(token));
         return new UsernamePasswordAuthenticationToken(userDetails,
