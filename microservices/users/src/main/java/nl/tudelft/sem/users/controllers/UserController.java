@@ -40,7 +40,8 @@ public class UserController {
 
     private final transient JwtUtils jwtUtils;
 
-    private final transient String userIdStr = "userId";
+    private static final transient String USERID = "userId";
+    private static final transient String ROLE = "role";
 
 
     /**
@@ -87,7 +88,7 @@ public class UserController {
         String jwt = "somegibberishherejustfornow";
         res.setHeader(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", jwt));
         ObjectNode response = mapper.createObjectNode();
-        response.put(userIdStr, userId);
+        response.put(USERID, userId);
         return response.toString();
     }
 
@@ -123,7 +124,7 @@ public class UserController {
     @GetMapping("/by_userid")
     public @ResponseBody
     String getByUserId(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        long userId = parseUserId(parseJsonField(getJsonNode(req), userIdStr));
+        long userId = parseUserId(parseJsonField(getJsonNode(req), USERID));
         return mapper.writeValueAsString(getUserByUserId(userId));
     }
 
@@ -139,7 +140,7 @@ public class UserController {
     @GetMapping("/by_role")
     public @ResponseBody
     String getByRole(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        UserRole role = parseRole(parseJsonField(getJsonNode(req), "role").toUpperCase(Locale.US));
+        UserRole role = parseRole(parseJsonField(getJsonNode(req), ROLE).toUpperCase(Locale.US));
 
         List<User> users = this.userService.getUsersByRole(role);
         if (users.isEmpty()) {
@@ -168,9 +169,9 @@ public class UserController {
     public void changeRole(HttpServletRequest req, HttpServletResponse res) {
         JsonNode jsonNode = getJsonNode(req);
 
-        long userId = parseUserId(parseJsonField(jsonNode, userIdStr));
+        long userId = parseUserId(parseJsonField(jsonNode, USERID));
         UserRole newRole =
-                parseRole(parseJsonField(jsonNode, "role").toUpperCase(Locale.US));
+                parseRole(parseJsonField(jsonNode, ROLE).toUpperCase(Locale.US));
 
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
         UserRole requesterRole = parseRole(claimsJws);
@@ -201,7 +202,7 @@ public class UserController {
     @DeleteMapping("/delete")
     public void deleteByUserId(HttpServletRequest req,
                                 HttpServletResponse res) {
-        long userId = parseUserId(parseJsonField(getJsonNode(req), userIdStr));
+        long userId = parseUserId(parseJsonField(getJsonNode(req), USERID));
 
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
         UserRole requesterRole = parseRole(claimsJws);

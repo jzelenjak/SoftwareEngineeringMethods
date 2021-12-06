@@ -55,12 +55,21 @@ class UserControllerTest {
     private final transient Key secretKey = new SecretKeySpec(secretKeyString.getBytes(),
             SignatureAlgorithm.HS256.getJcaName());
 
-    private final transient String roleStr = "role";
-    private final transient String usernameStr = "username";
-    private final transient String bearerStr = "Bearer ";
-    private final transient String userIdStr = "userId";
-    private final transient String changeRoleApi = "/api/users/change_role";
-    private final transient String byUserIdApi = "/api/users/by_userid";
+    // Some constants for JSON fields
+    private static final transient String USERID = "userId";
+    private static final transient String USERNAME = "username";
+    private static final transient String ROLE = "role";
+    private static final transient String BEARER = "Bearer ";
+
+
+    // Constants for APIs
+    private static final transient String REGISTER_API = "/api/users/register";
+    private static final transient String BY_USERNAME = "/api/users/by_username";
+    private static final transient String BY_USER_ID_API = "/api/users/by_userid";
+    private static final transient String BY_ROLE = "/api/users/by_role";
+    private static final transient String CHANGE_ROLE_API = "/api/users/change_role";
+    private static final transient String DELETE_API = "/api/users/delete";
+
 
 
     /**
@@ -79,7 +88,7 @@ class UserControllerTest {
 
     private String createToken(long userId, String role, Date date, long validityInMinutes) {
         Claims claims = Jwts.claims().setSubject(String.valueOf(userId));
-        claims.put(roleStr, role);
+        claims.put(ROLE, role);
         Date validity = new Date(date.getTime() + validityInMinutes * 60000);
         return Jwts.builder()
                 .setClaims(claims)
@@ -267,7 +276,7 @@ class UserControllerTest {
         String lname = "Bar";
         String pass = "123";
         mockRegister(uname, fname, lname, -1);
-        mockMvcRegister("/api/users/register", createJson(usernameStr, uname, "firstName",
+        mockMvcRegister(REGISTER_API, createJson(USERNAME, uname, "firstName",
                     fname, "lastName", lname, "password", pass))
                 .andExpect(status().isConflict());
 
@@ -281,8 +290,8 @@ class UserControllerTest {
         String lname = "Bar";
         String pass = "123";
         mockRegister(uname, fname, lname, 3443546L);
-        String res = mockMvcRegister("/api/users/register",
-                            createJson(usernameStr, uname, "firstName",
+        String res = mockMvcRegister(REGISTER_API,
+                            createJson(USERNAME, uname, "firstName",
                                 fname, "lastName", lname, "password", pass))
                     .andExpect(status().isOk())
                     .andReturn()
@@ -307,7 +316,7 @@ class UserControllerTest {
         String uname = "B.Bob@student.tudelft.nl";
 
         mockGetByUsername(uname, null);
-        mockMvcGetByUsername("/api/users/by_username", createJson(usernameStr, uname))
+        mockMvcGetByUsername(BY_USERNAME, createJson(USERNAME, uname))
                 .andExpect(status().isNotFound());
 
         verifyGetByUsername(uname, 1);
@@ -320,8 +329,8 @@ class UserControllerTest {
         user.setUserId(5545365L);
 
         mockGetByUsername(uname, user);
-        String res = mockMvcGetByUsername("/api/users/by_username",
-                    createJson(usernameStr, uname))
+        String res = mockMvcGetByUsername(BY_USERNAME,
+                    createJson(USERNAME, uname))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -347,7 +356,7 @@ class UserControllerTest {
         long userId = 4536894L;
 
         mockGetByUserId(userId, null);
-        mockMvcGetByUserId(byUserIdApi, createJson(userIdStr, String.valueOf(userId)))
+        mockMvcGetByUserId(BY_USER_ID_API, createJson(USERID, String.valueOf(userId)))
                 .andExpect(status().isNotFound());
 
         verifyGetByUserId(userId, 1);
@@ -360,8 +369,8 @@ class UserControllerTest {
         user.setUserId(userId);
 
         mockGetByUserId(userId, user);
-        String res = mockMvcGetByUserId(byUserIdApi,
-                        createJson(userIdStr, String.valueOf(userId)))
+        String res = mockMvcGetByUserId(BY_USER_ID_API,
+                        createJson(USERID, String.valueOf(userId)))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -388,7 +397,7 @@ class UserControllerTest {
 
         mockGetByRole(UserRole.CANDIDATE_TA, users);
 
-        mockMvcGetByRole("/api/users/by_role", createJson(roleStr, UserRole.CANDIDATE_TA.name()))
+        mockMvcGetByRole(BY_ROLE, createJson(ROLE, UserRole.CANDIDATE_TA.name()))
                 .andExpect(status().isNotFound());
 
         verifyGetByRole(UserRole.CANDIDATE_TA, 1);
@@ -407,7 +416,7 @@ class UserControllerTest {
 
         mockGetByRole(UserRole.STUDENT, users);
 
-        String res = mockMvcGetByRole("/api/users/by_role", createJson(roleStr,
+        String res = mockMvcGetByRole(BY_ROLE, createJson(ROLE,
                 UserRole.STUDENT.name()))
                 .andExpect(status().isOk())
                 .andReturn()
@@ -434,11 +443,11 @@ class UserControllerTest {
         String token = createToken(3456445L,
                 UserRole.STUDENT.name(), new Date(), 15);
         String badToken = "oupps" + token;
-        String prefixedBadToken = bearerStr + badToken;
+        String prefixedBadToken = BEARER + badToken;
 
 
-        mockMvcChangeRole(changeRoleApi,
-                createJson(userIdStr, String.valueOf(5422341L), roleStr,
+        mockMvcChangeRole(CHANGE_ROLE_API,
+                createJson(USERID, String.valueOf(5422341L), ROLE,
                         UserRole.TA.name()), prefixedBadToken)
                 .andExpect(status().isUnauthorized());
 
@@ -452,8 +461,8 @@ class UserControllerTest {
         String prefixedToken = "Prefix " + token;
 
 
-        mockMvcChangeRole(changeRoleApi,
-                createJson(userIdStr, String.valueOf(3456774L), roleStr,
+        mockMvcChangeRole(CHANGE_ROLE_API,
+                createJson(USERID, String.valueOf(3456774L), ROLE,
                         UserRole.TA.name()), prefixedToken)
                 .andExpect(status().isBadRequest());
 
@@ -464,11 +473,11 @@ class UserControllerTest {
     void changeRoleExpiredTest() throws Exception {
         String token = createToken(5456445L,
                 UserRole.ADMIN.name(), new Date(), 0);
-        String prefixedToken = bearerStr + token;
+        String prefixedToken = BEARER + token;
 
 
-        mockMvcChangeRole(changeRoleApi,
-                createJson(userIdStr, String.valueOf(4536654L), roleStr,
+        mockMvcChangeRole(CHANGE_ROLE_API,
+                createJson(USERID, String.valueOf(4536654L), ROLE,
                         UserRole.TA.name()), prefixedToken)
                 .andExpect(status().isUnauthorized());
 
@@ -479,11 +488,11 @@ class UserControllerTest {
     void changeRoleUnauthorizedTest() throws Exception {
         String token = createToken(5456445L,
                 UserRole.TA.name(), new Date(), 3000);
-        String prefixedToken = bearerStr + token;
+        String prefixedToken = BEARER + token;
 
         mockChangeRole(2376889L, UserRole.TA, UserRole.TA, false);
-        mockMvcChangeRole(changeRoleApi,
-                createJson(userIdStr, String.valueOf(2376889L), roleStr,
+        mockMvcChangeRole(CHANGE_ROLE_API,
+                createJson(USERID, String.valueOf(2376889L), ROLE,
                         UserRole.TA.name()), prefixedToken)
                 .andExpect(status().isUnauthorized());
 
@@ -496,9 +505,9 @@ class UserControllerTest {
                 UserRole.ADMIN.name(), new Date(), 20);
 
         mockChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, true);
-        mockMvcChangeRole(changeRoleApi,
-                createJson(userIdStr, String.valueOf(5465321L), roleStr,
-                        UserRole.LECTURER.name()), bearerStr + token)
+        mockMvcChangeRole(CHANGE_ROLE_API,
+                createJson(USERID, String.valueOf(5465321L), ROLE,
+                        UserRole.LECTURER.name()), BEARER + token)
                 .andExpect(status().isOk());
 
         verifyChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, 1);
@@ -522,8 +531,8 @@ class UserControllerTest {
 
         mockDeleteByUserId(userId, UserRole.STUDENT, false);
         mockGetByUserId(userId, user);
-        mockMvcDeleteByUserId("/api/users/delete", createJson(userIdStr,
-                    String.valueOf(userId)), bearerStr + token)
+        mockMvcDeleteByUserId(DELETE_API, createJson(USERID,
+                    String.valueOf(userId)), BEARER + token)
                 .andExpect(status().isUnauthorized());
 
         verifyDeleteByUserId(userId, UserRole.STUDENT, 1);
@@ -542,8 +551,8 @@ class UserControllerTest {
 
         mockDeleteByUserId(userId, UserRole.ADMIN, true);
         mockGetByUserId(userId, user);
-        mockMvcDeleteByUserId("/api/users/delete", createJson(userIdStr,
-                String.valueOf(userId)), bearerStr + token)
+        mockMvcDeleteByUserId(DELETE_API, createJson(USERID,
+                String.valueOf(userId)), BEARER + token)
                 .andExpect(status().isOk());
 
         verifyDeleteByUserId(userId, UserRole.ADMIN, 1);
@@ -558,19 +567,19 @@ class UserControllerTest {
 
     @Test
     void missingValuesInJsonTest() throws Exception {
-        mockMvcGetByUserId(byUserIdApi, createJson("ID", String.valueOf(4432894L)))
+        mockMvcGetByUserId(BY_USER_ID_API, createJson("ID", String.valueOf(4432894L)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void corruptedJsonTest() throws Exception {
-        mockMvcGetByUserId(byUserIdApi, "hehehe")
+        mockMvcGetByUserId(BY_USER_ID_API, "hehehe")
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void notNumberTest() throws Exception {
-        mockMvcGetByUserId(byUserIdApi, createJson("ID", "nan"))
+        mockMvcGetByUserId(BY_USER_ID_API, createJson("ID", "nan"))
                 .andExpect(status().isBadRequest());
     }
 }
