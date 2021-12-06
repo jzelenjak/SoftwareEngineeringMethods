@@ -328,7 +328,7 @@ class AuthControllerTest {
         String friendPassword = "SuperFraud";
         this.userDataRepository
                 .save(new UserData(friendName,
-                        this.passwordEncoder.encode(friendPassword), UserRole.LECTURER));
+                        this.passwordEncoder.encode(friendPassword), UserRole.STUDENT));
         String jwt = jwtUtils.createToken(evilUsername, UserRole.LECTURER, new Date());
         String jwtPrefixed = prefix + jwt;
         this.mockMvc
@@ -341,7 +341,7 @@ class AuthControllerTest {
         Assertions.assertEquals(this.userDataRepository.findByUsername(evilUsername)
                 .get().getRole(), UserRole.LECTURER);
         Assertions.assertEquals(this.userDataRepository.findByUsername(friendName)
-                .get().getRole(), UserRole.LECTURER);
+                .get().getRole(), UserRole.STUDENT);
 
         this.userDataRepository.deleteById(evilUsername);
         this.userDataRepository.deleteById(friendName);
