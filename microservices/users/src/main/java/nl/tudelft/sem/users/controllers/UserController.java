@@ -40,6 +40,8 @@ public class UserController {
 
     private final transient JwtUtils jwtUtils;
 
+    private final transient String userIdStr = "userId";
+
 
     /**
      * Instantiates a new User controller object.
@@ -85,7 +87,7 @@ public class UserController {
         String jwt = "somegibberishherejustfornow";
         res.setHeader(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", jwt));
         ObjectNode response = mapper.createObjectNode();
-        response.put("userId", userId);
+        response.put(userIdStr, userId);
         return response.toString();
     }
 
@@ -121,7 +123,7 @@ public class UserController {
     @GetMapping("/by_userid")
     public @ResponseBody
     String getByUserId(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        long userId = parseUserId(parseJsonField(getJsonNode(req), "userId"));
+        long userId = parseUserId(parseJsonField(getJsonNode(req), userIdStr));
         return mapper.writeValueAsString(getUserByUserId(userId));
     }
 
@@ -163,11 +165,10 @@ public class UserController {
      * @param res   the HTTP response
      */
     @PutMapping("/change_role")
-    public
-    void changeRole(HttpServletRequest req, HttpServletResponse res) {
+    public void changeRole(HttpServletRequest req, HttpServletResponse res) {
         JsonNode jsonNode = getJsonNode(req);
 
-        long userId = parseUserId(parseJsonField(jsonNode, "userId"));
+        long userId = parseUserId(parseJsonField(jsonNode, userIdStr));
         UserRole newRole =
                 parseRole(parseJsonField(jsonNode, "role").toUpperCase(Locale.US));
 
@@ -198,10 +199,9 @@ public class UserController {
      * @param res   the HTTP response
      */
     @DeleteMapping("/delete")
-    public
-    void deleteByUserId(HttpServletRequest req,
+    public void deleteByUserId(HttpServletRequest req,
                                 HttpServletResponse res) {
-        long userId = parseUserId(parseJsonField(getJsonNode(req), "userId"));
+        long userId = parseUserId(parseJsonField(getJsonNode(req), userIdStr));
 
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
         UserRole requesterRole = parseRole(claimsJws);
