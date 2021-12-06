@@ -48,7 +48,6 @@ class UserControllerTest {
 
     private final transient String utf8Str = "uft-8";
 
-
     private final transient String secretKeyString =
             "nbvfrtyujhghgdvagsdfsdgadflgpprqoewjfmanvxcmiq"
                     + "ertyuisgnsdfasdfayuiokjhfgsfsgfgfhgdgsfgs";
@@ -289,9 +288,9 @@ class UserControllerTest {
                     .andReturn()
                     .getResponse()
                     .getContentAsString();
-
+        String userIdStr = new ObjectMapper().readTree(res).get("userId").asText();
         Assertions
-                .assertThat(Long.parseLong(res))
+                .assertThat(Long.parseLong(userIdStr))
                 .isEqualTo(3443546L);
 
         verifyRegister(uname, fname, lname, 1);

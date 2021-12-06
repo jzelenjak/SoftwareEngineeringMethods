@@ -2,6 +2,7 @@ package nl.tudelft.sem.users.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
@@ -69,7 +70,7 @@ public class UserController {
      */
     @PostMapping("/register")
     public @ResponseBody
-    long registerUser(HttpServletRequest req, HttpServletResponse res) {
+    String registerUser(HttpServletRequest req, HttpServletResponse res) {
         JsonNode jsonNode = getJsonNode(req);
         String username = parseJsonField(jsonNode, "username");
         String firstName = parseJsonField(jsonNode, "firstName");
@@ -83,7 +84,9 @@ public class UserController {
 
         String jwt = "somegibberishherejustfornow";
         res.setHeader(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", jwt));
-        return userId;
+        ObjectNode response = mapper.createObjectNode();
+        response.put("userId", userId);
+        return response.toString();
     }
 
 
@@ -147,19 +150,21 @@ public class UserController {
 
     /**
      * Changes the role of a user given their netID, if the requester has permissions for that.
+     *  If the request has been successful,
+     *      then 200 OK is sent back.
+     *  If the provided user ID is not a number or if the new role is invalid,
+     *      then 400 BAD REQUEST is sent back.
+     *  If the user does not exist,
+     *      then 404 NOT FOUND status is sent.
+     *  If the operation is not allowed (no privileges),
+     *      then 401 UNAUTHORIZED status is sent back.
      *
      * @param req   the HTTP request
      * @param res   the HTTP response
-     * @return success message, if the request has been successful.
-     *         If the provided user ID is not a number or if the new role is invalid,
-     *           then 400 BAD REQUEST is sent back.
-     *         If the user does not exist, then 404 NOT FOUND status is sent.
-     *         If the operation is not allowed (no privileges),
-     *           then 401 UNAUTHORIZED status is sent back.
      */
     @PutMapping("/change_role")
-    public @ResponseBody
-    String changeRole(HttpServletRequest req, HttpServletResponse res) {
+    public
+    void changeRole(HttpServletRequest req, HttpServletResponse res) {
         JsonNode jsonNode = getJsonNode(req);
 
         long userId = parseUserId(parseJsonField(jsonNode, "userId"));
@@ -175,29 +180,27 @@ public class UserController {
 
         // TODO: send a request to the Authentication server
 
-        return String.format("The role of user with user ID %s has been changed to %s.",
-                                userId, newRole);
     }
 
 
     /**
      * Deletes a user by their user ID.
+     * If the request has been successful,
+     *      then 200 OK is sent back.
+     * If the provided user ID is not a number,
+     *      then 400 BAD REQUEST is sent back.
+     * If user with the provided user ID has not been found,
+     *      then 404 NOT FOUND is sent back.
+     * If the requester does not have enough permissions,
+     *      then 401 UNAUTHORIZED status is sent back.
      *
      * @param req   the HTTP request
      * @param res   the HTTP response
-     * @return success message, if the request has been successful
-     *         If the provided user ID is not a number,
-     *           then 400 BAD REQUEST is sent back.
-     *         If user with the provided user ID has not been found,
-     *           then 404 NOT FOUND is sent back.
-     *         If the requester does not have enough permissions,
-     *           then 401 UNAUTHORIZED status is sent back.
      */
     @DeleteMapping("/delete")
-    public @ResponseBody
-    String deleteByUserId(HttpServletRequest req,
+    public
+    void deleteByUserId(HttpServletRequest req,
                                 HttpServletResponse res) {
-
         long userId = parseUserId(parseJsonField(getJsonNode(req), "userId"));
 
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
@@ -208,8 +211,6 @@ public class UserController {
         if (!this.userService.deleteUserByUserId(userId, requesterRole)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
         }
-        return String
-                .format("The user with the user ID %s has been deleted successfully!", userId);
     }
 
 
