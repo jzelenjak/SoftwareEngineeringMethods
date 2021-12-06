@@ -140,7 +140,7 @@ public class UserController {
     @GetMapping("/by_role")
     public @ResponseBody
     String getByRole(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        UserRole role = parseRole(parseJsonField(getJsonNode(req), ROLE).toUpperCase(Locale.US));
+        UserRole role = parseRole(parseJsonField(getJsonNode(req), ROLE).toUpperCase(Locale.ROOT));
 
         List<User> users = this.userService.getUsersByRole(role);
         if (users.isEmpty()) {
@@ -295,7 +295,7 @@ public class UserController {
     private UserRole parseRole(Jws<Claims> claimsJws) {
         try {
             String role = jwtUtils.getRole(claimsJws);
-            return UserRole.valueOf(role.toUpperCase(Locale.US));
+            return UserRole.valueOf(role.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             String reason = String.format("Role must be one of the following: %s, %s, %s, %s, %s",
                     "STUDENT", "CANDIDATE_TA", "TA", "LECTURER", "ADMIN");
