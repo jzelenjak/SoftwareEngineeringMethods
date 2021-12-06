@@ -25,9 +25,9 @@ class AuthServiceTest {
     @Test
     void registerUserAlreadyExistsTest() {
         this.userDataRepository.save(new UserData("jegor",
-                this.passwordEncoder.encode("amogus"), UserRole.TA));
+                this.passwordEncoder.encode("amogus"), UserRole.TA, 3957639L));
 
-        Assertions.assertFalse(this.authService.registerUser("jegor", "password2"),
+        Assertions.assertFalse(this.authService.registerUser("jegor", 3957639L, "password2"),
                 "The user must not have been registered");
 
         this.userDataRepository.deleteById("jegor");
@@ -36,7 +36,7 @@ class AuthServiceTest {
     @Test
     void registerUserNotYesExistsTest() {
         String username = "impostor";
-        Assertions.assertTrue(this.authService.registerUser(username, "password2"),
+        Assertions.assertTrue(this.authService.registerUser(username, 7803850L, "password2"),
                 "The user must have been registered");
         Assertions.assertTrue(this.userDataRepository.findByUsername(username).isPresent(),
                 "The user must have been loaded");
@@ -57,7 +57,7 @@ class AuthServiceTest {
     void changePasswordTest() {
         String username = "red_kinda_sus_ngl";
         this.userDataRepository.save(new UserData(username,
-                this.passwordEncoder.encode("sus"), UserRole.TA));
+                this.passwordEncoder.encode("sus"), UserRole.TA, 3425101L));
 
         this.authService.changePassword(username, "ngl");
 

@@ -21,6 +21,9 @@ public class UserData implements UserDetails {
     @Column(name = "username", length = 50, unique = true, nullable = false)
     private String username;
 
+    @Column(name = "userId", unique = true, nullable = false, updatable = false)
+    private long userId;
+
     @Column(name = "password", length = 128)
     private String password;
 
@@ -48,10 +51,12 @@ public class UserData implements UserDetails {
      * @param password              the password of the user
      * @param role                  the role of the user
      */
-    public UserData(String username, String password, UserRole role) {
+    public UserData(String username, String password,
+                    UserRole role, long userId) {
         this.username = username;
         this.password = password;
         this.role = role;
+        this.userId = userId;
         this.accountNonExpired = true;
         this.accountNonLocked = true;
         this.credentialsNonExpired = true;
@@ -79,7 +84,6 @@ public class UserData implements UserDetails {
     public String getPassword() {
         return this.password;
     }
-
 
     /**
      * Sets the password of the user.
@@ -109,6 +113,24 @@ public class UserData implements UserDetails {
         this.username = username;
     }
 
+    /**
+     * Gets user id.
+     * (Used by microservices and jwt token).
+     *
+     * @return the id of the user.
+     */
+    public long getUserId() {
+        return userId;
+    }
+
+    /**
+     * Sets user id.
+     *
+     * @param userId the user id.
+     */
+    public void setUserId(long userId) {
+        this.userId = userId;
+    }
     /**
      * Gets the role of the user.
      *

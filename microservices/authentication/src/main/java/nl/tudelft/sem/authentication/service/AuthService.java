@@ -26,12 +26,12 @@ public class AuthService implements UserDetailsService {
      *
      * @return true if registration of user is successful, false otherwise.
      */
-    public boolean registerUser(String username, String password) {
+    public boolean registerUser(String username, long userId, String password) {
         if (this.userDataRepository.findByUsername(username).isPresent()) {
             return false;
         }
         this.userDataRepository.save(new UserData(username,
-                passwordEncoder.encode(password), UserRole.STUDENT));
+                passwordEncoder.encode(password), UserRole.STUDENT, userId));
         return true;
     }
 

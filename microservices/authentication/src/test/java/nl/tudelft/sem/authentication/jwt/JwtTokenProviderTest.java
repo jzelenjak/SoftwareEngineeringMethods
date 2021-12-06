@@ -39,19 +39,12 @@ class JwtTokenProviderTest {
 
     @Autowired
     private transient UserDataRepository userDataRepository;
-
     private transient JwtTokenProvider jwtTokenProvider;
-
     private final transient String prefix = "Bearer ";
-
     private final transient ObjectMapper objectMapper = new ObjectMapper();
-
     private transient String utf;
-
     private transient String usernameStr = "username";
-
     private transient String passwordStr = "password";
-
 
     @BeforeEach
     void setUp() {
@@ -80,12 +73,12 @@ class JwtTokenProviderTest {
     @WithMockUser(username = "amogus", password = "NoFraudAllowed")
     void createAndResolveValidTokenTest() throws Exception {
         Date date = new Date();
-        String jwt = jwtTokenProvider.createToken("admin", UserRole.STUDENT, date);
+        String jwt = jwtTokenProvider.createToken(1738290L, UserRole.STUDENT, date);
         String jwtPrefixed = prefix + jwt;
 
         String username = "admin";
         String password = "NoFraudAllowed";
-        this.userDataRepository.save(new UserData(username, password, UserRole.STUDENT));
+        this.userDataRepository.save(new UserData(username, password, UserRole.STUDENT, 1738290L));
         HttpServletRequest request =
                 this.mockMvc
                         .perform(get("/api/auth/login")
@@ -116,12 +109,12 @@ class JwtTokenProviderTest {
     void createAndResolveInValidTokenExpiredTest() throws Exception {
 
         Date date = new Date(new Date().getTime() - 10 * 60000);
-        String jwt = jwtTokenProvider.createToken("admin1", UserRole.ADMIN, date);
+        String jwt = jwtTokenProvider.createToken(9577681L, UserRole.ADMIN, date);
         String jwtPrefixed = prefix + jwt;
 
         String username = "admin1";
         String password = "NoFraudAllowed1";
-        this.userDataRepository.save(new UserData(username, password, UserRole.ADMIN));
+        this.userDataRepository.save(new UserData(username, password, UserRole.ADMIN, 9577681L));
         HttpServletRequest request =
                 this.mockMvc
                         .perform(get("/api/auth/" + "login")
@@ -146,12 +139,12 @@ class JwtTokenProviderTest {
         ReflectionTestUtils.setField(jwtTokenProvider, "validityInMinutes", 0);
 
         Date date = new Date();
-        String jwt = jwtTokenProvider.createToken("admin2", UserRole.ADMIN, date);
+        String jwt = jwtTokenProvider.createToken(9048182L, UserRole.ADMIN, date);
         String jwtPrefixed = prefix + jwt;
 
         String username = "admin2";
         String password = "NoFraudAllowed2";
-        this.userDataRepository.save(new UserData(username, password, UserRole.ADMIN));
+        this.userDataRepository.save(new UserData(username, password, UserRole.ADMIN, 9048182L));
         HttpServletRequest request =
                 this.mockMvc
                         .perform(get("/api/auth" + "/login")
@@ -174,7 +167,7 @@ class JwtTokenProviderTest {
     @Test
     @WithMockUser(username = "admin3", password = "NoFraudAllowed3")
     void resolveTokenNotStartsWithBearerTest() throws Exception {
-        String jwt = jwtTokenProvider.createToken("admin3", UserRole.ADMIN, new Date());
+        String jwt = jwtTokenProvider.createToken(1047399L, UserRole.ADMIN, new Date());
         String username = "admin3";
         String password = "NoFraudAllowed3";
         HttpServletRequest request =

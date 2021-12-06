@@ -14,10 +14,11 @@ class UserDataTest {
     private final transient String username = "jegor";
     private final transient String password1 = "password1";
     private final transient String password2 = "password2";
+    private final transient long userId = 1234567L;
 
     @BeforeEach
     void setUp() {
-        userData = new UserData(username, password1, UserRole.ADMIN);
+        userData = new UserData(username, password1, UserRole.ADMIN, userId);
     }
 
     @Test
@@ -53,6 +54,20 @@ class UserDataTest {
         userData.setUsername("amogus");
         Assertions.assertNotEquals(before, userData.getUsername());
         Assertions.assertEquals("amogus", userData.getUsername());
+    }
+
+    @Test
+    void getUserIdTest() {
+        Assertions.assertEquals(userId, userData.getUserId());
+    }
+
+    @Test
+    void setUserIdTest() {
+        UserData user = new UserData();
+        long before = user.getUserId();
+        user.setUserId(userId);
+        Assertions.assertNotEquals(before, user.getUserId());
+        Assertions.assertEquals(userId, user.getUserId());
     }
 
     @Test
@@ -128,13 +143,13 @@ class UserDataTest {
 
     @Test
     void equalsEqualTest() {
-        UserData otherUserData = new UserData(username, password2, UserRole.TA);
+        UserData otherUserData = new UserData(username, password2, UserRole.TA, userId);
         Assertions.assertEquals(userData, otherUserData);
     }
 
     @Test
     void equalsDifferentTest() {
-        UserData otherUserData = new UserData("jegorka", password2, UserRole.LECTURER);
+        UserData otherUserData = new UserData("jegorka", password2, UserRole.LECTURER, userId);
         Assertions.assertNotEquals(userData, otherUserData);
         Integer notUserData = 42;
         Assertions.assertNotEquals(userData, notUserData);
@@ -142,13 +157,13 @@ class UserDataTest {
 
     @Test
     void hashCodeSameTest() {
-        UserData otherUserData = new UserData(username, password2, UserRole.TA);
+        UserData otherUserData = new UserData(username, password2, UserRole.TA, userId);
         Assertions.assertEquals(userData.hashCode(), otherUserData.hashCode());
     }
 
     @Test
     void hashCodeDifferentTest() {
-        UserData otherUserData = new UserData("jegorka", password2, UserRole.LECTURER);
+        UserData otherUserData = new UserData("jegorka", password2, UserRole.LECTURER, userId);
         Assertions.assertNotEquals(userData.hashCode(), otherUserData.hashCode());
     }
 }

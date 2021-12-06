@@ -46,13 +46,13 @@ public class JwtTokenProvider {
     /**
      * Creates a new JWT.
      *
-     * @param username the username of the user
+     * @param userId   the userId of the user
      * @param role     the role of the user (STUDENT, LECTURER, TA, ADMIN)
      * @param date     the date of issue of the token
      * @return signed JWT
      */
-    public String createToken(String username, UserRole role, Date date) {
-        Claims claims = Jwts.claims().setSubject(username);
+    public String createToken(long userId, UserRole role, Date date) {
+        Claims claims = Jwts.claims().setSubject(String.valueOf(userId));
         claims.put("role", role);
         Date validity = new Date(date.getTime() + validityInMinutes * 60000);
         return Jwts.builder()

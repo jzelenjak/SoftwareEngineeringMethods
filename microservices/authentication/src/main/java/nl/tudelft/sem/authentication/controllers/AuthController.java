@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
 import nl.tudelft.sem.authentication.security.UserRole;
 import nl.tudelft.sem.authentication.service.AuthService;
@@ -33,6 +34,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthController {
     private final transient String username = "username";
     private final transient String password = "password";
+    private final transient String userIdStr = "userId";
     private final transient AuthService authService;
     private final transient ObjectMapper objectMapper;
     private final transient JwtTokenProvider jwtTokenProvider;
@@ -69,9 +71,10 @@ public class AuthController {
                     HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         final String uname = jsonNode.get(username).asText();
+        final long userId = Long.parseLong(jsonNode.get(userIdStr).asText());
         final String pwd = jsonNode.get(password).asText();
 
-        if (!this.authService.registerUser(uname, pwd)) {
+        if (!this.authService.registerUser(uname, userId, pwd)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     String.format("User with NetID %s already exists!", username));
         }
@@ -130,10 +133,9 @@ public class AuthController {
 
             authenticationManager
                     .authenticate(new UsernamePasswordAuthenticationToken(uname, pwd));
-
+            UserData user = this.authService.loadUserByUsername(uname);
             String jwt = jwtTokenProvider
-                    .createToken(uname, this.authService
-                            .loadUserByUsername(uname).getRole(), new Date());
+                    .createToken(user.getUserId(), user.getRole(), new Date());
 
             String jwtPrefixed = String.format("Bearer %s", jwt);
             res.setHeader(HttpHeaders.AUTHORIZATION, jwtPrefixed);
