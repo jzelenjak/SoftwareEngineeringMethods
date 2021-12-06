@@ -1,11 +1,13 @@
 package nl.tudelft.sem.authentication.jwt;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import java.security.Key;
 import java.util.Date;
 import javax.servlet.http.HttpServletRequest;
 import nl.tudelft.sem.authentication.security.UserRole;
+import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,7 +21,7 @@ import org.springframework.stereotype.Component;
  * A class that provides utilities related to JWT token.
  */
 @Component
-public class JwtUtils {
+public class JwtTokenProvider {
 
     private final transient Key hmacKey;
 
@@ -29,13 +31,16 @@ public class JwtUtils {
     @Autowired
     private transient UserDetailsService userDetailsService;
 
+    private transient JwtUtils jwtUtils;
+
     /**
-     * Instantiates JwtUtils object.
+     * Instantiates JwtTokenProvider object.
      *
      * @param hmacKey   The secret key used to sign the token
      */
-    public JwtUtils(@Qualifier("secretKey") Key hmacKey) {
+    public JwtTokenProvider(@Qualifier("secretKey") Key hmacKey, JwtUtils jwtUtils) {
         this.hmacKey = hmacKey;
+        this.jwtUtils = jwtUtils;
     }
 
     /**
@@ -66,10 +71,7 @@ public class JwtUtils {
      */
     public String resolveToken(HttpServletRequest req) {
         String bearerToken = req.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7, bearerToken.length());
-        }
-        return null;
+        return jwtUtils.resolveToken(bearerToken);
     }
 
     /**
@@ -80,17 +82,48 @@ public class JwtUtils {
      *         false otherwise
      */
     public boolean validateToken(String token) {
-        try {
-            Jwts
-                .parserBuilder()
-                .setSigningKey(this.hmacKey)
-                .build()
-                .parseClaimsJws(token);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        Jws<Claims> claimsJws = jwtUtils.validateAndParseClaims(token);
+        return claimsJws != null;
+//        try {
+//            Jwts
+//                .parserBuilder()
+//                .setSigningKey(this.hmacKey)
+//                .build()
+//                .parseClaimsJws(token);
+//            return true;
+//        } catch (Exception e) {
+//            return false;
+//        }
     }
+
+//    /**
+//     * Gets the username from the user with a given JWT token.
+//     *
+//     * @param token the JWT to get the username from.
+//     * @return the username from the JWT.
+//     */
+//    public String getUsername(String token) {
+//        // TODO: change if we need user ID?
+//        return Jwts.parserBuilder()
+//                .setSigningKey(this.hmacKey)
+//                .build()
+//                .parseClaimsJws(token)
+//                .getBody()
+//                .getSubject();
+//    }
+//
+//    /**
+//     * Gets the role from the user with the given JWT token.
+//     * Assumes that the provided token is valid (check this with 'validate' method).
+//     *
+//     * @param token the JWT token (assumed to be valid)
+//     * @return the role from JWT (STUDENT, LECTURER, TA, ADMIN)
+//     */
+//    public String getRole(String token) {
+//        Jws<Claims> claimsJws = jwtUtils.validateAndParseClaims(token);
+//        String role = jwtUtils.getRole(claimsJws);
+//        return role;
+//    }
 
     /**
      * Gets the username from the user with a given JWT token.

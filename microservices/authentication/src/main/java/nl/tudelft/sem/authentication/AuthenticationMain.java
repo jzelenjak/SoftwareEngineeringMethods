@@ -1,7 +1,7 @@
 package nl.tudelft.sem.authentication;
 
-import nl.tudelft.sem.authentication.jwt.JwtUtils;
 import nl.tudelft.sem.heartbeat.HeartbeatConfig;
+import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;

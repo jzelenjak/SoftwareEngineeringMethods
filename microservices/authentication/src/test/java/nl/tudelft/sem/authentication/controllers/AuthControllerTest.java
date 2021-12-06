@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Date;
 import nl.tudelft.sem.authentication.entities.UserData;
-import nl.tudelft.sem.authentication.jwt.JwtUtils;
+import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
 import nl.tudelft.sem.authentication.repositories.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.junit.jupiter.api.Assertions;
@@ -34,7 +34,7 @@ class AuthControllerTest {
     private transient PasswordEncoder passwordEncoder;
 
     @Autowired
-    private transient JwtUtils jwtUtils;
+    private transient JwtTokenProvider jwtTokenProvider;
 
     @Autowired
     private transient UserDataRepository userDataRepository;
@@ -105,7 +105,7 @@ class AuthControllerTest {
         this.userDataRepository
                 .save(new UserData(username,
                         this.passwordEncoder.encode(password), UserRole.ADMIN));
-        String jwt = jwtUtils.createToken(username, UserRole.ADMIN, new Date());
+        String jwt = jwtTokenProvider.createToken(username, UserRole.ADMIN, new Date());
         String jwtPrefixed = prefix + jwt;
         this.mockMvc
             .perform(put(changePasswordUrl)
@@ -146,7 +146,7 @@ class AuthControllerTest {
         this.userDataRepository
                 .save(new UserData(username,
                         this.passwordEncoder.encode(password), UserRole.ADMIN));
-        String jwt = jwtUtils.createToken(username, UserRole.ADMIN, new Date());
+        String jwt = jwtTokenProvider.createToken(username, UserRole.ADMIN, new Date());
         String jwtPrefixed = prefix + jwt;
         String target = "IDontKnowHim";
         this.userDataRepository
@@ -173,7 +173,7 @@ class AuthControllerTest {
         this.userDataRepository
                 .save(new UserData(username,
                         this.passwordEncoder.encode(password), UserRole.TA));
-        String jwt = jwtUtils.createToken("admin2", UserRole.ADMIN, new Date());
+        String jwt = jwtTokenProvider.createToken("admin2", UserRole.ADMIN, new Date());
         String jwtPrefixed = prefix + jwt;
         this.mockMvc
                 .perform(get(loginUrl)
@@ -183,9 +183,9 @@ class AuthControllerTest {
                         .characterEncoding(utf8Str))
                         .andExpect(status().isOk());
 
-        Assertions.assertTrue(this.jwtUtils.validateToken(jwt));
-        Assertions.assertEquals(this.jwtUtils.getUsername(jwt), username);
-        Assertions.assertEquals(this.jwtUtils.getRole(jwt), UserRole.ADMIN.name());
+        Assertions.assertTrue(this.jwtTokenProvider.validateToken(jwt));
+        Assertions.assertEquals(this.jwtTokenProvider.getUsername(jwt), username);
+        Assertions.assertEquals(this.jwtTokenProvider.getRole(jwt), UserRole.ADMIN.name());
 
 
         this.userDataRepository.deleteById(username);
@@ -231,7 +231,7 @@ class AuthControllerTest {
         this.userDataRepository
                 .save(new UserData(username,
                         this.passwordEncoder.encode(password), UserRole.ADMIN));
-        String jwt = jwtUtils.createToken(username, UserRole.ADMIN, new Date());
+        String jwt = jwtTokenProvider.createToken(username, UserRole.ADMIN, new Date());
         String jwtPrefixed = prefix + jwt;
         String lecturer = "IAmNotYetLecturer";
         String lecturerPassword = "SuperSad";
@@ -262,7 +262,7 @@ class AuthControllerTest {
         this.userDataRepository
                 .save(new UserData(username,
                         this.passwordEncoder.encode(password), UserRole.ADMIN));
-        String jwt = jwtUtils.createToken(username, UserRole.ADMIN, new Date());
+        String jwt = jwtTokenProvider.createToken(username, UserRole.ADMIN, new Date());
         String jwtPrefixed = prefix + jwt;
         String retiredTa = "IAmRetiredTa";
         String taPassword = "SuperSad";
@@ -293,7 +293,7 @@ class AuthControllerTest {
         this.userDataRepository
                 .save(new UserData(username,
                         this.passwordEncoder.encode(password), UserRole.LECTURER));
-        String jwt = jwtUtils.createToken(username, UserRole.LECTURER, new Date());
+        String jwt = jwtTokenProvider.createToken(username, UserRole.LECTURER, new Date());
         String jwtPrefixed = prefix + jwt;
         String ta = "IAmNotYetTa";
         String taPassword = "SoSadMe";
@@ -329,7 +329,7 @@ class AuthControllerTest {
         this.userDataRepository
                 .save(new UserData(friendName,
                         this.passwordEncoder.encode(friendPassword), UserRole.STUDENT));
-        String jwt = jwtUtils.createToken(evilUsername, UserRole.LECTURER, new Date());
+        String jwt = jwtTokenProvider.createToken(evilUsername, UserRole.LECTURER, new Date());
         String jwtPrefixed = prefix + jwt;
         this.mockMvc
                 .perform(put(changeRoleUrl)
@@ -360,7 +360,7 @@ class AuthControllerTest {
         this.userDataRepository
                 .save(new UserData(friendName,
                         this.passwordEncoder.encode(friendPassword), UserRole.LECTURER));
-        String jwt = jwtUtils.createToken(evilUsername, UserRole.LECTURER, new Date());
+        String jwt = jwtTokenProvider.createToken(evilUsername, UserRole.LECTURER, new Date());
         String jwtPrefixed = prefix + jwt;
         this.mockMvc
                 .perform(put(changeRoleUrl)
@@ -386,7 +386,7 @@ class AuthControllerTest {
         this.userDataRepository
                 .save(new UserData(username,
                         this.passwordEncoder.encode(password), UserRole.STUDENT));
-        String jwt = jwtUtils.createToken(username, UserRole.STUDENT, new Date());
+        String jwt = jwtTokenProvider.createToken(username, UserRole.STUDENT, new Date());
         String jwtPrefixed = prefix + jwt;
         this.mockMvc
                 .perform(put(changeRoleUrl)
@@ -430,7 +430,7 @@ class AuthControllerTest {
         this.userDataRepository
                 .save(new UserData(adminName,
                         this.passwordEncoder.encode(adminPassword), UserRole.ADMIN));
-        String jwt = jwtUtils.createToken(adminName, UserRole.ADMIN, new Date());
+        String jwt = jwtTokenProvider.createToken(adminName, UserRole.ADMIN, new Date());
         String jwtPrefixed = prefix + jwt;
         this.mockMvc
                 .perform(put(changeRoleUrl)

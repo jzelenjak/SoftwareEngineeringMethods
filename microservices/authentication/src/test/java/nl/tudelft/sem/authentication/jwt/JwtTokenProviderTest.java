@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.repositories.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
+import nl.tudelft.sem.jwt.JwtUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,14 +24,15 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
-
-
 @SpringBootTest
 @AutoConfigureMockMvc
-class JwtUtilsTest {
+class JwtTokenProviderTest {
     @Autowired
     @Qualifier("secretKey")
     private transient Key hmacKey;
+
+    @Autowired
+    private transient JwtUtils jwtUtils;
 
     @Autowired
     private transient MockMvc mockMvc;
@@ -38,7 +40,7 @@ class JwtUtilsTest {
     @Autowired
     private transient UserDataRepository userDataRepository;
 
-    private transient JwtUtils jwtUtils;
+    private transient JwtTokenProvider jwtTokenProvider;
 
     private final transient String prefix = "Bearer ";
 
@@ -54,8 +56,8 @@ class JwtUtilsTest {
     @BeforeEach
     void setUp() {
         utf = "utf-8";
-        jwtUtils = new JwtUtils(hmacKey);
-        ReflectionTestUtils.setField(jwtUtils, "validityInMinutes", 10);
+        jwtTokenProvider = new JwtTokenProvider(hmacKey, jwtUtils);
+        ReflectionTestUtils.setField(jwtTokenProvider, "validityInMinutes", 10);
     }
 
     /**
@@ -78,7 +80,7 @@ class JwtUtilsTest {
     @WithMockUser(username = "amogus", password = "NoFraudAllowed")
     void createAndResolveValidTokenTest() throws Exception {
         Date date = new Date();
-        String jwt = jwtUtils.createToken("admin", UserRole.STUDENT, date);
+        String jwt = jwtTokenProvider.createToken("admin", UserRole.STUDENT, date);
         String jwtPrefixed = prefix + jwt;
 
         String username = "admin";
@@ -94,15 +96,15 @@ class JwtUtilsTest {
                         .andReturn()
                         .getRequest();
 
-        String tokenBody = jwtUtils.resolveToken(request);
+        String tokenBody = jwtTokenProvider.resolveToken(request);
 
         Assertions.assertFalse(tokenBody.startsWith(prefix),
                 "The resolved token must not start with the prefix 'Bearer '");
-        Assertions.assertTrue(jwtUtils.validateToken(tokenBody),
+        Assertions.assertTrue(jwtTokenProvider.validateToken(tokenBody),
                 "Invalid or expired token");
-        Assertions.assertEquals("admin", jwtUtils.getUsername(tokenBody),
+        Assertions.assertEquals("admin", jwtTokenProvider.getUsername(tokenBody),
                 "Decoded username does not match the original one");
-        Assertions.assertEquals(UserRole.STUDENT.name(), jwtUtils.getRole(tokenBody),
+        Assertions.assertEquals(UserRole.STUDENT.name(), jwtTokenProvider.getRole(tokenBody),
                 "Decoded role does not match the original one");
         this.userDataRepository.deleteById(username);
     }
@@ -114,7 +116,7 @@ class JwtUtilsTest {
     void createAndResolveInValidTokenExpiredTest() throws Exception {
 
         Date date = new Date(new Date().getTime() - 10 * 60000);
-        String jwt = jwtUtils.createToken("admin1", UserRole.ADMIN, date);
+        String jwt = jwtTokenProvider.createToken("admin1", UserRole.ADMIN, date);
         String jwtPrefixed = prefix + jwt;
 
         String username = "admin1";
@@ -130,21 +132,21 @@ class JwtUtilsTest {
                         .andReturn()
                         .getRequest();
 
-        String tokenBody = jwtUtils.resolveToken(request);
+        String tokenBody = jwtTokenProvider.resolveToken(request);
 
         Assertions.assertFalse(tokenBody.startsWith(prefix),
                 "The resolved token must not start with the prefix 'Bearer '");
-        Assertions.assertFalse(jwtUtils.validateToken(tokenBody),
+        Assertions.assertFalse(jwtTokenProvider.validateToken(tokenBody),
                 "The token must be invalid or expired");
         this.userDataRepository.deleteById(username);
     }
 
     @Test
     void createAndResolveInValidTokenZeroValidityTest() throws Exception {
-        ReflectionTestUtils.setField(jwtUtils, "validityInMinutes", 0);
+        ReflectionTestUtils.setField(jwtTokenProvider, "validityInMinutes", 0);
 
         Date date = new Date();
-        String jwt = jwtUtils.createToken("admin2", UserRole.ADMIN, date);
+        String jwt = jwtTokenProvider.createToken("admin2", UserRole.ADMIN, date);
         String jwtPrefixed = prefix + jwt;
 
         String username = "admin2";
@@ -160,11 +162,11 @@ class JwtUtilsTest {
                         .andReturn()
                         .getRequest();
 
-        String tokenBody = jwtUtils.resolveToken(request);
+        String tokenBody = jwtTokenProvider.resolveToken(request);
 
         Assertions.assertFalse(tokenBody.startsWith("Bearer "),
                 "The resolved token must not start with the prefix 'Bearer '");
-        Assertions.assertFalse(jwtUtils.validateToken(tokenBody),
+        Assertions.assertFalse(jwtTokenProvider.validateToken(tokenBody),
                 "The token must be invalid or expired");
         this.userDataRepository.deleteById(username);
     }
@@ -172,7 +174,7 @@ class JwtUtilsTest {
     @Test
     @WithMockUser(username = "admin3", password = "NoFraudAllowed3")
     void resolveTokenNotStartsWithBearerTest() throws Exception {
-        String jwt = jwtUtils.createToken("admin3", UserRole.ADMIN, new Date());
+        String jwt = jwtTokenProvider.createToken("admin3", UserRole.ADMIN, new Date());
         String username = "admin3";
         String password = "NoFraudAllowed3";
         HttpServletRequest request =
@@ -184,7 +186,7 @@ class JwtUtilsTest {
                                 .characterEncoding(utf))
                         .andReturn()
                         .getRequest();
-        Assertions.assertNull(jwtUtils.getAuthentication("a.b.c"));
-        Assertions.assertNull(jwtUtils.resolveToken(request));
+        Assertions.assertNull(jwtTokenProvider.getAuthentication("a.b.c"));
+        Assertions.assertNull(jwtTokenProvider.resolveToken(request));
     }
 }

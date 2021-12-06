@@ -1,7 +1,7 @@
 package nl.tudelft.sem.authentication.security;
 
 import nl.tudelft.sem.authentication.jwt.JwtConfig;
-import nl.tudelft.sem.authentication.jwt.JwtUtils;
+import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
 import nl.tudelft.sem.authentication.service.AuthService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,16 +23,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
     private final transient AuthService authService;
     private final transient PasswordEncoder passwordEncoder;
-    private final transient JwtUtils jwtUtils;
+    private final transient JwtTokenProvider jwtTokenProvider;
 
     /**
      * Instantiates the security configuration class.
      */
     public AuthSecurityConfig(AuthService authService, PasswordEncoder passwordEncoder,
-                              JwtUtils jwtUtils) {
+                              JwtTokenProvider jwtTokenProvider) {
         this.authService = authService;
         this.passwordEncoder = passwordEncoder;
-        this.jwtUtils = jwtUtils;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     /**
@@ -57,7 +57,7 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest()
                 .authenticated()
                 .and()
-                .apply(new JwtConfig(jwtUtils));
+                .apply(new JwtConfig(jwtTokenProvider));
     }
 
 

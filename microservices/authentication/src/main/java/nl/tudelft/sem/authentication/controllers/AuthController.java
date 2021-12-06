@@ -7,7 +7,7 @@ import java.util.Date;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import nl.tudelft.sem.authentication.jwt.JwtUtils;
+import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
 import nl.tudelft.sem.authentication.security.UserRole;
 import nl.tudelft.sem.authentication.service.AuthService;
 import org.springframework.http.HttpHeaders;
@@ -35,7 +35,7 @@ public class AuthController {
     private final transient String password = "password";
     private final transient AuthService authService;
     private final transient ObjectMapper objectMapper;
-    private final transient JwtUtils jwtUtils;
+    private final transient JwtTokenProvider jwtTokenProvider;
     private final transient AuthenticationManager authenticationManager;
 
 
@@ -43,13 +43,13 @@ public class AuthController {
      * Instantiates a new authentication controller.
      *
      * @param authService           the authentication service
-     * @param jwtUtils              the JWT utils class
+     * @param jwtTokenProvider              the JWT utils class
      * @param authenticationManager the authentication manager
      */
-    public AuthController(AuthService authService, JwtUtils jwtUtils,
+    public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider,
                           AuthenticationManager authenticationManager) {
         this.authService = authService;
-        this.jwtUtils = jwtUtils;
+        this.jwtTokenProvider = jwtTokenProvider;
         this.authenticationManager = authenticationManager;
         this.objectMapper = new ObjectMapper();
     }
@@ -91,14 +91,14 @@ public class AuthController {
     public @ResponseBody
     String changePassword(HttpServletRequest req,
                           HttpServletResponse res) throws IOException {
-        String jwt = jwtUtils.resolveToken(req);
+        String jwt = jwtTokenProvider.resolveToken(req);
         if (jwt == null || jwt.equals("Bearer ")) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                     "You need to login to change your password!");
         }
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         String target = jsonNode.get(username).asText();
-        if (!target.equals(jwtUtils.getUsername(jwt))) {
+        if (!target.equals(jwtTokenProvider.getUsername(jwt))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     String.format("You are not %s and are not allowed to change password!",
                             target));
@@ -131,7 +131,7 @@ public class AuthController {
             authenticationManager
                     .authenticate(new UsernamePasswordAuthenticationToken(uname, pwd));
 
-            String jwt = jwtUtils
+            String jwt = jwtTokenProvider
                     .createToken(uname, this.authService
                             .loadUserByUsername(uname).getRole(), new Date());
 
@@ -158,8 +158,8 @@ public class AuthController {
     String changeRole(HttpServletRequest req,
                       HttpServletResponse res) throws IOException {
         // Get JWT from the requester.
-        String jwt = jwtUtils.resolveToken(req);
-        String roleOfRequester = jwtUtils.getRole(jwt);
+        String jwt = jwtTokenProvider.resolveToken(req);
+        String roleOfRequester = jwtTokenProvider.getRole(jwt);
 
         // Check if requester is a lecturer.
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());

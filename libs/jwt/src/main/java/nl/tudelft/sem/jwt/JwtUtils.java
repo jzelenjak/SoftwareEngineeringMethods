@@ -71,8 +71,7 @@ public class JwtUtils {
                     .setSigningKey(this.secretKey)
                     .build()
                     .parseClaimsJws(token);
-
-            Long.parseLong(claims.getBody().getSubject());
+//            Long.parseLong(claims.getBody().getSubject());
             return claims;
         } catch (Exception e) {
             return null;
