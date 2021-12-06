@@ -7,6 +7,9 @@ gradle-app.setting
 **/build/
 .gradletasknamecache
 
+
+.jpb
+
 ### IntelliJ ###
 .idea
 
