@@ -7,6 +7,9 @@ import java.util.Date;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
 import nl.tudelft.sem.authentication.security.UserRole;
@@ -32,20 +35,24 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-    private final transient String username = "username";
-    private final transient String password = "password";
-    private final transient String userIdStr = "userId";
+    private static final transient String USERNAME = "username";
+    private static final transient String PASSWORD = "password";
+    private static final transient String USERID = "userId";
+
     private final transient AuthService authService;
-    private final transient ObjectMapper objectMapper;
+
     private final transient JwtTokenProvider jwtTokenProvider;
+
     private final transient AuthenticationManager authenticationManager;
+
+    private final transient ObjectMapper objectMapper = new ObjectMapper();
 
 
     /**
-     * Instantiates a new authentication controller.
+     * Instantiates a new AuthenticationController object.
      *
      * @param authService           the authentication service
-     * @param jwtTokenProvider              the JWT utils class
+     * @param jwtTokenProvider      the class with JWT utilities
      * @param authenticationManager the authentication manager
      */
     public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider,
@@ -53,32 +60,33 @@ public class AuthController {
         this.authService = authService;
         this.jwtTokenProvider = jwtTokenProvider;
         this.authenticationManager = authenticationManager;
-        this.objectMapper = new ObjectMapper();
     }
 
 
     /**
-     * Registers a new user to the system, if not (s)he is not already registered.
+     * Registers a new user to the system, if (s)he is not already registered.
      *
      * @param req the HTTP request
      * @param res the HTTP response
      * @throws IOException IO exception if something goes wrong with the servlets.
      */
     @PostMapping("/register")
-    @ResponseStatus(HttpStatus.OK)
+    //@ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    String register(HttpServletRequest req,
+    String /*void*/ register(HttpServletRequest req,
                     HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
-        final String uname = jsonNode.get(username).asText();
-        final long userId = Long.parseLong(jsonNode.get(userIdStr).asText());
-        final String pwd = jsonNode.get(password).asText();
+        final String username = jsonNode.get(USERNAME).asText();
+        final long userId = Long.parseLong(jsonNode.get(USERID).asText());
+        final String password = jsonNode.get(PASSWORD).asText();
 
-        if (!this.authService.registerUser(uname, userId, pwd)) {
+        if (!this.authService.registerUser(username, userId, password)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    String.format("User with NetID %s already exists!", username));
+                    String.format("User with NetID %s already exists!", USERNAME));
         }
-        return String.format("User with NetID %s successfully registered!", uname);
+        // TODO: decide on how do we send back the token
+        // Comment this out if necessary
+        return String.format("User with NetID %s successfully registered!", username);
     }
 
 
@@ -90,17 +98,17 @@ public class AuthController {
      * @throws IOException IO exception if something goes wrong with the servlets.
      */
     @PutMapping("/change_password")
-    @ResponseStatus(HttpStatus.OK)
+    //@ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    String changePassword(HttpServletRequest req,
+    String /*void*/ changePassword(HttpServletRequest req,
                           HttpServletResponse res) throws IOException {
         String jwt = jwtTokenProvider.resolveToken(req);
-        if (jwt == null || jwt.equals("Bearer ")) {
+        if (!this.jwtTokenProvider.validateToken(jwt)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                     "You need to login to change your password!");
         }
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
-        String target = jsonNode.get(username).asText();
+        String target = jsonNode.get(USERNAME).asText();
         if (!target.equals(jwtTokenProvider.getUsername(jwt))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     String.format("You are not %s and are not allowed to change password!",
@@ -109,6 +117,7 @@ public class AuthController {
         String newPassword = jsonNode.get("newPassword").asText();
         this.authService.changePassword(target, newPassword);
 
+        // Comment this out if necessary
         return "Password successfully changed!";
     }
 
@@ -122,28 +131,27 @@ public class AuthController {
      * @throws IOException IO exception if something goes wrong with the servlets.
      */
     @GetMapping("/login")
-    @ResponseStatus(HttpStatus.OK)
+    //@ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    String login(HttpServletRequest req,
+    String /*void*/ login(HttpServletRequest req,
                  HttpServletResponse res) throws IOException {
         try {
             JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
-            String uname = jsonNode.get(username).asText();
-            String pwd = jsonNode.get(password).asText();
+            String username = jsonNode.get(USERNAME).asText();
+            String password = jsonNode.get(PASSWORD).asText();
 
             authenticationManager
-                    .authenticate(new UsernamePasswordAuthenticationToken(uname, pwd));
-            UserData user = this.authService.loadUserByUsername(uname);
+                    .authenticate(new UsernamePasswordAuthenticationToken(username, password));
+            UserData user = this.authService.loadUserByUsername(username);
             String jwt = jwtTokenProvider
                     .createToken(user.getUserId(), user.getRole(), new Date());
 
-            String jwtPrefixed = String.format("Bearer %s", jwt);
-            res.setHeader(HttpHeaders.AUTHORIZATION, jwtPrefixed);
+            res.setHeader(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", jwt));
             res.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+            // Comment this out if necessary
             return "Login successful!";
         } catch (AuthenticationException e) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Invalid credentials");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid credentials");
         }
     }
 
@@ -155,9 +163,9 @@ public class AuthController {
      * @throws IOException IO exception if something goes wrong with the servlets.
      */
     @PutMapping("/change_role")
-    @ResponseStatus(HttpStatus.OK)
+    //@ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    String changeRole(HttpServletRequest req,
+    String /*void*/ changeRole(HttpServletRequest req,
                       HttpServletResponse res) throws IOException {
         // Get JWT from the requester.
         String jwt = jwtTokenProvider.resolveToken(req);
@@ -165,10 +173,10 @@ public class AuthController {
 
         // Check if requester is a lecturer.
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
-        String target = jsonNode.get(username).asText();
+        String target = jsonNode.get(USERNAME).asText();
         if (getRole(roleOfRequester) == UserRole.LECTURER) {
             // Lecturer can only change a student's role to TA.
-            if (authService.loadUserByUsername(target).getRole() != UserRole.STUDENT) {
+            if (this.authService.loadUserByUsername(target).getRole() != UserRole.STUDENT) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "You are not allowed to do that as a lecturer!");
             }
@@ -185,6 +193,7 @@ public class AuthController {
         UserRole newRole = getRole(newRoleInput);
         this.authService.changeRole(target, newRole);
 
+        // Comment this out if necessary
         return "Role successfully changed!";
 
     }
@@ -192,11 +201,11 @@ public class AuthController {
     /**
      * Gets role for a given string.
      *
-     * @param newRoleInput the new role input.
-     * @return role for the given string as enum.
+     * @param newRoleFromInput the new role from input.
+     * @return role for the given string as enum element.
      */
-    public UserRole getRole(String newRoleInput) {
-        switch (newRoleInput.toUpperCase(Locale.ROOT)) {
+    public UserRole getRole(String newRoleFromInput) {
+        switch (newRoleFromInput.toUpperCase(Locale.ROOT)) {
             case "ADMIN":
                 return UserRole.ADMIN;
             case "STUDENT":
