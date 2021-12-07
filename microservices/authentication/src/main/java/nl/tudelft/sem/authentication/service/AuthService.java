@@ -62,4 +62,16 @@ public class AuthService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException(String.format(
                         "User with username %s not found", username)));
     }
+
+    /**
+     * Change role of the user.
+     *
+     * @param username the username of the user.
+     * @param newRole  the new role of the user.
+     */
+    public void changeRole(String username, UserRole newRole) {
+        UserData userData = loadUserByUsername(username);
+        userData.setRole(newRole);
+        userDataRepository.save(userData);
+    }
 }

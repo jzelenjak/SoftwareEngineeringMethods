@@ -1,5 +1,7 @@
 package nl.tudelft.sem.authentication.security;
 
+import nl.tudelft.sem.authentication.jwt.JwtConfig;
+import nl.tudelft.sem.authentication.jwt.JwtUtils;
 import nl.tudelft.sem.authentication.service.AuthService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,13 +23,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
     private final transient AuthService authService;
     private final transient PasswordEncoder passwordEncoder;
+    private final transient JwtUtils jwtUtils;
 
     /**
      * Instantiates the security configuration class.
      */
-    public AuthSecurityConfig(AuthService authService, PasswordEncoder passwordEncoder) {
+    public AuthSecurityConfig(AuthService authService, PasswordEncoder passwordEncoder,
+                              JwtUtils jwtUtils) {
         this.authService = authService;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtils = jwtUtils;
     }
 
     /**
@@ -46,9 +51,13 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
             .authorizeRequests()
                 .antMatchers(HttpMethod.GET, "/api/auth/login").permitAll()
                 .antMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
-                .antMatchers(HttpMethod.PUT, "/api/auth/change_password").permitAll()
+                .antMatchers(HttpMethod.PUT, "/api/auth/change_password").authenticated()
+                .antMatchers(HttpMethod.PUT, "/api/auth/change_role")
+                    .hasAnyAuthority("ADMIN")
                 .anyRequest()
-                .authenticated();
+                .authenticated()
+                .and()
+                .apply(new JwtConfig(jwtUtils));
     }
 
 
