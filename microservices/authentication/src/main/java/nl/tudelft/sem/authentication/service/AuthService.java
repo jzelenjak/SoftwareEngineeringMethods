@@ -38,7 +38,8 @@ public class AuthService implements UserDetailsService {
             return false;
         }
         this.userDataRepository
-                .save(new UserData(username, passwordEncoder.encode(password),UserRole.STUDENT, userId));
+            .save(new UserData(username, passwordEncoder.encode(password),
+                    UserRole.STUDENT, userId));
         return true;
     }
 
@@ -82,7 +83,8 @@ public class AuthService implements UserDetailsService {
         return this.userDataRepository
                 .findByUserId(userId)
                 .orElseThrow(() ->
-                        new UsernameNotFoundException(String.format("User with user ID %s not found", userId)));
+                        new UsernameNotFoundException(String
+                                .format("User with user ID %s not found", userId)));
     }
 
     /**

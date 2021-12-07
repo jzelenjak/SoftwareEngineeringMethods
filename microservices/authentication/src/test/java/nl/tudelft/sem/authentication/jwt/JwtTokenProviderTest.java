@@ -88,14 +88,15 @@ class JwtTokenProviderTest {
 
         this.userDataRepository.save(new UserData(username, password, UserRole.STUDENT, 1738290L));
 
-        HttpServletRequest request = this.mockMvc
-                                        .perform(get(LOGIN_API_PATH)
-                                                .contentType(APPLICATION_JSON)
-                                                .content(createJson(USERNAME, username, PASSWORD, password))
-                                                .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
-                                                .characterEncoding(UTF8))
-                                        .andReturn()
-                                        .getRequest();
+        HttpServletRequest request =
+                this.mockMvc
+                        .perform(get(LOGIN_API_PATH)
+                            .contentType(APPLICATION_JSON)
+                            .content(createJson(USERNAME, username, PASSWORD, password))
+                            .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
+                            .characterEncoding(UTF8))
+                        .andReturn()
+                        .getRequest();
 
         String tokenBody = jwtTokenProvider.resolveToken(request);
 
@@ -125,14 +126,15 @@ class JwtTokenProviderTest {
 
         this.userDataRepository.save(new UserData(username, password, UserRole.ADMIN, 9577681L));
 
-        HttpServletRequest request = this.mockMvc
-                                        .perform(get(LOGIN_API_PATH)
-                                                .contentType(APPLICATION_JSON)
-                                                .content(createJson(USERNAME, username, PASSWORD, password))
-                                                .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
-                                                .characterEncoding(UTF8))
-                                        .andReturn()
-                                        .getRequest();
+        HttpServletRequest request =
+                this.mockMvc
+                        .perform(get(LOGIN_API_PATH)
+                                .contentType(APPLICATION_JSON)
+                                .content(createJson(USERNAME, username, PASSWORD, password))
+                                .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
+                                .characterEncoding(UTF8))
+                        .andReturn()
+                        .getRequest();
 
         String tokenBody = jwtTokenProvider.resolveToken(request);
 
@@ -156,14 +158,15 @@ class JwtTokenProviderTest {
 
         this.userDataRepository.save(new UserData(username, password, UserRole.ADMIN, 9048182L));
 
-        HttpServletRequest request = this.mockMvc
-                                        .perform(get(LOGIN_API_PATH)
-                                                .contentType(APPLICATION_JSON)
-                                                .content(createJson(USERNAME, username, PASSWORD, password))
-                                                .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
-                                                .characterEncoding(UTF8))
-                                        .andReturn()
-                                        .getRequest();
+        HttpServletRequest request =
+                this.mockMvc
+                        .perform(get(LOGIN_API_PATH)
+                                .contentType(APPLICATION_JSON)
+                                .content(createJson(USERNAME, username, PASSWORD, password))
+                                .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
+                                .characterEncoding(UTF8))
+                        .andReturn()
+                        .getRequest();
 
         String tokenBody = jwtTokenProvider.resolveToken(request);
 
@@ -182,14 +185,15 @@ class JwtTokenProviderTest {
         String username = "admin3";
         String password = "NoFraudAllowed3";
 
-        HttpServletRequest request = this.mockMvc
-                                            .perform(get(LOGIN_API_PATH)
-                                                    .contentType(APPLICATION_JSON)
-                                                    .content(createJson(USERNAME, username, PASSWORD, password))
-                                                    .header(HttpHeaders.AUTHORIZATION, jwt)
-                                                    .characterEncoding(UTF8))
-                                            .andReturn()
-                                            .getRequest();
+        HttpServletRequest request =
+                this.mockMvc
+                        .perform(get(LOGIN_API_PATH)
+                                .contentType(APPLICATION_JSON)
+                                .content(createJson(USERNAME, username, PASSWORD, password))
+                                .header(HttpHeaders.AUTHORIZATION, jwt)
+                                .characterEncoding(UTF8))
+                        .andReturn()
+                        .getRequest();
         Assertions.assertNull(jwtTokenProvider.getAuthentication("a.b.c"));
         Assertions.assertNull(jwtTokenProvider.resolveToken(request));
     }

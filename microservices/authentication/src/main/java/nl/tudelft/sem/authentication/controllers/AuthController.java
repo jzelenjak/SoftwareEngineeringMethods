@@ -7,9 +7,6 @@ import java.util.Date;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
 import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
 import nl.tudelft.sem.authentication.security.UserRole;

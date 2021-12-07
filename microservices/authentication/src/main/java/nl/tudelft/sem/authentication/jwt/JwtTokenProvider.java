@@ -37,7 +37,8 @@ public class JwtTokenProvider {
      *
      * @param hmacKey   The secret key used to sign the token
      */
-    public JwtTokenProvider(AuthService authService, @Qualifier("secretKey") Key hmacKey, JwtUtils jwtUtils) {
+    public JwtTokenProvider(AuthService authService,
+                            @Qualifier("secretKey") Key hmacKey, JwtUtils jwtUtils) {
         this.authService = authService;
         this.hmacKey = hmacKey;
         this.jwtUtils = jwtUtils;
@@ -168,7 +169,8 @@ public class JwtTokenProvider {
 
         UserDetails userDetails = this.authService.loadUserByUserId(userId);
 
-        return new UsernamePasswordAuthenticationToken(userDetails,"", userDetails.getAuthorities());
+        return new UsernamePasswordAuthenticationToken(userDetails,
+                "", userDetails.getAuthorities());
     }
 
     /**

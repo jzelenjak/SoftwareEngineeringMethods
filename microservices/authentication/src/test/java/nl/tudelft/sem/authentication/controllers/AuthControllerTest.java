@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Date;
 import java.util.Optional;
-
 import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
 import nl.tudelft.sem.authentication.repositories.UserDataRepository;
@@ -82,7 +81,8 @@ class AuthControllerTest {
         this.mockMvc
             .perform(post(REGISTER_URL)
                 .contentType(APPLICATION_JSON)
-                .content(createJson(USERNAME, "amongus", PASSWORD, "kindasusngl", USERID, "2812040"))
+                .content(createJson(USERNAME, "amongus",
+                        PASSWORD, "kindasusngl", USERID, "2812040"))
                 .characterEncoding(UTF8))
             .andExpect(status().isOk());
 
@@ -95,12 +95,14 @@ class AuthControllerTest {
         String username = "AMONGAS";
         String password = "impostor";
 
-        this.userDataRepository.save(new UserData(username, password, UserRole.LECTURER, 23014918L));
+        this.userDataRepository.save(new UserData(username,
+                password, UserRole.LECTURER, 23014918L));
 
         this.mockMvc
             .perform(post(REGISTER_URL)
                 .contentType(APPLICATION_JSON)
-                .content(createJson(USERNAME, username, PASSWORD, password, USERID, "1824910"))
+                .content(createJson(USERNAME, username,
+                        PASSWORD, password, USERID, "1824910"))
                 .characterEncoding(UTF8))
             .andExpect(status().isConflict());
 
@@ -123,7 +125,8 @@ class AuthControllerTest {
         this.mockMvc
             .perform(put(CHANGE_PASSWORD_URL)
                 .contentType(APPLICATION_JSON)
-                .content(createJson(USERNAME, username, PASSWORD, password, "newPassword", "sssuss"))
+                .content(createJson(USERNAME, username,
+                        PASSWORD, password, "newPassword", "sssuss"))
                 .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
                 .characterEncoding(UTF8))
             .andExpect(status().isOk());
@@ -143,7 +146,8 @@ class AuthControllerTest {
         this.mockMvc
             .perform(put(CHANGE_PASSWORD_URL)
                 .contentType(APPLICATION_JSON)
-                .content(createJson(USERNAME, username, PASSWORD, password, "newPassword", "Dementia"))
+                .content(createJson(USERNAME, username,
+                        PASSWORD, password, "newPassword", "Dementia"))
                 .characterEncoding(UTF8))
             .andExpect(status().isUnauthorized());
 
@@ -169,7 +173,8 @@ class AuthControllerTest {
         this.mockMvc
             .perform(put(CHANGE_PASSWORD_URL)
                 .contentType(APPLICATION_JSON)
-                .content(createJson(USERNAME, target, PASSWORD, password, "new_password", "Dementia"))
+                .content(createJson(USERNAME, target,
+                        PASSWORD, password, "new_password", "Dementia"))
                 .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
                 .characterEncoding(UTF8))
             .andExpect(status().isForbidden());
@@ -185,7 +190,7 @@ class AuthControllerTest {
         String password = "amooooogus";
 
         this.userDataRepository
-            .save(new UserData(username, this.passwordEncoder.encode(password), UserRole.TA, 1048369L));
+            .save(new UserData(username, encode(password), UserRole.TA, 1048369L));
         String jwt = jwtTokenProvider.createToken(1048369L, UserRole.ADMIN, new Date());
         String jwtPrefixed = PREFIX + jwt;
 
@@ -251,7 +256,8 @@ class AuthControllerTest {
         String jwtPrefixed = PREFIX + jwt;
 
         this.userDataRepository
-            .save(new UserData(lecturerUsername, encode(lecturerPassword), UserRole.STUDENT, 1122334L));
+            .save(new UserData(lecturerUsername, encode(lecturerPassword),
+                    UserRole.STUDENT, 1122334L));
 
 
         this.mockMvc

@@ -22,7 +22,8 @@ class UserDataTest {
 
     @Test
     void getAuthoritiesTest() {
-        Set<SimpleGrantedAuthority> expected = Set.of(new SimpleGrantedAuthority(UserRole.ADMIN.name()));
+        Set<SimpleGrantedAuthority> expected = Set
+                .of(new SimpleGrantedAuthority(UserRole.ADMIN.name()));
         Assertions.assertEquals(expected, userData.getAuthorities());
     }
 
