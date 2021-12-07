@@ -7,14 +7,15 @@ import java.security.Key;
 import java.util.Date;
 import javax.servlet.http.HttpServletRequest;
 import nl.tudelft.sem.authentication.security.UserRole;
+import nl.tudelft.sem.authentication.service.AuthService;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
 /**
@@ -28,17 +29,17 @@ public class JwtTokenProvider {
     @Value("${jwtTokenValidityInMinutes:10}")
     private transient long validityInMinutes;
 
-    @Autowired
-    private transient UserDetailsService userDetailsService;
+    private final transient AuthService authService;
 
-    private transient JwtUtils jwtUtils;
+    private final transient JwtUtils jwtUtils;
 
     /**
      * Instantiates JwtTokenProvider object.
      *
      * @param hmacKey   The secret key used to sign the token
      */
-    public JwtTokenProvider(@Qualifier("secretKey") Key hmacKey, JwtUtils jwtUtils) {
+    public JwtTokenProvider(AuthService authService, @Qualifier("secretKey") Key hmacKey, JwtUtils jwtUtils) {
+        this.authService = authService;
         this.hmacKey = hmacKey;
         this.jwtUtils = jwtUtils;
     }
@@ -70,7 +71,7 @@ public class JwtTokenProvider {
      * @return The JWT in the request, null if no JWT was found or there is no 'Bearer ' prefix.
      */
     public String resolveToken(HttpServletRequest req) {
-        String bearerToken = req.getHeader("Authorization");
+        String bearerToken = req.getHeader(HttpHeaders.AUTHORIZATION);
         return jwtUtils.resolveToken(bearerToken);
     }
 
@@ -82,48 +83,19 @@ public class JwtTokenProvider {
      *         false otherwise
      */
     public boolean validateToken(String token) {
-        Jws<Claims> claimsJws = jwtUtils.validateAndParseClaims(token);
-        return claimsJws != null;
-//        try {
-//            Jwts
-//                .parserBuilder()
-//                .setSigningKey(this.hmacKey)
-//                .build()
-//                .parseClaimsJws(token);
-//            return true;
-//        } catch (Exception e) {
-//            return false;
-//        }
+        return this.validateAndParseToken(token) != null;
     }
 
-//    /**
-//     * Gets the username from the user with a given JWT token.
-//     *
-//     * @param token the JWT to get the username from.
-//     * @return the username from the JWT.
-//     */
-//    public String getUsername(String token) {
-//        // TODO: change if we need user ID?
-//        return Jwts.parserBuilder()
-//                .setSigningKey(this.hmacKey)
-//                .build()
-//                .parseClaimsJws(token)
-//                .getBody()
-//                .getSubject();
-//    }
-//
-//    /**
-//     * Gets the role from the user with the given JWT token.
-//     * Assumes that the provided token is valid (check this with 'validate' method).
-//     *
-//     * @param token the JWT token (assumed to be valid)
-//     * @return the role from JWT (STUDENT, LECTURER, TA, ADMIN)
-//     */
-//    public String getRole(String token) {
-//        Jws<Claims> claimsJws = jwtUtils.validateAndParseClaims(token);
-//        String role = jwtUtils.getRole(claimsJws);
-//        return role;
-//    }
+    /**
+     * Validates a JWT. Returns the claims
+     *
+     * @param token JWT to validate
+     * @return true if the token is valid (not expired and not corrupted)
+     *         false otherwise
+     */
+    public Jws<Claims> validateAndParseToken(String token) {
+        return jwtUtils.validateAndParseClaims(token);
+    }
 
     /**
      * Gets the username from the user with a given JWT token.
@@ -131,11 +103,22 @@ public class JwtTokenProvider {
      * @param token the JWT to get the username from.
      * @return the username from the JWT.
      */
-    public String getUsername(String token) {
-        return Jwts.parserBuilder()
+    public String getSubject(String token) {
+        Jws<Claims> claimsJws = Jwts.parserBuilder()
                 .setSigningKey(this.hmacKey)
                 .build()
-                .parseClaimsJws(token)
+                .parseClaimsJws(token);
+        return this.getSubject(claimsJws);
+    }
+
+    /**
+     * Gets the username from the user with a given JWT token.
+     *
+     * @param claimsJws          .
+     * @return the username from the JWT.
+     */
+    public String getSubject(Jws<Claims> claimsJws) {
+        return claimsJws
                 .getBody()
                 .getSubject();
     }
@@ -148,11 +131,23 @@ public class JwtTokenProvider {
      * @return the role from JWT (STUDENT, LECTURER, TA, ADMIN)
      */
     public String getRole(String token) {
-        return Jwts
+        Jws<Claims> claimsJws = Jwts
                 .parserBuilder()
                 .setSigningKey(this.hmacKey)
                 .build()
-                .parseClaimsJws(token)
+                .parseClaimsJws(token);
+        return getRole(claimsJws);
+    }
+
+    /**
+     * Gets the role from the user with the given JWT token.
+     * Assumes that the provided token is valid (check this with 'validate' method).
+     *
+     * @param claimsJws  dummy
+     * @return the role from JWT (STUDENT, LECTURER, TA, ADMIN)
+     */
+    public String getRole(Jws<Claims> claimsJws) {
+        return claimsJws
                 .getBody().get("role").toString();
     }
 
@@ -163,13 +158,29 @@ public class JwtTokenProvider {
      * @return the authentication in the JWT.
      */
     public Authentication getAuthentication(String token) {
-        if (!validateToken(token)) {
+        Jws<Claims> claims = this.validateAndParseToken(token);
+        if (claims == null) {
             return null;
         }
-        UserDetails userDetails = this.userDetailsService.loadUserByUsername(
-                this.getUsername(token));
-        return new UsernamePasswordAuthenticationToken(userDetails,
-                "", userDetails.getAuthorities());
+        return this.getAuthentication(claims);
+    }
+
+    public String getUsername(String token) {
+        Jws<Claims> claims = this.validateAndParseToken(token);
+        if (claims == null) {
+            return null;
+        }
+        long userId = Long.parseLong(this.getSubject(claims));
+
+        return this.authService.loadUserByUserId(userId).getUsername();
+    }
+
+    public Authentication getAuthentication(Jws<Claims> claimsJws) {
+        long userId = Long.parseLong(this.getSubject(claimsJws));
+
+        UserDetails userDetails = this.authService.loadUserByUserId(userId);
+
+        return new UsernamePasswordAuthenticationToken(userDetails,"", userDetails.getAuthorities());
     }
 }
 

@@ -106,7 +106,7 @@ public class AuthController {
                     String.format("You are not %s and are not allowed to change password!",
                             target));
         }
-        String newPassword = jsonNode.get("new_password").asText();
+        String newPassword = jsonNode.get("newPassword").asText();
         this.authService.changePassword(target, newPassword);
 
         return "Password successfully changed!";

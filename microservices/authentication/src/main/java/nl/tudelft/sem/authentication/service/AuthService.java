@@ -63,6 +63,13 @@ public class AuthService implements UserDetailsService {
                         "User with username %s not found", username)));
     }
 
+    public UserData loadUserByUserId(long userId) {
+        return this.userDataRepository
+                .findByUserId(userId)
+                .orElseThrow(() -> new UsernameNotFoundException(String.format(
+                        "User with user ID %s not found", userId)));
+    }
+
     /**
      * Change role of the user.
      *

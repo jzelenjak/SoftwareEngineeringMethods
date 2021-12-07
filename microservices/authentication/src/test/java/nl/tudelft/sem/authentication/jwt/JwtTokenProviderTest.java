@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.repositories.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
+import nl.tudelft.sem.authentication.service.AuthService;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +40,10 @@ class JwtTokenProviderTest {
 
     @Autowired
     private transient UserDataRepository userDataRepository;
+
+    @Autowired
+    private transient AuthService authService;
+
     private transient JwtTokenProvider jwtTokenProvider;
     private final transient String prefix = "Bearer ";
     private final transient ObjectMapper objectMapper = new ObjectMapper();
@@ -49,7 +54,7 @@ class JwtTokenProviderTest {
     @BeforeEach
     void setUp() {
         utf = "utf-8";
-        jwtTokenProvider = new JwtTokenProvider(hmacKey, jwtUtils);
+        jwtTokenProvider = new JwtTokenProvider(authService, hmacKey, jwtUtils);
         ReflectionTestUtils.setField(jwtTokenProvider, "validityInMinutes", 10);
     }
 
@@ -95,7 +100,7 @@ class JwtTokenProviderTest {
                 "The resolved token must not start with the prefix 'Bearer '");
         Assertions.assertTrue(jwtTokenProvider.validateToken(tokenBody),
                 "Invalid or expired token");
-        Assertions.assertEquals("admin", jwtTokenProvider.getUsername(tokenBody),
+        Assertions.assertEquals(1738290L, Long.parseLong(jwtTokenProvider.getSubject(tokenBody)),
                 "Decoded username does not match the original one");
         Assertions.assertEquals(UserRole.STUDENT.name(), jwtTokenProvider.getRole(tokenBody),
                 "Decoded role does not match the original one");

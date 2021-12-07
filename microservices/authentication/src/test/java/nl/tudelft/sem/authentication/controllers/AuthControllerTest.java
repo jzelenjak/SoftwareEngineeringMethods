@@ -80,7 +80,7 @@ class AuthControllerTest {
 
         this.userDataRepository.deleteById("amongus");
     }
-    /*
+
     @Test
     @WithMockUser(username = "AMONGAS", password = "impostor")
     void registerUnsuccessfullyTest() throws Exception {
@@ -115,7 +115,7 @@ class AuthControllerTest {
             .perform(put(changePasswordUrl)
                     .contentType(APPLICATION_JSON)
                     .content(createJson(usernameStr, username,
-                            passwordStr, password, "new_password", "sssuss"))
+                            passwordStr, password, "newPassword", "sssuss"))
                     .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
                     .characterEncoding(utf8Str))
                 .andExpect(status().isOk());
@@ -135,7 +135,7 @@ class AuthControllerTest {
                 .perform(put(changePasswordUrl)
                         .contentType(APPLICATION_JSON)
                         .content(createJson(usernameStr, username,
-                                passwordStr, password, "new_password", "Dementia"))
+                                passwordStr, password, "newPassword", "Dementia"))
                         .characterEncoding(utf8Str))
                 .andExpect(status().isUnauthorized());
 
@@ -188,7 +188,7 @@ class AuthControllerTest {
                         .andExpect(status().isOk());
 
         Assertions.assertTrue(this.jwtTokenProvider.validateToken(jwt));
-        Assertions.assertEquals(this.jwtTokenProvider.getUsername(jwt), username);
+        Assertions.assertEquals(1048369L, Long.parseLong(this.jwtTokenProvider.getSubject(jwt)));
         Assertions.assertEquals(this.jwtTokenProvider.getRole(jwt), UserRole.ADMIN.name());
 
 
@@ -447,7 +447,7 @@ class AuthControllerTest {
                 .get().getRole(), UserRole.ADMIN);
 
         this.userDataRepository.deleteById(adminName);
-    }*/
+    }
 
 
 }
