@@ -1,26 +1,36 @@
 package nl.tudelft.sem.hour.management.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
+import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator;
+import nl.tudelft.sem.jwt.JwtUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -33,6 +43,8 @@ public class HourDeclarationControllerTest {
 
     private static final String declarationPath = "/api/hour-management/declaration";
 
+    private static final String authorization = "Authorization";
+
     @Autowired
     private transient MockMvc mockMvc;
 
@@ -42,7 +54,11 @@ public class HourDeclarationControllerTest {
     @Autowired
     private transient HourDeclarationRepository hourDeclarationRepository;
 
-    private transient JavaType listHourType;
+    @MockBean
+    private transient JwtUtils jwtUtils;
+
+    @Mock
+    private transient Jws<Claims> jwsMock;
 
     private final transient LocalDateTime testDate = LocalDateTime.now();
 
@@ -62,10 +78,12 @@ public class HourDeclarationControllerTest {
     void init() {
         hourDeclarationRepository.deleteAll();
 
-        listHourType = objectMapper.getTypeFactory()
-                .constructCollectionType(List.class, HourDeclaration.class);
         hourDeclarationRepository.save(hourDeclarationUnapproved);
         hourDeclarationRepository.save(hourDeclarationApproved);
+
+        when(jwtUtils.resolveToken(Mockito.any())).thenReturn("");
+        when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(jwsMock);
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.ADMIN.name());
     }
 
     @Test
@@ -83,51 +101,55 @@ public class HourDeclarationControllerTest {
     void testGetAllDeclarations() throws Exception {
         List<HourDeclaration> expectedResponseBody = hourDeclarationRepository.findAll();
 
-        MvcResult mvcResult = mockMvc.perform(get(declarationPath))
-                .andExpect(status().isOk())
+        MvcResult mvcResult = mockMvc.perform(get(declarationPath)
+                        .header(authorization, ""))
                 .andReturn();
 
-        List<HourDeclaration> actualResponseBody = objectMapper
-                .readValue(mvcResult.getResponse().getContentAsString(), listHourType);
-
-
-        assertThat(actualResponseBody).isEqualTo(expectedResponseBody);
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string(objectMapper.writeValueAsString(expectedResponseBody)));
     }
 
     @Test
     void testGetAllDeclarationsEmpty() throws Exception {
         hourDeclarationRepository.deleteAll();
 
-        mockMvc.perform(get(declarationPath))
-                .andExpect(status().isBadRequest())
+        MvcResult mvcResult = mockMvc.perform(get(declarationPath)
+                        .header(authorization, ""))
                 .andReturn();
+
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     void testPostDeclaration() throws Exception {
         MvcResult mvcResult = mockMvc.perform(post(declarationPath)
-            .contentType("application/json")
-            .content(objectMapper.writeValueAsString(hourDeclarationRequestNew)))
-            .andExpect(status().isOk())
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(hourDeclarationRequestNew))
+                        .header(authorization, ""))
             .andReturn();
 
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Declaration with id 3 has been successfully saved."));
+
         Optional<HourDeclaration> saved = hourDeclarationRepository.findById(3L);
-        String actualResponseBody = mvcResult.getResponse().getContentAsString();
 
         assertThat(saved.isEmpty()).isFalse();
         assertThat(saved.get().getStudentId()).isEqualTo(hourDeclarationRequestNew.getStudentId());
         assertThat(saved.get().getCourseId()).isEqualTo(hourDeclarationRequestNew.getCourseId());
-        assertThat(saved.get().getCourseId()).isEqualTo(hourDeclarationRequestNew.getCourseId());
-
-        assertThat(actualResponseBody)
-                .isEqualTo("Declaration with id 3 has been successfully saved.");
     }
 
     @Test
     void testPostDeclarationInvalid() throws Exception {
         mockMvc.perform(post(declarationPath)
-                .contentType("application/json")
-                .content(""))
+                    .contentType("application/json")
+                    .content("")
+                    .header(authorization, ""))
                 .andExpect(status().isBadRequest());
     }
 
@@ -135,80 +157,102 @@ public class HourDeclarationControllerTest {
     void testGetSpecifiedDeclaration() throws Exception {
         Optional<HourDeclaration> expectedResponseBody = hourDeclarationRepository.findById(1L);
 
-        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/1"))
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/1")
+                .header(authorization, ""))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        HourDeclaration actualResponseBody = objectMapper
-                .readValue(mvcResult.getResponse().getContentAsString(), HourDeclaration.class);
-
-        assertThat(expectedResponseBody.isEmpty()).isFalse();
-        assertThat(actualResponseBody).isEqualTo(expectedResponseBody.get());
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string(objectMapper.writeValueAsString(expectedResponseBody)));
     }
 
     @Test
     void testGetSpecifiedDeclarationInvalidId() throws Exception {
-        hourDeclarationRepository.deleteAll();
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/9999")
+                        .header(authorization, ""))
+                .andReturn();
 
-        mockMvc.perform(get("/api/hour-management/declaration/9999"))
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void testDeleteDeclaration() throws Exception {
-        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/1/reject"))
-                .andExpect(status().isOk())
+        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/1/reject")
+                .header(authorization, ""))
                 .andReturn();
 
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content()
+                        .string("Declaration with id 1 has been successfully deleted."));
+
         Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository.findById(1L);
-        String actualResponseBody = mvcResult.getResponse().getContentAsString();
 
         // ensures that delete is no longer in system
         assertThat(hourDeclaration.isEmpty()).isTrue();
-
-        assertThat(actualResponseBody)
-                .isEqualTo("Declaration with id 1 has been successfully deleted.");
     }
 
     @Test
     void testDeleteDeclarationInvalidId() throws Exception {
-        mockMvc.perform(delete("/api/hour-management/declaration/20/reject"))
+        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/20/reject")
+                .header(authorization, ""))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void testDeleteDeclarationApproved() throws Exception {
-        mockMvc.perform(delete("/api/hour-management/declaration/2/reject"))
+        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/2/reject")
+                .header(authorization, ""))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void testApproveDeclaration() throws Exception {
         MvcResult mvcResult = mockMvc.perform(put("/api/hour-management/declaration/1/approve")
-                .contentType("application/json"))
-                .andExpect(status().isOk())
+                .contentType("application/json")
+                .header(authorization, ""))
                 .andReturn();
 
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content()
+                        .string("Declaration with id 1 has been successfully approved."));
+
         Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository.findById(1L);
-        String actualResponseBody = mvcResult.getResponse().getContentAsString();
 
         assertThat(hourDeclaration.isEmpty()).isFalse();
         assertThat(hourDeclaration.get().isApproved()).isTrue();
-
-        assertThat(actualResponseBody)
-                .isEqualTo("Declaration with id 1 has been successfully approved.");
-
     }
 
     @Test
     void testApproveDeclarationInvalidId() throws Exception {
-        mockMvc.perform(put("/api/hour-management/declaration/20/approve"))
+        MvcResult mvcResult = mockMvc.perform(put("/api/hour-management/declaration/20/approve")
+                .header(authorization, ""))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void testApproveDeclarationApproved() throws Exception {
-        mockMvc.perform(put("/api/hour-management/declaration/2/approve"))
+        MvcResult mvcResult = mockMvc.perform(put("/api/hour-management/declaration/2/approve")
+                .header(authorization, ""))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
     }
 
@@ -217,23 +261,26 @@ public class HourDeclarationControllerTest {
         List<HourDeclaration> expectedResponseBody = hourDeclarationRepository
                 .findByApproved(false);
 
-        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/unapproved"))
-                .andExpect(status().isOk())
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/unapproved")
+                .header(authorization, ""))
                 .andReturn();
 
-        List<HourDeclaration> actualResponseBody = objectMapper
-                .readValue(mvcResult.getResponse().getContentAsString(), listHourType);
-
-        assertThat(actualResponseBody).isEqualTo(expectedResponseBody);
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string(objectMapper.writeValueAsString(expectedResponseBody)));
     }
 
     @Test
     void testGetAllUnapprovedDeclarationsEmpty() throws Exception {
         hourDeclarationRepository.deleteAll();
 
-        mockMvc.perform(get("/api/hour-management/declaration/unapproved"))
-                .andExpect(status().isBadRequest())
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/unapproved")
+                .header(authorization, ""))
                 .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -241,21 +288,23 @@ public class HourDeclarationControllerTest {
         List<HourDeclaration> expectedResponseBody = hourDeclarationRepository
                 .findByStudentId(1234);
 
-        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/student/1234"))
-                .andExpect(status().isOk())
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/student/1234")
+                .header(authorization, ""))
                 .andReturn();
 
-        List<HourDeclaration> actualResponseBody = objectMapper
-                .readValue(mvcResult.getResponse().getContentAsString(), listHourType);
-
-        assertThat(actualResponseBody).isEqualTo(expectedResponseBody);
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string(objectMapper.writeValueAsString(expectedResponseBody)));
     }
 
     @Test
     void testGetAllDeclarationsByStudentEmpty() throws Exception {
-        hourDeclarationRepository.deleteAll();
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/student/9999")
+                .header(authorization, ""))
+                .andReturn();
 
-        mockMvc.perform(get("/api/hour-management/declaration/student/9999"))
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
     }
 }

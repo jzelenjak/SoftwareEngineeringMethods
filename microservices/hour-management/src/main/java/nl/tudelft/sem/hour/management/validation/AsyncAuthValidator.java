@@ -2,6 +2,7 @@ package nl.tudelft.sem.hour.management.validation;
 
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import nl.tudelft.sem.jwt.JwtUtils;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -9,7 +10,6 @@ import reactor.core.publisher.Mono;
 
 public class AsyncAuthValidator extends AsyncBaseValidator {
 
-    // TODO: Create the bean on initialization
     // JWT utility token
     private final transient JwtUtils jwtUtils;
 

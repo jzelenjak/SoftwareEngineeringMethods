@@ -11,4 +11,9 @@ public class HourDeclarationRequest {
     private long courseId;
 
     private double declaredHours;
+
+    public String toJson() {
+        return String.format("{\"studentId\": %d, \"courseId\": %d, \"declaredHours\": %f}",
+                studentId, courseId, declaredHours);
+    }
 }
