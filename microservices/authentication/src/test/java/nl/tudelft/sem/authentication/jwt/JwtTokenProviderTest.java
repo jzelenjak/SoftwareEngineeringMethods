@@ -1,10 +1,13 @@
 package nl.tudelft.sem.authentication.jwt;
 
+
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import java.security.Key;
 import java.util.Date;
 import javax.servlet.http.HttpServletRequest;
@@ -99,14 +102,15 @@ class JwtTokenProviderTest {
                         .getRequest();
 
         String tokenBody = jwtTokenProvider.resolveToken(request);
+        Jws<Claims> claimsJws = jwtTokenProvider.validateAndParseToken(tokenBody);
 
         Assertions.assertFalse(tokenBody.startsWith(PREFIX),
                 "The resolved token must not start with the prefix 'Bearer '");
-        Assertions.assertTrue(jwtTokenProvider.validateToken(tokenBody),
+        Assertions.assertNotNull(claimsJws,
                 "Invalid or expired token");
-        Assertions.assertEquals(1738290L, Long.parseLong(jwtTokenProvider.getSubject(tokenBody)),
+        Assertions.assertEquals(1738290L, Long.parseLong(jwtTokenProvider.getSubject(claimsJws)),
                 "Decoded subject does not match the original one");
-        Assertions.assertEquals(UserRole.STUDENT.name(), jwtTokenProvider.getRole(tokenBody),
+        Assertions.assertEquals(UserRole.STUDENT.name(), jwtTokenProvider.getRole(claimsJws),
                 "Decoded role does not match the original one");
 
         this.userDataRepository.deleteById(username);
@@ -194,7 +198,9 @@ class JwtTokenProviderTest {
                                 .characterEncoding(UTF8))
                         .andReturn()
                         .getRequest();
-        Assertions.assertNull(jwtTokenProvider.getAuthentication("a.b.c"));
+        Jws<Claims> claimsJws = jwtTokenProvider.validateAndParseToken(PREFIX + jwt);
+        Assertions.assertNull(jwtTokenProvider.getAuthentication(claimsJws));
+        Assertions.assertNull(jwtTokenProvider.getSubject(claimsJws));
         Assertions.assertNull(jwtTokenProvider.resolveToken(request));
     }
 }

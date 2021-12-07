@@ -76,37 +76,14 @@ public class JwtTokenProvider {
     }
 
     /**
-     * Validates a JWT. Takes in an unprefixed token String.
-     *
-     * @param token     JWT to validate (unprefixed)
-     * @return true if the token is valid (not expired and not corrupted)
-     *         false otherwise
-     */
-    public boolean validateToken(String token) {
-        return this.validateAndParseToken(token) != null;
-    }
-
-    /**
      * Validates a JWT and parses it. Returns the claims from the token.
      *
      * @param token     JWT to validate
-     * @return true if the token is valid (not expired and not corrupted)
-     *         false otherwise
+     * @return the parsed claims from the token if it is valid (not expired and not corrupted),
+     *         null otherwise
      */
     public Jws<Claims> validateAndParseToken(String token) {
         return jwtUtils.validateAndParseClaims(token);
-    }
-
-    /**
-     * Gets the subject (here: userId) from the user with a given JWT token.
-     * Takes in an unprefixed token String.
-     *
-     * @param token     the JWT to get the subject from.
-     * @return the subject from the JWT (NB! As a String).
-     */
-    public String getSubject(String token) {
-        Jws<Claims> claimsJws = this.validateAndParseToken(token);
-        return this.getSubject(claimsJws);
     }
 
     /**
@@ -115,21 +92,13 @@ public class JwtTokenProvider {
      *
      * @param claimsJws     the claims from a parsed token   .
      * @return the subject from the JWT (NB! As a String).
+     *         And null when subject is null.
      */
     public String getSubject(Jws<Claims> claimsJws) {
+        if (claimsJws == null) {
+            return null;
+        }
         return String.valueOf(jwtUtils.getUserId(claimsJws));
-    }
-
-    /**
-     * Gets the role of the user from a given JWT token. Takes in the token as a String.
-     * Assumes that the provided token is valid (check this with 'validate' method).
-     *
-     * @param token the JWT token string (assumed to be valid)
-     * @return the role from JWT (STUDENT, CANDIDATE_TA, TA, LECTURER, ADMIN)
-     */
-    public String getRole(String token) {
-        Jws<Claims> claimsJws = this.validateAndParseToken(token);
-        return getRole(claimsJws);
     }
 
     /**
@@ -146,25 +115,13 @@ public class JwtTokenProvider {
     /**
      * Gets the authentication of a JWT (used in JwtFilter).
      *
-     * @param token the JWT to get the authentication from.
-     * @return the Authentication object made from the data in the JWT.
-     *          Null if the token is invalid
-     */
-    public Authentication getAuthentication(String token) {
-        Jws<Claims> claims = this.validateAndParseToken(token);
-        if (claims == null) {
-            return null;
-        }
-        return this.getAuthentication(claims);
-    }
-
-    /**
-     * Gets the authentication of a JWT (used in JwtFilter).
-     *
      * @param claimsJws the claims from a valid parsed token
      * @return the Authentication object made from the data in the JWT.
      */
     public Authentication getAuthentication(Jws<Claims> claimsJws) {
+        if (claimsJws == null) {
+            return null;
+        }
         long userId = Long.parseLong(this.getSubject(claimsJws));
 
         UserDetails userDetails = this.authService.loadUserByUserId(userId);

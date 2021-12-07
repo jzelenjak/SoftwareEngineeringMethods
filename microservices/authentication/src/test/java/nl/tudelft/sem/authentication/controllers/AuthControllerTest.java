@@ -1,5 +1,6 @@
 package nl.tudelft.sem.authentication.controllers;
 
+
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -8,6 +9,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import java.util.Date;
 import java.util.Optional;
 import nl.tudelft.sem.authentication.entities.UserData;
@@ -149,7 +152,7 @@ class AuthControllerTest {
                 .content(createJson(USERNAME, username,
                         PASSWORD, password, "newPassword", "Dementia"))
                 .characterEncoding(UTF8))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isForbidden());
 
         this.userDataRepository.deleteById(username);
     }
@@ -202,9 +205,11 @@ class AuthControllerTest {
                 .characterEncoding(UTF8))
             .andExpect(status().isOk());
 
-        Assertions.assertTrue(this.jwtTokenProvider.validateToken(jwt));
-        Assertions.assertEquals(1048369L, Long.parseLong(this.jwtTokenProvider.getSubject(jwt)));
-        Assertions.assertEquals(this.jwtTokenProvider.getRole(jwt), UserRole.ADMIN.name());
+        Jws<Claims> claimsJws = this.jwtTokenProvider.validateAndParseToken(jwt);
+        Assertions.assertNotNull(claimsJws);
+        Assertions.assertEquals(1048369L,
+                Long.parseLong(this.jwtTokenProvider.getSubject(claimsJws)));
+        Assertions.assertEquals(this.jwtTokenProvider.getRole(claimsJws), UserRole.ADMIN.name());
 
         this.userDataRepository.deleteById(username);
     }
