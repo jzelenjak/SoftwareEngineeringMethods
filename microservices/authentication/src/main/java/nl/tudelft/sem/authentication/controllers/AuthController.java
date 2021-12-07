@@ -71,8 +71,7 @@ public class AuthController {
      */
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    void register(HttpServletRequest req,
+    public @ResponseBody void register(HttpServletRequest req,
                     HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         final String username = jsonNode.get(USERNAME).asText();
@@ -95,8 +94,7 @@ public class AuthController {
      */
     @PutMapping("/change_password")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    void changePassword(HttpServletRequest req,
+    public @ResponseBody void changePassword(HttpServletRequest req,
                           HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         String target = jsonNode.get(USERNAME).asText();
@@ -121,12 +119,11 @@ public class AuthController {
      */
     @GetMapping("/login")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    void login(HttpServletRequest req,
+    public @ResponseBody void login(HttpServletRequest req,
                  HttpServletResponse res) throws IOException {
-            JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
-            String username = jsonNode.get(USERNAME).asText();
-            String password = jsonNode.get(PASSWORD).asText();
+        JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
+        String username = jsonNode.get(USERNAME).asText();
+        String password = jsonNode.get(PASSWORD).asText();
         try {
             authenticationManager
                     .authenticate(new UsernamePasswordAuthenticationToken(username, password));
@@ -150,8 +147,7 @@ public class AuthController {
      */
     @PutMapping("/change_role")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    void changeRole(HttpServletRequest req,
+    public @ResponseBody void changeRole(HttpServletRequest req,
                       HttpServletResponse res) throws IOException {
         // Get JWT from the requester.
         String jwt = jwtTokenProvider.resolveToken(req);
@@ -189,15 +185,12 @@ public class AuthController {
      */
     @PutMapping("/delete")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    void delete(HttpServletRequest req,
+    public @ResponseBody void delete(HttpServletRequest req,
                     HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         String target = jsonNode.get(USERNAME).asText();
         this.authService.deleteUser(target);
     }
-
-
 
     /**
      * Gets role for a given string.

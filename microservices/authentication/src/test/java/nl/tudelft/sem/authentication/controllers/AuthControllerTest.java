@@ -509,7 +509,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmAllMightyAdmin", password = "MeAllMightyMe")
-    void deleteExistingUserTest() throws Exception{
+    void deleteExistingUserTest() throws Exception {
         String username = "IAmAllMightyAdmin";
         String password = "MeAllMightyMe";
 
@@ -522,7 +522,8 @@ class AuthControllerTest {
         String studentPassword = "MeSoSadMe";
 
         this.userDataRepository
-                .save(new UserData(studentName, encode(studentPassword), UserRole.STUDENT, 7654321L));
+                .save(new UserData(studentName, encode(studentPassword),
+                        UserRole.STUDENT, 7654321L));
 
         this.mockMvc
                 .perform(put(DELETE_USER_URL)
@@ -537,7 +538,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmAllMightyAdmin2", password = "MeAllMighty")
-    void deleteNonExistingUserTest() throws Exception{
+    void deleteNonExistingUserTest() throws Exception {
         String username = "IAmAllMightyAdmin2";
         String password = "MeAllMighty";
 
@@ -556,5 +557,4 @@ class AuthControllerTest {
 
         this.userDataRepository.deleteById(username);
     }
-
 }
