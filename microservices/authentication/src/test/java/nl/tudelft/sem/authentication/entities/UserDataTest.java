@@ -1,6 +1,5 @@
 package nl.tudelft.sem.authentication.entities;
 
-import java.util.HashSet;
 import java.util.Set;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.junit.jupiter.api.Assertions;
@@ -23,8 +22,7 @@ class UserDataTest {
 
     @Test
     void getAuthoritiesTest() {
-        Set<SimpleGrantedAuthority> expected = new HashSet<>();
-        expected.add(new SimpleGrantedAuthority(UserRole.ADMIN.name()));
+        Set<SimpleGrantedAuthority> expected = Set.of(new SimpleGrantedAuthority(UserRole.ADMIN.name()));
         Assertions.assertEquals(expected, userData.getAuthorities());
     }
 
@@ -37,9 +35,7 @@ class UserDataTest {
     void setPasswordTest() {
         // Cover empty constructor as well
         UserData user = new UserData();
-        String before = user.getPassword();
         user.setPassword(password2);
-        Assertions.assertNotEquals(before, user.getPassword());
         Assertions.assertEquals(password2, user.getPassword());
     }
 
@@ -50,10 +46,9 @@ class UserDataTest {
 
     @Test
     void setUsernameTest() {
-        String before = userData.getUsername();
-        userData.setUsername("amogus");
-        Assertions.assertNotEquals(before, userData.getUsername());
-        Assertions.assertEquals("amogus", userData.getUsername());
+        UserData user = new UserData();
+        user.setUsername("amogus");
+        Assertions.assertEquals("amogus", user.getUsername());
     }
 
     @Test
@@ -64,9 +59,7 @@ class UserDataTest {
     @Test
     void setUserIdTest() {
         UserData user = new UserData();
-        long before = user.getUserId();
         user.setUserId(userId);
-        Assertions.assertNotEquals(before, user.getUserId());
         Assertions.assertEquals(userId, user.getUserId());
     }
 
@@ -77,10 +70,9 @@ class UserDataTest {
 
     @Test
     void setRoleTest() {
-        UserRole before = userData.getRole();
-        userData.setRole(UserRole.TA);
-        Assertions.assertNotEquals(before, userData.getRole());
-        Assertions.assertEquals(UserRole.TA, userData.getRole());
+        UserData user = new UserData();
+        user.setRole(UserRole.TA);
+        Assertions.assertEquals(UserRole.TA, user.getRole());
     }
 
     @Test
@@ -93,6 +85,8 @@ class UserDataTest {
         boolean before = userData.isAccountNonExpired();
         userData.setAccountNonExpired(!before);
         Assertions.assertEquals(!before, userData.isAccountNonExpired());
+
+        userData.setAccountNonExpired(before);
     }
 
     @Test
@@ -105,6 +99,8 @@ class UserDataTest {
         boolean before = userData.isAccountNonLocked();
         userData.setAccountNonLocked(!before);
         Assertions.assertEquals(!before, userData.isAccountNonLocked());
+
+        userData.setAccountNonLocked(before);
     }
 
     @Test
@@ -117,6 +113,8 @@ class UserDataTest {
         boolean before = userData.isCredentialsNonExpired();
         userData.setCredentialsNonExpired(!before);
         Assertions.assertEquals(!before, userData.isCredentialsNonExpired());
+
+        userData.setCredentialsNonExpired(before);
     }
 
     @Test
@@ -129,6 +127,8 @@ class UserDataTest {
         boolean before = userData.isEnabled();
         userData.setEnabled(!before);
         Assertions.assertEquals(!before, userData.isEnabled());
+
+        userData.setEnabled(before);
     }
 
     @Test
@@ -151,8 +151,6 @@ class UserDataTest {
     void equalsDifferentTest() {
         UserData otherUserData = new UserData("jegorka", password2, UserRole.LECTURER, userId);
         Assertions.assertNotEquals(userData, otherUserData);
-        Integer notUserData = 42;
-        Assertions.assertNotEquals(userData, notUserData);
     }
 
     @Test
@@ -163,7 +161,7 @@ class UserDataTest {
 
     @Test
     void hashCodeDifferentTest() {
-        UserData otherUserData = new UserData("jegorka", password2, UserRole.LECTURER, userId);
+        UserData otherUserData = new UserData("jegorkaboom", password2, UserRole.LECTURER, userId);
         Assertions.assertNotEquals(userData.hashCode(), otherUserData.hashCode());
     }
 }
