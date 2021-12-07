@@ -1,7 +1,6 @@
 package nl.tudelft.sem.authentication.entities;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -14,6 +13,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 /**
  * A class for storing user data.
+ * Username (netID) is used to log in or register a user
+ *      (it is the identifier in authentication microservice).
+ * UserId is mostly used by other microservices to identify the users,
+ *      also it is used as "Subject" in JWT token.
  */
 @Entity(name = "user_data")
 public class UserData implements UserDetails {
@@ -21,22 +24,32 @@ public class UserData implements UserDetails {
     @Column(name = "username", length = 50, unique = true, nullable = false)
     private String username;
 
-    @Column(name = "password", length = 128)
+    @Column(name = "userId", unique = true, nullable = false, updatable = false)
+    private long userId;
+
+    @Column(name = "password", length = 128, nullable = false)
     private String password;
 
-    @Column(name = "role")
+    @Column(name = "role", nullable = false)
     private UserRole role;
 
+    @Column(name = "account_non_expired")
     private boolean accountNonExpired;
 
+    @Column(name = "account_non_locked")
     private boolean accountNonLocked;
 
+    @Column(name = "credentials_non_expired")
     private boolean credentialsNonExpired;
 
+    @Column(name = "enabled")
     private boolean enabled;
 
     private static final long serialVersionUID = 25565543525446278L;
 
+    /**
+     * An empty constructor to create a user.
+     */
     public UserData(){
 
     }
@@ -47,11 +60,13 @@ public class UserData implements UserDetails {
      * @param username              the netID of the user
      * @param password              the password of the user
      * @param role                  the role of the user
+     * @param userId                the user ID of the user
      */
-    public UserData(String username, String password, UserRole role) {
+    public UserData(String username, String password, UserRole role, long userId) {
         this.username = username;
         this.password = password;
         this.role = role;
+        this.userId = userId;
         this.accountNonExpired = true;
         this.accountNonLocked = true;
         this.credentialsNonExpired = true;
@@ -65,21 +80,18 @@ public class UserData implements UserDetails {
      */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-        authorities.add(new SimpleGrantedAuthority(this.role.name()));
-        return authorities;
+        return Set.of(new SimpleGrantedAuthority(this.role.name()));
     }
 
     /**
-     * Gets the password of the user.
+     * Gets the (hashed) password of the user.
      *
-     * @return the password of the user
+     * @return the (hashed) password of the user
      */
     @Override
     public String getPassword() {
         return this.password;
     }
-
 
     /**
      * Sets the password of the user.
@@ -91,7 +103,7 @@ public class UserData implements UserDetails {
     }
 
     /**
-     * Gets the username (netid) of the user.
+     * Gets the username (net ID) of the user.
      *
      * @return the username of the user
      */
@@ -101,12 +113,30 @@ public class UserData implements UserDetails {
     }
 
     /**
-     * Sets the username (netid) of the user.
+     * Sets the username (net ID) of the user.
      *
      * @param username the username of the user
      */
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    /**
+     * Gets the user ID of the user.
+     *
+     * @return the user ID of the user.
+     */
+    public long getUserId() {
+        return this.userId;
+    }
+
+    /**
+     * Sets the user ID of the user.
+     *
+     * @param userId the user ID of the user.
+     */
+    public void setUserId(long userId) {
+        this.userId = userId;
     }
 
     /**
@@ -204,11 +234,11 @@ public class UserData implements UserDetails {
     }
 
     /**
-     * Checks if an object is equals to this UserData object.
+     * Checks if another user (UserData) is equals to this user.
      *
      * @param other the object ot compare to
-     * @return true if the other object is also an instance of the UserData
-     *         and if the usernames match. False otherwise
+     * @return true if the other object is also an instance of UserData class
+     *         and if the usernames match, otherwise false
      */
     @Override
     public boolean equals(Object other) {
@@ -224,12 +254,12 @@ public class UserData implements UserDetails {
     }
 
     /**
-     * Returns the hash code of a UserData object.
+     * Returns the hash code of a user (UserData) object.
      *
-     * @return the hash code of a UserData object.
+     * @return the hash code of a user (UserData) object.
      */
     @Override
     public int hashCode() {
-        return username.hashCode();
+        return this.username.hashCode();
     }
 }

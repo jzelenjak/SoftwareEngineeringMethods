@@ -14,4 +14,7 @@ dependencies {
 
     // Jackson for JSON parsing
     implementation 'com.fasterxml.jackson.core:jackson-core:2.13.0'
+
+    implementation project(':libs:heartbeat')
+    implementation project(':libs:jwt')
 }

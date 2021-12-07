@@ -19,4 +19,7 @@ public interface UserDataRepository extends CrudRepository<UserData, String> {
      * @return the user if has been found
      */
     Optional<UserData> findByUsername(String username);
+
+
+    Optional<UserData> findByUserId(long userId);
 }
