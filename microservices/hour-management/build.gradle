@@ -1,3 +1,7 @@
 group = 'nl.tudelft.cse.sem.hour.management'
 version = '0.0.1-SNAPSHOT'
 mainClassName = 'nl.tudelft.sem.hour.management.HourManagementMain'
+
+dependencies {
+    implementation project(':libs:heartbeat')
+}

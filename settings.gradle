@@ -2,3 +2,7 @@ rootProject.name = 'sem-group-13a'
 
 include 'microservices:authentication', 'microservices:gateway', 'microservices:courses'
 include 'microservices:hiring-procedure', 'microservices:hour-management', 'microservices:users'
+
+// Utility libraries
+include 'libs:heartbeat'
+include 'libs:jwt'
