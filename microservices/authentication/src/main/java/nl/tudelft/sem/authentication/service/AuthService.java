@@ -98,4 +98,14 @@ public class AuthService implements UserDetailsService {
         userData.setRole(newRole);
         userDataRepository.save(userData);
     }
+
+    /**
+     * Delete user specified by the username.
+     *
+     * @param username the username of the to be removed user.
+     */
+    public void deleteUser(String username) {
+        UserData userData = loadUserByUsername(username);
+        userDataRepository.delete(userData);
+    }
 }

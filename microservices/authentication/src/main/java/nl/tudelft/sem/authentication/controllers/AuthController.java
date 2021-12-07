@@ -83,7 +83,6 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     String.format("User with NetID %s already exists!", USERNAME));
         }
-        // TODO: decide on how do we send back the token
     }
 
 
@@ -143,7 +142,7 @@ public class AuthController {
     }
 
     /**
-     * Changes the password of a user if the provided credentials are correct.
+     * Changes the role of a user, if the user is an admin or lecturer.
      *
      * @param req the HTTP request.
      * @param res the HTTP response.
@@ -175,12 +174,30 @@ public class AuthController {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "You are not allowed to do that as a lecturer!");
             }
-
         }
         String newRoleInput = jsonNode.get("role").asText();
         UserRole newRole = getRole(newRoleInput);
         this.authService.changeRole(target, newRole);
     }
+
+    /**
+     * Deletes the specified user. Only possible by ADMIN.
+     *
+     * @param req the HTTP request.
+     * @param res the HTTP response.
+     * @throws IOException IO exception if something goes wrong with the servlets.
+     */
+    @PutMapping("/delete")
+    @ResponseStatus(HttpStatus.OK)
+    public @ResponseBody
+    void delete(HttpServletRequest req,
+                    HttpServletResponse res) throws IOException {
+        JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
+        String target = jsonNode.get(USERNAME).asText();
+        this.authService.deleteUser(target);
+    }
+
+
 
     /**
      * Gets role for a given string.
