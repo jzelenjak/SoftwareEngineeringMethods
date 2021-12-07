@@ -54,14 +54,17 @@ public class ApplicationService {
      * @param userId The ID of the user
      * @param courseId The ID of the course
      */
-    public void createApplication(long userId, long courseId) {
-        LocalDateTime currentTime = LocalDateTime.now();
+    public void createApplication(long userId, long courseId, LocalDateTime currentTime) {
         Application application = new Application(userId, courseId, currentTime);
         applicationRepository.save(application);
     }
 
-    public List<Application> getAllApplications(long courseId) {
+    public List<Application> getApplicationsForCourse(long courseId) {
         return applicationRepository.findAllByCourseId(courseId);
+    }
+
+    public List<Application> getAllApplications() {
+        return applicationRepository.findAll();
     }
 
     /**
