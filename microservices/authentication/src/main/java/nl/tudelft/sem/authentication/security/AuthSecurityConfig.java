@@ -26,7 +26,7 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
     private final transient JwtTokenProvider jwtTokenProvider;
 
     /**
-     * Instantiates the security configuration class.
+     * Instantiates a new AuthSecurityConfig object.
      */
     public AuthSecurityConfig(AuthService authService, PasswordEncoder passwordEncoder,
                               JwtTokenProvider jwtTokenProvider) {
@@ -35,12 +35,6 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
-    /**
-     * Configures HTTP security (requests, permissions, authentication, csrf etc).
-     *
-     * @param http HTTP security object
-     * @throws Exception if something goes wrong
-     */
     @Override
     public void configure(HttpSecurity http) throws Exception {
         http
@@ -57,16 +51,10 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest()
                 .authenticated()
                 .and()
-                .apply(new JwtConfig(jwtTokenProvider));
+                .apply(new JwtConfig(this.jwtTokenProvider));
     }
 
 
-    /**
-     * Configures authentication manager using AuthenticationManagerBuilder.
-     *
-     * @param auth authentication manager builder
-     * @throws Exception if something goes wrong
-     */
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth
@@ -74,12 +62,6 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
             .passwordEncoder(this.passwordEncoder);
     }
 
-    /**
-     * Creates an authentication manager bean.
-     *
-     * @return the authentication manager bean
-     * @throws Exception if something goes wrong
-     */
     @Bean
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
