@@ -156,7 +156,7 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testDeleteDeclaration() throws Exception {
-        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/1"))
+        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/1/reject"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -172,13 +172,13 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testDeleteDeclarationInvalidId() throws Exception {
-        mockMvc.perform(delete("/api/hour-management/declaration/20"))
+        mockMvc.perform(delete("/api/hour-management/declaration/20/reject"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void testDeleteDeclarationApproved() throws Exception {
-        mockMvc.perform(delete("/api/hour-management/declaration/2"))
+        mockMvc.perform(delete("/api/hour-management/declaration/2/reject"))
                 .andExpect(status().isBadRequest());
     }
 

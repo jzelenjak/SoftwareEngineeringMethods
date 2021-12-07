@@ -2,6 +2,7 @@ package nl.tudelft.sem.hour.management.controllers;
 
 import java.util.List;
 import java.util.Optional;
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.Data;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
@@ -44,7 +45,7 @@ public class HourDeclarationController {
      */
     @GetMapping("/declaration")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody List<HourDeclaration> getAllDeclarations() {
+    public @ResponseBody List<HourDeclaration> getAllDeclarations(HttpServletRequest request) {
         List<HourDeclaration> result = hourDeclarationRepository.findAll();
 
         if (result.isEmpty()) {
@@ -65,7 +66,8 @@ public class HourDeclarationController {
     @PostMapping("/declaration")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody String
-    declareHours(@RequestBody @Valid HourDeclarationRequest hourDeclarationRequest) {
+    declareHours(@RequestBody @Valid HourDeclarationRequest hourDeclarationRequest,
+                 HttpServletRequest request) {
         HourDeclaration hourDeclaration = new HourDeclaration(hourDeclarationRequest);
 
         try {
@@ -89,7 +91,7 @@ public class HourDeclarationController {
     @GetMapping("/declaration/{id}")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody HourDeclaration
-    getSpecifiedDeclaration(@PathVariable("id") long declarationId) {
+    getSpecifiedDeclaration(@PathVariable("id") long declarationId, HttpServletRequest request) {
         Optional<HourDeclaration> result = hourDeclarationRepository.findById(declarationId);
 
         if (result.isEmpty()) {
@@ -109,9 +111,10 @@ public class HourDeclarationController {
      *
      * @return an informative message about status of request
      */
-    @DeleteMapping("/declaration/{id}")
+    @DeleteMapping("/declaration/{id}/reject")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody String deleteDeclaredHour(@PathVariable("id") long declarationId) {
+    public @ResponseBody String
+    deleteDeclaredHour(@PathVariable("id") long declarationId, HttpServletRequest request) {
         Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository
                 .findById(declarationId);
 
@@ -137,7 +140,8 @@ public class HourDeclarationController {
      */
     @PutMapping("/declaration/{id}/approve")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody String approveDeclaredHour(@PathVariable("id") long declarationId) {
+    public @ResponseBody String
+    approveDeclaredHour(@PathVariable("id") long declarationId, HttpServletRequest request) {
         Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository
                 .findById(declarationId);
 
@@ -164,7 +168,8 @@ public class HourDeclarationController {
      */
     @GetMapping("/declaration/unapproved")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody List<HourDeclaration> getAllUnapprovedDeclarations() {
+    public @ResponseBody List<HourDeclaration>
+    getAllUnapprovedDeclarations(HttpServletRequest request) {
         List<HourDeclaration> result = hourDeclarationRepository.findByApproved(false);
 
         if (result.isEmpty()) {
@@ -185,7 +190,7 @@ public class HourDeclarationController {
     @GetMapping("/declaration/student/{id}")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody List<HourDeclaration>
-    getAllDeclarationsByStudent(@PathVariable("id") long studentId) {
+    getAllDeclarationsByStudent(@PathVariable("id") long studentId, HttpServletRequest request) {
         List<HourDeclaration> result = hourDeclarationRepository.findByStudentId(studentId);
 
         if (result.isEmpty()) {
