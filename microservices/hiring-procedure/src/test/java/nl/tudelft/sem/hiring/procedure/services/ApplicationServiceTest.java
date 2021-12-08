@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import java.time.LocalDateTime;
 import java.util.List;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
+import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
 import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -122,12 +123,12 @@ public class ApplicationServiceTest {
 
     @Test
     public void checkCandidateFalse() {
-        application1.setStatus(2);
+        application1.setStatus(ApplicationStatus.ACCEPTED);
         given(applicationRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
             List.of(application1, application2));
         boolean actual = applicationService.checkCandidate(userId1, courseId1);
         assertFalse(actual);
-        application1.setStatus(0);
+        application1.setStatus(ApplicationStatus.IN_PROGRESS);
     }
 
     @Test
@@ -143,7 +144,7 @@ public class ApplicationServiceTest {
         given(applicationRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
             List.of(application1, application2));
         applicationService.hire(userId1, courseId1);
-        application1.setStatus(2);
+        application1.setStatus(ApplicationStatus.ACCEPTED);
         verify(applicationRepository).save(application1);
     }
 
@@ -152,7 +153,7 @@ public class ApplicationServiceTest {
         given(applicationRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
             List.of(application2));
         applicationService.hire(userId1, courseId1);
-        application1.setStatus(2);
+        application1.setStatus(ApplicationStatus.ACCEPTED);
         verify(applicationRepository, never()).save(application1);
     }
 }

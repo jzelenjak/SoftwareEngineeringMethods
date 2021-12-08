@@ -3,6 +3,7 @@ package nl.tudelft.sem.hiring.procedure.services;
 import java.time.LocalDateTime;
 import java.util.List;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
+import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
 import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -80,7 +81,7 @@ public class ApplicationService {
             .findAllByUserIdAndAndCourseId(userId, courseId);
         for (Application application : applications) {
             if (application.getSubmissionDate().getYear() == LocalDateTime.now().getYear()) {
-                return application.getStatus() == 0;
+                return application.getStatus() == ApplicationStatus.IN_PROGRESS;
             }
         }
         return false;
@@ -98,7 +99,7 @@ public class ApplicationService {
             .findAllByUserIdAndAndCourseId(userId, courseId);
         for (Application application : applications) {
             if (application.getSubmissionDate().getYear() == LocalDateTime.now().getYear()) {
-                application.setStatus(2);
+                application.setStatus(ApplicationStatus.ACCEPTED);
                 applicationRepository.save(application);
             }
         }
