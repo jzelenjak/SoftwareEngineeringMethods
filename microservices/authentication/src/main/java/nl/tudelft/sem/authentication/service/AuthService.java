@@ -8,9 +8,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+/**
+ * A class that represents Service which communicates with the database containing the user details.
+ */
 @Service
 public class AuthService implements UserDetailsService {
+
     private final transient UserDataRepository userDataRepository;
+
     private final transient PasswordEncoder passwordEncoder;
 
     public AuthService(UserDataRepository userDataRepository, PasswordEncoder passwordEncoder) {
@@ -19,27 +24,30 @@ public class AuthService implements UserDetailsService {
     }
 
     /**
-     * Registers a new user.
+     * Registers a new user into the database.
      *
-     * @param username the username of the new user.
-     * @param password the password of the new user.
+     * @param username      the username of the new user.
+     * @param userId        the user ID of the new user.
+     * @param password      the password of the new user.
      *
-     * @return true if registration of user is successful, false otherwise.
+     * @return true if the registration has been successful,
+     *         false otherwise (if the user with the same username is already in the database).
      */
-    public boolean registerUser(String username, String password) {
+    public boolean registerUser(String username, long userId, String password) {
         if (this.userDataRepository.findByUsername(username).isPresent()) {
             return false;
         }
-        this.userDataRepository.save(new UserData(username,
-                passwordEncoder.encode(password), UserRole.STUDENT));
+        this.userDataRepository
+            .save(new UserData(username, passwordEncoder.encode(password),
+                    UserRole.STUDENT, userId));
         return true;
     }
 
     /**
-     * Changes password of existing user.
+     * Changes the password of an existing user.
      *
-     * @param username    the username of the existing user.
-     * @param newPassword the new password of the existing user.
+     * @param username      the username of the existing user.
+     * @param newPassword   the new password for this user.
      */
     public void changePassword(String username, String newPassword) {
         UserData userData = loadUserByUsername(username);
@@ -50,16 +58,54 @@ public class AuthService implements UserDetailsService {
     /**
      * Finds the user by their username.
      *
-     * @param username  the username of the user to be found.
+     * @param username      the username of the user to be found.
      *
-     * @return the user, if found.
-     * @throws UsernameNotFoundException thrown when user has not been found.
+     * @return the user object, if it is found in the repository.
+     * @throws UsernameNotFoundException thrown when the user has not been found.
      */
     @Override
-    public UserData loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserData loadUserByUsername(String username) {
         return this.userDataRepository
                 .findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException(String.format(
                         "User with username %s not found", username)));
+    }
+
+    /**
+     * Finds the user by their user ID.
+     *
+     * @param userId        the user ID of the user to be found.
+     *
+     * @return the user object, if it is found in the repository.
+     * @throws UsernameNotFoundException thrown when the user has not been found.
+     */
+    public UserData loadUserByUserId(long userId) {
+        return this.userDataRepository
+                .findByUserId(userId)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(String
+                                .format("User with user ID %s not found", userId)));
+    }
+
+    /**
+     * Change role of the user.
+     *
+     * @param username      the username of the user.
+     * @param newRole       the new role of the user.
+     */
+    public void changeRole(String username, UserRole newRole) {
+        UserData userData = loadUserByUsername(username);
+        userData.setRole(newRole);
+        userDataRepository.save(userData);
+    }
+
+    /**
+     * Delete user specified by the username.
+     *
+     * @param username the username of the to be removed user.
+     */
+    public void deleteUser(String username) {
+        UserData userData = loadUserByUsername(username);
+        userDataRepository.delete(userData);
     }
 }
