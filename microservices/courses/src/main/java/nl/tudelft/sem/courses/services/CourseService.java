@@ -27,16 +27,17 @@ public class CourseService {
     public String addNewCourses(CourseRequest request) throws Exception {
         Optional<Course> course = courseRepository.findByCourseId(request.getCourseId());
 
-        if (course.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+
+        if (course.isEmpty()) {
+            Course newCourse = new Course();
+            newCourse.setCourseId(request.getCourseId());
+            newCourse.setStartDate(request.getStartDate());
+            newCourse.setFinishDate(request.getFinishDate());
+            courseRepository.save(newCourse);
+
+            return "Success. Added course";
         }
 
-        Course newCourse = new Course();
-        newCourse.setCourseId(request.getCourseId());
-        newCourse.setStartDate(request.getStartDate());
-        newCourse.setFinishDate(request.getFinishDate());
-        courseRepository.save(newCourse);
-
-        return "Success. Added course";
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
     }
 }
