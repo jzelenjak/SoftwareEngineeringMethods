@@ -9,7 +9,9 @@ import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
+@AutoConfigureMockMvc
 public class AsyncHiringValidatorTest {
 
     private static MockWebServer mockWebServer;
@@ -41,6 +43,25 @@ public class AsyncHiringValidatorTest {
     @Test
     void testValidate() {
         // TODO: Implement
+
+    }
+
+    @Test
+    void testValidateInvalidContract() {
+        // TODO: Implement
+
+    }
+
+    @Test
+    void testValidateNegativeHours() {
+        // TODO: Implement
+
+    }
+
+    @Test
+    void testValidateMoreThanMaxHours() {
+        // TODO: Implement
+
     }
 
 }

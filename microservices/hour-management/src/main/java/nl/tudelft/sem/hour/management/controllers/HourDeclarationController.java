@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import javax.validation.Valid;
 import lombok.Data;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
@@ -69,7 +68,6 @@ public class HourDeclarationController {
 
         // Validate the request, if it succeeds, attempt to return the declarations
         return head.validate(headers, "").flatMap((valid) -> {
-            assert valid;
             List<HourDeclaration> result = hourDeclarationRepository.findAll();
 
             if (result.isEmpty()) {
@@ -92,7 +90,7 @@ public class HourDeclarationController {
     public @ResponseBody
     Mono<String>
     declareHours(@RequestHeader HttpHeaders headers,
-                 @RequestBody @Valid HourDeclarationRequest hourDeclarationRequest) {
+                 @RequestBody HourDeclarationRequest hourDeclarationRequest) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
@@ -101,7 +99,6 @@ public class HourDeclarationController {
 
 
         return head.validate(headers, hourDeclarationRequest.toJson()).flatMap((valid) -> {
-            assert valid;
             HourDeclaration hourDeclaration = new HourDeclaration(hourDeclarationRequest);
 
             try {
@@ -134,8 +131,6 @@ public class HourDeclarationController {
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
-            assert valid;
-
             Optional<HourDeclaration> result = hourDeclarationRepository.findById(declarationId);
 
             if (result.isEmpty()) {
@@ -168,8 +163,6 @@ public class HourDeclarationController {
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
-            assert valid;
-
             Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository
                     .findById(declarationId);
 
@@ -206,8 +199,6 @@ public class HourDeclarationController {
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
-            assert valid;
-
             Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository
                     .findById(declarationId);
 
@@ -246,8 +237,6 @@ public class HourDeclarationController {
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
-            assert valid;
-
             List<HourDeclaration> result = hourDeclarationRepository.findByApproved(false);
 
             if (result.isEmpty()) {
@@ -277,8 +266,6 @@ public class HourDeclarationController {
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
-            assert valid;
-
             List<HourDeclaration> result = hourDeclarationRepository.findByStudentId(studentId);
 
             if (result.isEmpty()) {

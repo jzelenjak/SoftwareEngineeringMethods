@@ -3,10 +3,10 @@ package nl.tudelft.sem.hour.management.validation;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
-import nl.tudelft.sem.hour.management.exceptions.AsyncValidationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
@@ -41,12 +41,25 @@ public class AsyncHiringValidator extends AsyncBaseValidator {
                         .toUriString())
                 .exchange()
                 .flatMap(response -> {
-                    if (response.statusCode().is2xxSuccessful()) {
-                        return evaluateNext(headers, body);
-                    } else {
-                        return Mono.error(new AsyncValidationException(HttpStatus.BAD_REQUEST,
+                    if (response.statusCode().isError()) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
                                 "Cannot find active contract"));
                     }
+
+                    return response.bodyToMono(String.class).flatMap(json -> {
+                        JsonObject contract = JsonParser.parseString(body).getAsJsonObject();
+
+                        if (parsed.get("declaredHours").getAsDouble() <= 0) {
+                            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                    "Declared hours cannot be negative or 0."));
+                        }
+
+                        if (parsed.get("declaredHours").getAsDouble() > contract.get("maxHours").getAsDouble()) {
+                            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                    "Declared hours cannot exceed the maximum hours denoted in the contract."));
+                        }
+                        return evaluateNext(headers, body);
+                    });
                 });
     }
 }

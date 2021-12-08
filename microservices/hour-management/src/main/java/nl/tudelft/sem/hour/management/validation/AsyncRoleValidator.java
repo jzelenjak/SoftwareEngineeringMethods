@@ -3,6 +3,7 @@ package nl.tudelft.sem.hour.management.validation;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.util.Set;
+import lombok.Getter;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.http.HttpHeaders;
@@ -20,7 +21,23 @@ public class AsyncRoleValidator extends AsyncBaseValidator {
     }
 
     private final transient JwtUtils jwtUtils;
+
+    @Getter
     private final transient Set<Roles> authorizedRoles;
+
+    /**
+     * Constructs a new AsyncRoleValidator instance.
+     *
+     * @param gatewayConfig   The GatewayConfig.
+     * @param jwtUtils        A JWTUtils library instance to help with the validation.
+     */
+    public AsyncRoleValidator(GatewayConfig gatewayConfig, JwtUtils jwtUtils) {
+        super(gatewayConfig);
+        this.jwtUtils = jwtUtils;
+
+        this.authorizedRoles = Set.of(Roles.ADMIN);
+
+    }
 
     /**
      * Constructs a new AsyncRoleValidator instance.
@@ -33,7 +50,9 @@ public class AsyncRoleValidator extends AsyncBaseValidator {
                               JwtUtils jwtUtils, Set<Roles> authorizedRoles) {
         super(gatewayConfig);
         this.jwtUtils = jwtUtils;
+
         this.authorizedRoles = authorizedRoles;
+
     }
 
     @Override
