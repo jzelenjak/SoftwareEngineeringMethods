@@ -1,5 +1,7 @@
 package nl.tudelft.sem.hiring.procedure.controllers;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import java.time.LocalDateTime;
 import java.util.List;
 import javax.management.InstanceNotFoundException;
@@ -7,11 +9,17 @@ import lombok.Data;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
 import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
-import nl.tudelft.sem.hiring.procedure.utils.JwtUtils;
+import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
@@ -21,9 +29,9 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/api/hiring-procedure")
 @Data
 public class ApplicationController {
-    private final static String courseNotFound = "Course not found";
-    private final static String userNotFound = "User not found";
-    private final static String invalidToken = "Provided token is not valid";
+    private static final String COURSE_NOT_FOUND = "Course not found";
+    private static final String USER_NOT_FOUND = "User not found";
+    private static final String INVALID_TOKEN = "Provided token is not valid";
 
     private ApplicationService applicationService;
     private WebClient webClient;
@@ -55,9 +63,7 @@ public class ApplicationController {
     public void applyTa(@RequestParam() long courseId, @RequestHeader() HttpHeaders authHeader) {
         long userId;
         String jsonParse;
-        LocalDateTime courseStart;
         Boolean isStudent;
-        Mono<String> courseStartMono;
         try {
             isStudent = checkStudent(authHeader);
             if (!isStudent) {
@@ -65,14 +71,16 @@ public class ApplicationController {
                     "User is not a student");
             }
         } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, invalidToken);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
         }
 
+        LocalDateTime courseStart;
+        Mono<String> courseStartMono;
         try {
             courseStartMono = getCourseStartDate(courseId);
             jsonParse = courseStartMono.block();
         }  catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, courseNotFound);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, COURSE_NOT_FOUND);
         }
 
         jsonParse = jsonParse.split("\"")[3];
@@ -85,7 +93,7 @@ public class ApplicationController {
         try {
             userId = checkJwt(authHeader);
         } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, invalidToken);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
         }
         // Check if application with same credentials exists
         if (applicationService.checkSameApplication(userId, courseId)) {
@@ -110,17 +118,18 @@ public class ApplicationController {
     public List<Application> getApplications(@RequestParam() long courseId,
                                                 @RequestHeader() HttpHeaders authHeader) {
         try {
-            if (!checkLecturer(authHeader))
+            if (!checkLecturer(authHeader)) {
                 throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
                     "User is not a lecturer");
+            }
         } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, invalidToken);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
         }
 
         try {
             getCourseStartDate(courseId).block();
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, courseNotFound);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, COURSE_NOT_FOUND);
         }
         return applicationService.getApplicationsForCourse(courseId);
     }
@@ -141,7 +150,7 @@ public class ApplicationController {
             }
             return applicationService.getAllApplications();
         } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, invalidToken);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
         }
     }
 
@@ -165,19 +174,19 @@ public class ApplicationController {
                     "User is not a lecturer");
             }
         } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, invalidToken);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
         }
 
         try {
             getCourseStartDate(courseId).block();
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, courseNotFound);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, COURSE_NOT_FOUND);
         }
 
         try {
             checkUserExists(userId).block();
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, userNotFound);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
         }
 
         if (!applicationService.checkCandidate(userId, courseId)) {
@@ -197,11 +206,11 @@ public class ApplicationController {
      */
     private long checkJwt(HttpHeaders authJwt) throws InstanceNotFoundException {
         String resolvedToken = jwtUtils.resolveToken(authJwt.get("Authorization").get(0));
-        if (jwtUtils.validateToken(resolvedToken)) {
-            return Long.parseLong(jwtUtils.getUsername(resolvedToken));
-        } else {
-            throw new InstanceNotFoundException(invalidToken);
+        Jws<Claims> userClaims = jwtUtils.validateAndParseClaims(resolvedToken);
+        if (userClaims != null) {
+            return jwtUtils.getUserId(userClaims);
         }
+        throw new InstanceNotFoundException(INVALID_TOKEN);
     }
 
     /**
@@ -220,8 +229,9 @@ public class ApplicationController {
             .exchange();
         return response
             .flatMap(clientResponse -> {
-                if (clientResponse.statusCode().isError())
-                    return Mono.error(new InstanceNotFoundException(courseNotFound));
+                if (clientResponse.statusCode().isError()) {
+                    return Mono.error(new InstanceNotFoundException(COURSE_NOT_FOUND));
+                }
                 return clientResponse.bodyToMono(String.class);
             });
     }
@@ -235,12 +245,11 @@ public class ApplicationController {
      */
     private Boolean checkStudent(HttpHeaders authJwt) throws InstanceNotFoundException {
         String resolvedToken = jwtUtils.resolveToken(authJwt.get("Authorization").get(0));
-        if (jwtUtils.validateToken(resolvedToken)) {
-            String role = jwtUtils.getRole(resolvedToken);
-            return role.equals("student");
-        } else {
-            throw new InstanceNotFoundException(invalidToken);
+        Jws<Claims> userClaims = jwtUtils.validateAndParseClaims(resolvedToken);
+        if (userClaims != null) {
+            return jwtUtils.getRole(userClaims).equals("student");
         }
+        throw new InstanceNotFoundException(INVALID_TOKEN);
     }
 
     /**
@@ -252,12 +261,11 @@ public class ApplicationController {
      */
     private Boolean checkLecturer(HttpHeaders authJwt) throws InstanceNotFoundException {
         String resolvedToken = jwtUtils.resolveToken(authJwt.get("Authorization").get(0));
-        if (jwtUtils.validateToken(resolvedToken)) {
-            String role = jwtUtils.getRole(resolvedToken);
-            return role.equals("lecturer");
-        } else {
-            throw new InstanceNotFoundException(invalidToken);
+        Jws<Claims> userClaims = jwtUtils.validateAndParseClaims(resolvedToken);
+        if (userClaims != null) {
+            return jwtUtils.getRole(userClaims).equals("lecturer");
         }
+        throw new InstanceNotFoundException(INVALID_TOKEN);
     }
 
     /**
@@ -275,8 +283,9 @@ public class ApplicationController {
             .exchange();
         return response
             .flatMap(clientResponse -> {
-                if (clientResponse.statusCode().isError())
-                    return Mono.error(new InstanceNotFoundException(userNotFound));
+                if (clientResponse.statusCode().isError()) {
+                    return Mono.error(new InstanceNotFoundException(USER_NOT_FOUND));
+                }
                 return Mono.just(true);
             });
     }
