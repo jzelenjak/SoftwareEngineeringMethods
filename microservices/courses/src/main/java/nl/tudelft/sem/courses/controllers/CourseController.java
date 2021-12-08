@@ -5,6 +5,7 @@ import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
+import nl.tudelft.sem.courses.services.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,12 +23,12 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/courses")
 public class CourseController {
 
-    @Autowired
-    private transient CourseRepository courseRepository;
 
     @Autowired
     private GradeRepository gradeRepository;
 
+    @Autowired
+    private CourseService courseService;
 
 
     @GetMapping
@@ -44,19 +45,9 @@ public class CourseController {
      * @return returns a http success or bad request
      */
     @PostMapping("/create")
-    public String createNewCourse(@RequestBody CourseRequest request) {
-        Optional<Course> course = courseRepository.findByCourseId(request.courseId);
+    public String createNewCourse(@RequestBody CourseRequest request) throws Exception {
 
-        if (course.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        }
-
-        Course newCourse = new Course();
-        newCourse.setCourseId(request.courseId);
-        newCourse.setStartDate(request.startDate);
-        courseRepository.save(newCourse);
-
-        return "Success. Added course";
+        return courseService.addNewCourses(request);
 
     }
 
@@ -68,10 +59,7 @@ public class CourseController {
      */
     @PostMapping("/edit")
     public String editCourse(@PathVariable CourseRequest request) {
-        Optional<Course> course = courseRepository.findByCourseId(request.courseId);
-        if (course.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        }
+        //functionality to be added.
 
         return "Success. Edited Course";
     }

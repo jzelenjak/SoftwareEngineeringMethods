@@ -17,7 +17,7 @@ public class GradeTest {
 
     @Test
     public void constructorTest() {
-        Course course = new Course(1, "CSE2215", LocalDateTime.now());
+        Course course = new Course(1, "CSE2215", LocalDateTime.now(), LocalDateTime.now());
         long id = 1;
         long userId = 5;
         Grade grade = new Grade(id, course, userId, 2.0f);
@@ -27,7 +27,7 @@ public class GradeTest {
 
     @Test
     public void testingEqualsMethod() {
-        Course course = new Course(1, "CSE2215", LocalDateTime.now());
+        Course course = new Course(1, "CSE2215", LocalDateTime.now(), LocalDateTime.now());
 
         long id = 1;
         long id2 = 2;

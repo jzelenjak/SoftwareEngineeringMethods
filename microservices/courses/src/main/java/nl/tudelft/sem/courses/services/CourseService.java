@@ -1,0 +1,35 @@
+package nl.tudelft.sem.courses.services;
+
+import nl.tudelft.sem.courses.communication.CourseRequest;
+import nl.tudelft.sem.courses.entities.Course;
+import nl.tudelft.sem.courses.respositories.CourseRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Optional;
+
+@Service
+public class CourseService {
+
+
+    @Autowired
+    private transient CourseRepository courseRepository;
+
+    public String addNewCourses(CourseRequest request) throws Exception {
+        Optional<Course> course = courseRepository.findByCourseId(request.getCourseId());
+
+        if (course.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+
+        Course newCourse = new Course();
+        newCourse.setCourseId(request.getCourseId());
+        newCourse.setStartDate(request.getStartDate());
+        newCourse.setFinishDate(request.getFinishDate());
+        courseRepository.save(newCourse);
+
+        return "Success. Added course";
+    }
+}
