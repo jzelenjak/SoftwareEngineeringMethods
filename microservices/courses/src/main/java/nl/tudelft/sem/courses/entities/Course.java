@@ -91,7 +91,9 @@ public class Course {
             return false;
         }
         Course course = (Course) o;
-        return courseId.equals(course.courseId) && id == course.id && startDate.equals(course.startDate) && finishDate.equals(course.finishDate);
+        return courseId.equals(course.courseId) && id == course.id
+                && startDate.equals(course.startDate)
+                && finishDate.equals(course.finishDate);
     }
 
     @Override
