@@ -29,10 +29,10 @@ public class AsyncRoleValidatorTest {
     private transient JwtUtils jwtUtils;
 
     @Mock
-    private Jws<Claims> jwsMock;
+    private transient Jws<Claims> jwsMock;
 
     @BeforeAll
-    static void setup(){
+    static void setup() {
         gatewayConfig = new GatewayConfig();
         gatewayConfig.setHost("");
         gatewayConfig.setPort(0);
@@ -48,7 +48,8 @@ public class AsyncRoleValidatorTest {
 
     @Test
     public void testConstructorProvideSet() {
-        AsyncRoleValidator validator = new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.TA));
+        AsyncRoleValidator validator =
+                new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.TA));
         assertNotNull(validator);
 
         assertEquals(validator.getAuthorizedRoles(), Set.of(Roles.TA));
@@ -62,7 +63,8 @@ public class AsyncRoleValidatorTest {
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer VALIDVALIDVALID");
-        AsyncRoleValidator validator = new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN, Roles.TA));
+        AsyncRoleValidator validator =
+                new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN, Roles.TA));
 
         Mono<Boolean> result = validator.validate(headers, "");
 
@@ -77,7 +79,8 @@ public class AsyncRoleValidatorTest {
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer INVALIDINVALID");
-        AsyncRoleValidator validator = new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN, Roles.TA));
+        AsyncRoleValidator validator =
+                new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN, Roles.TA));
 
         Mono<Boolean> result = validator.validate(headers, "");
 
