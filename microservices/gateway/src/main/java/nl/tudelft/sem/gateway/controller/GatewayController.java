@@ -123,7 +123,10 @@ public class GatewayController {
                             }
                             return Mono.just(new ResponseEntity<>(responseBody, responseHeaders,
                                     response.statusCode()));
-                        })
+                        }).switchIfEmpty(Mono.just(ResponseEntity
+                                .status(response.statusCode())
+                                .headers(response.headers().asHttpHeaders())
+                                .build()))
                 );
     }
 
