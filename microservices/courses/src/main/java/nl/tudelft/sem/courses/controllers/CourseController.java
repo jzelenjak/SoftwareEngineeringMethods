@@ -28,7 +28,7 @@ public class CourseController {
     private GradeRepository gradeRepository;
 
     @Autowired
-    private CourseService courseService;
+    transient CourseService courseService;
 
 
     @GetMapping

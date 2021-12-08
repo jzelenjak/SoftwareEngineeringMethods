@@ -1,5 +1,6 @@
 package nl.tudelft.sem.courses.services;
 
+import java.util.Optional;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
@@ -8,8 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Optional;
-
 @Service
 public class CourseService {
 
@@ -17,6 +16,14 @@ public class CourseService {
     @Autowired
     private transient CourseRepository courseRepository;
 
+    /**
+     * This method adds new courses to the repo.
+     * The request must be through the controller.
+     *
+     * @param request - The request
+     * @return String - returns successful string.
+     * @throws Exception - This exception is a http exception
+     */
     public String addNewCourses(CourseRequest request) throws Exception {
         Optional<Course> course = courseRepository.findByCourseId(request.getCourseId());
 

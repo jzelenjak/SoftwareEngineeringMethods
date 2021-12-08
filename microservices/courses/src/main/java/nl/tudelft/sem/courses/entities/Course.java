@@ -2,9 +2,7 @@ package nl.tudelft.sem.courses.entities;
 
 
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -18,11 +16,16 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 
 @Entity(name = "Courses")
 @Table(name = "course")
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class Course {
 
     @Id
@@ -48,7 +51,8 @@ public class Course {
 
 
     /**
-     * Constructor for Course. The course ID will be automatically generated when the entity is created.
+     * Constructor for Course. The course ID will be automatically
+     * generated when the entity is created.
      * This course ID can be changed later.
      *
      * @param courseId - Course ID in a string format
@@ -63,7 +67,8 @@ public class Course {
 
 
     /**
-     * Constructor for Course. You must specify a course ID when creating the course in this constructor.
+     * Constructor for Course. You must specify a course ID
+     * when creating the course in this constructor.
      * This course ID can be changed later. Mainly used for testing purposes.
      *
      * @param courseId - Course ID in a string format
