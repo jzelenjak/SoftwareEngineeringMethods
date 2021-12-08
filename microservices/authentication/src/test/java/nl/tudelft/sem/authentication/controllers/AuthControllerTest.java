@@ -2,6 +2,7 @@ package nl.tudelft.sem.authentication.controllers;
 
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -526,7 +527,7 @@ class AuthControllerTest {
                         UserRole.STUDENT, 7654321L));
 
         this.mockMvc
-                .perform(put(DELETE_USER_URL)
+                .perform(delete(DELETE_USER_URL)
                         .contentType(APPLICATION_JSON)
                         .content(createJson(USERNAME, studentName))
                         .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
@@ -548,7 +549,7 @@ class AuthControllerTest {
         String jwtPrefixed = PREFIX + jwt;
 
         this.mockMvc
-                .perform(put(DELETE_USER_URL)
+                .perform(delete(DELETE_USER_URL)
                         .contentType(APPLICATION_JSON)
                         .content(createJson(USERNAME, "BadStudent"))
                         .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)

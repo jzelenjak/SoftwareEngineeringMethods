@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -71,7 +72,8 @@ public class AuthController {
      */
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody void register(HttpServletRequest req,
+    @ResponseBody
+    public void register(HttpServletRequest req,
                     HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         final String username = jsonNode.get(USERNAME).asText();
@@ -94,7 +96,8 @@ public class AuthController {
      */
     @PutMapping("/change_password")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody void changePassword(HttpServletRequest req,
+    @ResponseBody
+    public void changePassword(HttpServletRequest req,
                           HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         String target = jsonNode.get(USERNAME).asText();
@@ -119,7 +122,8 @@ public class AuthController {
      */
     @GetMapping("/login")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody void login(HttpServletRequest req,
+    @ResponseBody
+    public void login(HttpServletRequest req,
                  HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         String username = jsonNode.get(USERNAME).asText();
@@ -147,7 +151,8 @@ public class AuthController {
      */
     @PutMapping("/change_role")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody void changeRole(HttpServletRequest req,
+    @ResponseBody
+    public void changeRole(HttpServletRequest req,
                       HttpServletResponse res) throws IOException {
         // Get JWT from the requester.
         String jwt = jwtTokenProvider.resolveToken(req);
@@ -183,9 +188,10 @@ public class AuthController {
      * @param res the HTTP response.
      * @throws IOException IO exception if something goes wrong with the servlets.
      */
-    @PutMapping("/delete")
+    @DeleteMapping("/delete")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody void delete(HttpServletRequest req,
+    @ResponseBody
+    public void delete(HttpServletRequest req,
                     HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         String target = jsonNode.get(USERNAME).asText();
