@@ -24,4 +24,7 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     @Query
     List<Application> findAllBySubmissionDateBefore(LocalDateTime submissionDate);
+
+    @Query
+    List<Application> findAllByUserIdAndAndCourseId(long userId, long courseId);
 }
