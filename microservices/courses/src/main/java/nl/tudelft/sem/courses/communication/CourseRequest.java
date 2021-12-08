@@ -4,12 +4,14 @@ import java.time.LocalDateTime;
 
 public class CourseRequest {
 
-    public String courseId;
-    public LocalDateTime startDate;
+    private String courseId;
+    private LocalDateTime startDate;
+    private LocalDateTime finishDate;
 
-    public CourseRequest(String courseId, LocalDateTime startDate) {
+    public CourseRequest(String courseId, LocalDateTime startDate, LocalDateTime finishDate) {
         this.courseId = courseId;
         this.startDate = startDate;
+        this.finishDate = finishDate;
     }
 
     public String getCourseId() {
@@ -26,5 +28,13 @@ public class CourseRequest {
 
     public void setStartDate(LocalDateTime startDate) {
         this.startDate = startDate;
+    }
+
+    public LocalDateTime getFinishDate() {
+        return finishDate;
+    }
+
+    public void setFinishDate(LocalDateTime finishDate) {
+        this.finishDate = finishDate;
     }
 }

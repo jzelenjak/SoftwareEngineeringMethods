@@ -37,6 +37,9 @@ public class Course {
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     public Set<Grade> grades;
 
+    @Column(name = "finish_date")
+    public LocalDateTime finishDate;
+
     /**
      *  Empty constructor for Jpa Persistence.
      */
@@ -49,10 +52,11 @@ public class Course {
      *
      * @param courseId - Course ID in a string format
      */
-    public Course(long id, String courseId, LocalDateTime startDate) {
+    public Course(long id, String courseId, LocalDateTime startDate, LocalDateTime finishDate) {
         this.id = id;
         this.courseId = courseId;
         this.startDate = startDate;
+        this.finishDate = finishDate;
         grades = new HashSet<>();
     }
 
@@ -88,6 +92,14 @@ public class Course {
         this.grades = grades;
     }
 
+    public LocalDateTime getFinishDate() {
+        return finishDate;
+    }
+
+    public void setFinishDate(LocalDateTime finishDate) {
+        this.finishDate = finishDate;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -97,7 +109,7 @@ public class Course {
             return false;
         }
         Course course = (Course) o;
-        return courseId.equals(course.courseId) && id == course.id;
+        return courseId.equals(course.courseId) && id == course.id && startDate.equals(course.startDate) && finishDate.equals(course.finishDate);
     }
 
     @Override
