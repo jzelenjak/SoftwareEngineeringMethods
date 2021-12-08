@@ -42,7 +42,8 @@ public class CourseControllerTest {
 
     @Test
     void testCourseCreationWithNoConflictingCourses() throws Exception {
-        CourseRequest courseRequest = new CourseRequest("CSE2215", LocalDateTime.now(), LocalDateTime.now());
+        CourseRequest courseRequest = new CourseRequest("CSE2215",
+                LocalDateTime.now(), LocalDateTime.now());
 
         mockMvc.perform(post("/api/courses/create")
                 .contentType(jsonContentHeader)
@@ -53,7 +54,8 @@ public class CourseControllerTest {
 
     @Test
     void testCourseCreationWithConflictingCourses() throws Exception {
-        CourseRequest courseRequest = new CourseRequest("CSE2216", LocalDateTime.now(), LocalDateTime.now());
+        CourseRequest courseRequest = new CourseRequest("CSE2216",
+                LocalDateTime.now(), LocalDateTime.now());
 
         mockMvc.perform(post("/api/courses/create")
                         .contentType(jsonContentHeader)
