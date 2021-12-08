@@ -36,7 +36,7 @@ public class Application {
      * @value 3 - Rejected
      */
     @Column(name = "status")
-    private int status;
+    private ApplicationStatus status;
 
     @Column(name = "submission_date", columnDefinition = "TIMESTAMP")
     private LocalDateTime submissionDate;
@@ -55,7 +55,7 @@ public class Application {
     public Application(long userId, long courseId, LocalDateTime submissionDate) {
         this.userId = userId;
         this.courseId = courseId;
-        this.status = 0;
+        this.status = ApplicationStatus.IN_PROGRESS;
         this.submissionDate = submissionDate;
     }
 
@@ -72,7 +72,7 @@ public class Application {
         this.applicationId = applicationId;
         this.userId = userId;
         this.courseId = courseId;
-        this.status = 0;
+        this.status = ApplicationStatus.IN_PROGRESS;
         this.submissionDate = submissionDate;
     }
 
@@ -86,8 +86,7 @@ public class Application {
         }
         Application that = (Application) o;
         return applicationId == that.applicationId && userId == that.userId
-            && courseId == that.courseId && status == that.status
-            && Objects.equals(submissionDate, that.submissionDate);
+            && courseId == that.courseId && status == that.status;
     }
 
     @Override
