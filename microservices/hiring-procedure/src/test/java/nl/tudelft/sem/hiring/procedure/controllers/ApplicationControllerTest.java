@@ -45,7 +45,7 @@ public class ApplicationControllerTest {
     @Mock
     private transient Jws<Claims> claims;
 
-    @SpyBean
+    @MockBean
     private transient GatewayConfig gatewayConfig;
 
     private static MockWebServer mockWebServer;
@@ -103,8 +103,8 @@ public class ApplicationControllerTest {
         // Register listener and setup url
         HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
             + COURSE_ID_PARAM + courseId);
-        gatewayConfig.setHost(url.host());
-        gatewayConfig.setPort(url.port());
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .setBody(BODY_START + courseStartNextYear + BODY_END));
@@ -146,8 +146,8 @@ public class ApplicationControllerTest {
         // Register listener and setup url
         HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
             + COURSE_ID_PARAM + courseId);
-        gatewayConfig.setHost(url.host());
-        gatewayConfig.setPort(url.port());
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .setBody(BODY_START + courseStartNextYear + BODY_END));
@@ -177,8 +177,8 @@ public class ApplicationControllerTest {
         // Register listener and setup url
         HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
             + COURSE_ID_PARAM + courseId);
-        gatewayConfig.setHost(url.host());
-        gatewayConfig.setPort(url.port());
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .setBody(BODY_START + courseStartNextYear + BODY_END));
@@ -205,8 +205,8 @@ public class ApplicationControllerTest {
         // Register listener and setup url
         HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
             + COURSE_ID_PARAM + courseId);
-        gatewayConfig.setHost(url.host());
-        gatewayConfig.setPort(url.port());
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(404)
             .setBody("Not found"));
@@ -286,8 +286,8 @@ public class ApplicationControllerTest {
         // Register listener and setup url
         HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
             + COURSE_ID_PARAM + courseId);
-        gatewayConfig.setHost(url.host());
-        gatewayConfig.setPort(url.port());
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .setBody(BODY_START + courseStartNextYear + BODY_END));
@@ -339,8 +339,8 @@ public class ApplicationControllerTest {
         // Register listener and setup url
         HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
             + COURSE_ID_PARAM + courseId);
-        gatewayConfig.setHost(url.host());
-        gatewayConfig.setPort(url.port());
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(404)
             .setBody("Course not found"));
@@ -364,8 +364,8 @@ public class ApplicationControllerTest {
         // Register listener and setup url
         HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
             + COURSE_ID_PARAM + courseId);
-        gatewayConfig.setHost(url.host());
-        gatewayConfig.setPort(url.port());
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .setBody(BODY_START + courseStartNextYear + BODY_END));
@@ -427,8 +427,8 @@ public class ApplicationControllerTest {
         // Register listener and setup url
         HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
             + COURSE_ID_PARAM + courseId);
-        gatewayConfig.setHost(url.host());
-        gatewayConfig.setPort(url.port());
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(404)
             .setBody("Course not found."));
@@ -456,8 +456,8 @@ public class ApplicationControllerTest {
         // Register listener and setup url
         HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
             + COURSE_ID_PARAM + courseId);
-        gatewayConfig.setHost(url.host());
-        gatewayConfig.setPort(url.port());
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .setBody(BODY_START + courseStartNextYear + BODY_END));
@@ -491,8 +491,8 @@ public class ApplicationControllerTest {
         // Register listener and setup url
         HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
             + COURSE_ID_PARAM + courseId);
-        gatewayConfig.setHost(url.host());
-        gatewayConfig.setPort(url.port());
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
             .setResponseCode(200)
             .setBody(BODY_START + courseStartNextYear + BODY_END));
