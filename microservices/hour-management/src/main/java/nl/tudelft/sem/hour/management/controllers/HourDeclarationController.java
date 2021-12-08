@@ -47,8 +47,7 @@ public class HourDeclarationController {
      * @return a simple greeting
      */
     @GetMapping
-    public @ResponseBody
-    String hello() {
+    public @ResponseBody String hello() {
         return "Hello from Hour Management";
     }
 
@@ -59,12 +58,13 @@ public class HourDeclarationController {
      */
     @GetMapping("/declaration")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    Mono<List<HourDeclaration>> getAllDeclarations(@RequestHeader HttpHeaders headers) {
+    public @ResponseBody Mono<List<HourDeclaration>> getAllDeclarations(
+            @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
-                        new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN, Roles.LECTURER))
+                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
+                                Set.of(Roles.ADMIN, Roles.LECTURER))
                 ).build();
 
         // Validate the request, if it succeeds, attempt to return the declarations
@@ -90,13 +90,14 @@ public class HourDeclarationController {
     @PostMapping("/declaration")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    Mono<String>
-    declareHours(@RequestHeader HttpHeaders headers,
-                 @RequestBody @Valid HourDeclarationRequest hourDeclarationRequest) {
+    Mono<String> declareHours(@RequestHeader HttpHeaders headers,
+                              @RequestBody
+                              @Valid HourDeclarationRequest hourDeclarationRequest) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
-                        new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN, Roles.TA))
+                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
+                                Set.of(Roles.ADMIN, Roles.TA))
                 ).build();
 
 
@@ -106,9 +107,11 @@ public class HourDeclarationController {
 
             try {
                 // throws error if there is a problem with the given argument
-                long declarationId = hourDeclarationRepository.save(hourDeclaration).getDeclarationId();
-                return Mono.just(String.format("Declaration with id %s has been successfully saved.",
-                        declarationId));
+                long declarationId =
+                        hourDeclarationRepository.save(hourDeclaration).getDeclarationId();
+                return Mono.just(
+                        String.format("Declaration with id %s has been successfully saved.",
+                                declarationId));
             } catch (IllegalArgumentException e) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Given declaration is not valid."));
@@ -125,12 +128,13 @@ public class HourDeclarationController {
     @GetMapping("/declaration/{id}")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    Mono<HourDeclaration>
-    getSpecifiedDeclaration(@PathVariable("id") long declarationId, @RequestHeader HttpHeaders headers) {
+    Mono<HourDeclaration> getSpecifiedDeclaration(@PathVariable("id") long declarationId,
+                                                  @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
-                        new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN, Roles.LECTURER))
+                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
+                                Set.of(Roles.ADMIN, Roles.LECTURER))
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
@@ -159,12 +163,13 @@ public class HourDeclarationController {
     @DeleteMapping("/declaration/{id}/reject")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    Mono<String>
-    deleteDeclaredHour(@PathVariable("id") long declarationId, @RequestHeader HttpHeaders headers) {
+    Mono<String> deleteDeclaredHour(@PathVariable("id") long declarationId,
+                                    @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
-                        new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN, Roles.LECTURER))
+                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
+                                Set.of(Roles.ADMIN, Roles.LECTURER))
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
@@ -197,12 +202,13 @@ public class HourDeclarationController {
     @PutMapping("/declaration/{id}/approve")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    Mono<String>
-    approveDeclaredHour(@PathVariable("id") long declarationId, @RequestHeader HttpHeaders headers) {
+    Mono<String> approveDeclaredHour(@PathVariable("id") long declarationId,
+                                     @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
-                        new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN, Roles.LECTURER))
+                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
+                                Set.of(Roles.ADMIN, Roles.LECTURER))
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
@@ -237,12 +243,12 @@ public class HourDeclarationController {
     @GetMapping("/declaration/unapproved")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    Mono<List<HourDeclaration>>
-    getAllUnapprovedDeclarations(@RequestHeader HttpHeaders headers) {
+    Mono<List<HourDeclaration>> getAllUnapprovedDeclarations(@RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
-                        new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN, Roles.LECTURER))
+                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
+                                Set.of(Roles.ADMIN, Roles.LECTURER))
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
@@ -268,12 +274,13 @@ public class HourDeclarationController {
     @GetMapping("/declaration/student/{id}")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    Mono<List<HourDeclaration>>
-    getAllDeclarationsByStudent(@PathVariable("id") long studentId, @RequestHeader HttpHeaders headers) {
+    Mono<List<HourDeclaration>> getAllDeclarationsByStudent(@PathVariable("id") long studentId,
+                                                            @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
-                        new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN, Roles.LECTURER))
+                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
+                                Set.of(Roles.ADMIN, Roles.LECTURER))
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
