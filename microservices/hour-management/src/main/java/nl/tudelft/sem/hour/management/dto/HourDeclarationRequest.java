@@ -1,5 +1,6 @@
 package nl.tudelft.sem.hour.management.dto;
 
+import java.util.Locale;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -12,8 +13,14 @@ public class HourDeclarationRequest {
 
     private double declaredHours;
 
+    /**
+     * Returns the JSON representation of this object.
+     *
+     * @return JSON representation of the object.
+     */
     public String toJson() {
-        return String.format("{\"studentId\": %d, \"courseId\": %d, \"declaredHours\": %f}",
+        return String.format(Locale.ROOT,
+                "{\"studentId\": %d, \"courseId\": %d, \"declaredHours\": %f}",
                 studentId, courseId, declaredHours);
     }
 }

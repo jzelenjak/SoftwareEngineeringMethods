@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
+import java.util.Locale;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 import okhttp3.HttpUrl;
@@ -28,8 +29,8 @@ public class AsyncHiringValidatorTest {
     private static final String applicationJson = "application/json";
     private static final String get = "GET";
 
-    private static final String contract =
-            String.format("{\"studentId\": %d, \"courseId\": %d, \"maxHours\": %f}", 1, 1, 15.0);
+    private static final String contract = String.format(Locale.ROOT,
+            "{\"studentId\": %d, \"courseId\": %d, \"maxHours\": %f}", 1, 1, 15.0);
 
     private static MockWebServer mockWebServer;
 

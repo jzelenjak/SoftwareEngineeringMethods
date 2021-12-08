@@ -55,9 +55,11 @@ public class AsyncHiringValidator extends AsyncBaseValidator {
                                     "Declared hours cannot be negative or 0."));
                         }
 
-                        if (parsed.get("declaredHours").getAsDouble() > contract.get("maxHours").getAsDouble()) {
+                        if (parsed.get("declaredHours").getAsDouble()
+                                > contract.get("maxHours").getAsDouble()) {
                             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                                    "Declared hours cannot exceed the maximum hours denoted in the contract."));
+                                    "Declared hours cannot exceed the maximum hours "
+                                            + "denoted in the contract."));
                         }
                         return evaluateNext(headers, body);
                     });
