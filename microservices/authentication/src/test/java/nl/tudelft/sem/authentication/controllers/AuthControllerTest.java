@@ -2,6 +2,7 @@ package nl.tudelft.sem.authentication.controllers;
 
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -56,6 +57,7 @@ class AuthControllerTest {
     private static final transient String REGISTER_URL = "/api/auth/register";
     private static final transient String CHANGE_PASSWORD_URL = "/api/auth/change_password";
     private static final transient String CHANGE_ROLE_URL = "/api/auth/change_role";
+    private static final transient String DELETE_USER_URL = "/api/auth/delete";
 
 
 
@@ -506,5 +508,54 @@ class AuthControllerTest {
         this.userDataRepository.deleteById(adminName);
     }
 
+    @Test
+    @WithMockUser(username = "IAmAllMightyAdmin", password = "MeAllMightyMe")
+    void deleteExistingUserTest() throws Exception {
+        String username = "IAmAllMightyAdmin";
+        String password = "MeAllMightyMe";
 
+        this.userDataRepository
+                .save(new UserData(username, encode(password), UserRole.ADMIN, 2948412L));
+        String jwt = jwtTokenProvider.createToken(2948412L, UserRole.ADMIN, new Date());
+        String jwtPrefixed = PREFIX + jwt;
+
+        String studentName = "IAmCollegeDropout";
+        String studentPassword = "MeSoSadMe";
+
+        this.userDataRepository
+                .save(new UserData(studentName, encode(studentPassword),
+                        UserRole.STUDENT, 7654321L));
+
+        this.mockMvc
+                .perform(delete(DELETE_USER_URL)
+                        .contentType(APPLICATION_JSON)
+                        .content(createJson(USERNAME, studentName))
+                        .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
+                        .characterEncoding(UTF8))
+                .andExpect(status().isOk());
+
+        this.userDataRepository.deleteById(username);
+    }
+
+    @Test
+    @WithMockUser(username = "IAmAllMightyAdmin2", password = "MeAllMighty")
+    void deleteNonExistingUserTest() throws Exception {
+        String username = "IAmAllMightyAdmin2";
+        String password = "MeAllMighty";
+
+        this.userDataRepository
+                .save(new UserData(username, encode(password), UserRole.ADMIN, 2948412L));
+        String jwt = jwtTokenProvider.createToken(2948412L, UserRole.ADMIN, new Date());
+        String jwtPrefixed = PREFIX + jwt;
+
+        this.mockMvc
+                .perform(delete(DELETE_USER_URL)
+                        .contentType(APPLICATION_JSON)
+                        .content(createJson(USERNAME, "BadStudent"))
+                        .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
+                        .characterEncoding(UTF8))
+                .andExpect(status().isForbidden());
+
+        this.userDataRepository.deleteById(username);
+    }
 }

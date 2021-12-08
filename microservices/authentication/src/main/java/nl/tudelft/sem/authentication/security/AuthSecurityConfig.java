@@ -48,10 +48,12 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.PUT, "/api/auth/change_password").authenticated()
                 .antMatchers(HttpMethod.PUT, "/api/auth/change_role")
                     .hasAnyAuthority("ADMIN", "LECTURER")
+                .antMatchers(HttpMethod.DELETE, "/api/auth/delete")
+                    .hasAnyAuthority("ADMIN")
                 .anyRequest()
                 .authenticated()
-                .and()
-                .apply(new JwtConfig(this.jwtTokenProvider));
+            .and()
+            .apply(new JwtConfig(this.jwtTokenProvider));
     }
 
 

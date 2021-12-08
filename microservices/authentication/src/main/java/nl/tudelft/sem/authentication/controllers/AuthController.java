@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -71,8 +72,8 @@ public class AuthController {
      */
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    void register(HttpServletRequest req,
+    @ResponseBody
+    public void register(HttpServletRequest req,
                     HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         final String username = jsonNode.get(USERNAME).asText();
@@ -83,7 +84,6 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     String.format("User with NetID %s already exists!", USERNAME));
         }
-        // TODO: decide on how do we send back the token
     }
 
 
@@ -96,8 +96,8 @@ public class AuthController {
      */
     @PutMapping("/change_password")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    void changePassword(HttpServletRequest req,
+    @ResponseBody
+    public void changePassword(HttpServletRequest req,
                           HttpServletResponse res) throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         String target = jsonNode.get(USERNAME).asText();
@@ -122,12 +122,12 @@ public class AuthController {
      */
     @GetMapping("/login")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    void login(HttpServletRequest req,
+    @ResponseBody
+    public void login(HttpServletRequest req,
                  HttpServletResponse res) throws IOException {
-            JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
-            String username = jsonNode.get(USERNAME).asText();
-            String password = jsonNode.get(PASSWORD).asText();
+        JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
+        String username = jsonNode.get(USERNAME).asText();
+        String password = jsonNode.get(PASSWORD).asText();
         try {
             authenticationManager
                     .authenticate(new UsernamePasswordAuthenticationToken(username, password));
@@ -143,7 +143,7 @@ public class AuthController {
     }
 
     /**
-     * Changes the password of a user if the provided credentials are correct.
+     * Changes the role of a user, if the user is an admin or lecturer.
      *
      * @param req the HTTP request.
      * @param res the HTTP response.
@@ -151,8 +151,8 @@ public class AuthController {
      */
     @PutMapping("/change_role")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    void changeRole(HttpServletRequest req,
+    @ResponseBody
+    public void changeRole(HttpServletRequest req,
                       HttpServletResponse res) throws IOException {
         // Get JWT from the requester.
         String jwt = jwtTokenProvider.resolveToken(req);
@@ -175,11 +175,27 @@ public class AuthController {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "You are not allowed to do that as a lecturer!");
             }
-
         }
         String newRoleInput = jsonNode.get("role").asText();
         UserRole newRole = getRole(newRoleInput);
         this.authService.changeRole(target, newRole);
+    }
+
+    /**
+     * Deletes the specified user. Only possible by ADMIN.
+     *
+     * @param req the HTTP request.
+     * @param res the HTTP response.
+     * @throws IOException IO exception if something goes wrong with the servlets.
+     */
+    @DeleteMapping("/delete")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public void delete(HttpServletRequest req,
+                    HttpServletResponse res) throws IOException {
+        JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
+        String target = jsonNode.get(USERNAME).asText();
+        this.authService.deleteUser(target);
     }
 
     /**
