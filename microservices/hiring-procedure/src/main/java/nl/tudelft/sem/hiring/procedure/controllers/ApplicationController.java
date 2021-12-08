@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -223,9 +224,13 @@ public class ApplicationController {
      */
     private Mono<String> getCourseStartDate(long courseId) throws InstanceNotFoundException {
         System.out.println(gatewayConfig.getHost() + ":" + gatewayConfig.getPort());
-        Mono<ClientResponse> response = webClient.get()
-            .uri("http://" + gatewayConfig.getHost() + ":" + gatewayConfig.getPort()
-                + "/api/courses/get-start-date?courseId=" + courseId)
+        String uri = UriComponentsBuilder.newInstance().scheme("http")
+            .host(gatewayConfig.getHost())
+            .port(gatewayConfig.getPort())
+            .pathSegment("api", "courses", "get-start-date")
+            .queryParam("courseId", courseId)
+            .toUriString();
+        Mono<ClientResponse> response = webClient.get().uri(uri)
             .exchange();
         return response
             .flatMap(clientResponse -> {
@@ -277,9 +282,13 @@ public class ApplicationController {
      * @throws InstanceNotFoundException when Users returns an error
      */
     private Mono<Boolean> checkUserExists(long userId) throws InstanceNotFoundException {
-        Mono<ClientResponse> response = webClient.get()
-            .uri("http://" + gatewayConfig.getHost() + ":" + gatewayConfig.getPort()
-                + "/api/users/by_userid?user_id=" + userId)
+        String uri = UriComponentsBuilder.newInstance().scheme("http")
+            .host(gatewayConfig.getHost())
+            .port(gatewayConfig.getPort())
+            .pathSegment("api", "users", "by-userid")
+            .queryParam("userId", userId)
+            .toUriString();
+        Mono<ClientResponse> response = webClient.get().uri(uri)
             .exchange();
         return response
             .flatMap(clientResponse -> {

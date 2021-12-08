@@ -27,7 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @AutoConfigureMockMvc
@@ -50,9 +49,9 @@ public class ApplicationControllerTest {
 
     private static MockWebServer mockWebServer;
 
-    private final transient long courseId = 2450;
-    private final transient long userId = 521234;
-    private final transient LocalDateTime courseStartNextYear = LocalDateTime.now().plusYears(1);
+    private static final long courseId = 2450;
+    private static final long userId = 521234;
+    private static final LocalDateTime courseStartNextYear = LocalDateTime.now().plusYears(1);
     private static final String RESOLVED_TOKEN = "yo";
     private static final String STUDENT_ROLE = "student";
     private static final String LECTURER_ROLE = "lecturer";
