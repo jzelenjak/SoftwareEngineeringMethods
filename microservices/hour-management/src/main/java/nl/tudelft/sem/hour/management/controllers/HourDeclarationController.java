@@ -101,15 +101,9 @@ public class HourDeclarationController {
         return head.validate(headers, hourDeclarationRequest.toJson()).flatMap((valid) -> {
             HourDeclaration hourDeclaration = new HourDeclaration(hourDeclarationRequest);
 
-            try {
-                // throws error if there is a problem with the given argument
-                long declarationId = hourDeclarationRepository.save(hourDeclaration).getDeclarationId();
-                return Mono.just(String.format("Declaration with id %s has been successfully saved.",
-                        declarationId));
-            } catch (IllegalArgumentException e) {
-                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Given declaration is not valid."));
-            }
+            long declarationId = hourDeclarationRepository.save(hourDeclaration).getDeclarationId();
+            return Mono.just(String.format("Declaration with id %s has been successfully saved.",
+                    declarationId));
         });
     }
 

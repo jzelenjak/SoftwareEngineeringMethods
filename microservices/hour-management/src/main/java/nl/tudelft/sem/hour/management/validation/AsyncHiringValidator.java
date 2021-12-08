@@ -2,6 +2,7 @@ package nl.tudelft.sem.hour.management.validation;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -47,7 +48,7 @@ public class AsyncHiringValidator extends AsyncBaseValidator {
                     }
 
                     return response.bodyToMono(String.class).flatMap(json -> {
-                        JsonObject contract = JsonParser.parseString(body).getAsJsonObject();
+                        JsonObject contract = JsonParser.parseString(json).getAsJsonObject();
 
                         if (parsed.get("declaredHours").getAsDouble() <= 0) {
                             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
