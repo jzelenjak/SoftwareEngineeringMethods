@@ -2,6 +2,10 @@ package nl.tudelft.sem.courses.entities;
 
 
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Objects;
@@ -18,6 +22,7 @@ import javax.persistence.Table;
 
 @Entity(name = "Courses")
 @Table(name = "course")
+@Getter @Setter @NoArgsConstructor
 public class Course {
 
     @Id
@@ -26,11 +31,11 @@ public class Course {
     private long id;
 
 
-    @Column(name = "courseId")
+    @Column(name = "course_id")
     public String courseId;
 
 
-    @Column(name = "startDate")
+    @Column(name = "start_date")
     private LocalDateTime startDate;
 
     @Column(name = "grades")
@@ -40,15 +45,26 @@ public class Course {
     @Column(name = "finish_date")
     public LocalDateTime finishDate;
 
-    /**
-     *  Empty constructor for Jpa Persistence.
-     */
-    public Course() {}
 
 
     /**
-     * Constructor for Course. You must specify a course ID when creating the course.
+     * Constructor for Course. The course ID will be automatically generated when the entity is created.
      * This course ID can be changed later.
+     *
+     * @param courseId - Course ID in a string format
+     */
+    public Course(String courseId, LocalDateTime startDate, LocalDateTime finishDate) {
+        this.courseId = courseId;
+        this.startDate = startDate;
+        this.finishDate = finishDate;
+        grades = new HashSet<>();
+    }
+
+
+
+    /**
+     * Constructor for Course. You must specify a course ID when creating the course in this constructor.
+     * This course ID can be changed later. Mainly used for testing purposes.
      *
      * @param courseId - Course ID in a string format
      */
@@ -60,45 +76,6 @@ public class Course {
         grades = new HashSet<>();
     }
 
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public String getCourseId() {
-        return courseId;
-    }
-
-    public void setCourseId(String courseId) {
-        this.courseId = courseId;
-    }
-
-    public LocalDateTime getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(LocalDateTime startDate) {
-        this.startDate = startDate;
-    }
-
-    public Set<Grade> getGrades() {
-        return grades;
-    }
-
-    public void setGrades(Set<Grade> grades) {
-        this.grades = grades;
-    }
-
-    public LocalDateTime getFinishDate() {
-        return finishDate;
-    }
-
-    public void setFinishDate(LocalDateTime finishDate) {
-        this.finishDate = finishDate;
-    }
 
     @Override
     public boolean equals(Object o) {
