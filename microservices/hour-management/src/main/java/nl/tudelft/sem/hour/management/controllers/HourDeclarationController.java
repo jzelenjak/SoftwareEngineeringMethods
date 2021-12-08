@@ -71,7 +71,7 @@ public class HourDeclarationController {
             List<HourDeclaration> result = hourDeclarationRepository.findAll();
 
             if (result.isEmpty()) {
-                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "There are no declarations in the system."));
             }
 
@@ -128,7 +128,7 @@ public class HourDeclarationController {
             Optional<HourDeclaration> result = hourDeclarationRepository.findById(declarationId);
 
             if (result.isEmpty()) {
-                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                         String.format("There are no declarations with id: %d in the system.",
                                 declarationId)));
             }
