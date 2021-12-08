@@ -1,6 +1,10 @@
 package nl.tudelft.sem.courses.entities;
 
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -14,31 +18,27 @@ import javax.persistence.Table;
 
 @Entity(name = "Grades")
 @Table(name = "grade")
+
+@Getter @Setter @NoArgsConstructor
 public class Grade {
 
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public long id;
+    private long id;
 
 
     @ManyToOne(fetch = FetchType.LAZY)
-    public Course course;
+    private Course course;
 
     @Column(name = "grade")
-    public float gradeValue;
+    private float gradeValue;
 
 
 
-    @Column(name = "userId")
-    public long userId;
+    @Column(name = "user_id")
+    private long userId;
 
-    /**
-     *  Empty constructor for Jpa Persistance.
-     */
-    public Grade(){
-
-    }
 
     /**
      * When using this constructor you must provide a course and a user.
@@ -53,37 +53,6 @@ public class Grade {
         this.gradeValue = gradeValue;
     }
 
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public Course getCourse() {
-        return course;
-    }
-
-    public void setCourse(Course course) {
-        this.course = course;
-    }
-
-    public float getGradeValue() {
-        return gradeValue;
-    }
-
-    public void setGradeValue(float gradeValue) {
-        this.gradeValue = gradeValue;
-    }
-
-    public long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(long userId) {
-        this.userId = userId;
-    }
 
     @Override
     public boolean equals(Object o) {
