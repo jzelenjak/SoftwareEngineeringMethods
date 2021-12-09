@@ -157,4 +157,14 @@ public class UserService {
         this.userRepository.deleteByUserId(userId);
         return true;
     }
+
+    /**
+     * Saves the user that needs to be saved again due to a failure
+     *      in delete method in the UserController.
+     *
+     * @param user the user that needs to be saved again
+     */
+    public void saveUserAgain(User user) {
+        this.userRepository.save(user);
+    }
 }

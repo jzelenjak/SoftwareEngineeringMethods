@@ -545,4 +545,14 @@ class UserServiceTest {
             .verify(userRepository, Mockito.times(1))
             .deleteByUserId(userId);
     }
+
+    @Test
+    void saveUserAgainTest() {
+        User user = new User("aaa", "bbb", "ccc", UserRole.STUDENT);
+
+        userService.saveUserAgain(user);
+        Mockito
+            .verify(userRepository, Mockito.times(1))
+            .save(user);
+    }
 }
