@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.time.LocalDateTime;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class ApplicationTest {
@@ -56,7 +55,7 @@ public class ApplicationTest {
             + "applicationId=" + 1
             + ", userId=" + 5211111
             + ", courseId=" + 1250
-            + ", status=" + 0
+            + ", status=" + ApplicationStatus.IN_PROGRESS.toString()
             + ", submissionDate=" + application.getSubmissionDate()
             + ", lastUpdate=" + application.getLastUpdate()
             + '}';
