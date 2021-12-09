@@ -115,7 +115,6 @@ class UserServiceTest {
             .findByUserId(userId);
     }
 
-
     /**
      * Tests for registerUser method.
      */
@@ -135,16 +134,6 @@ class UserServiceTest {
         Assertions
             .assertThatThrownBy(() ->
                 userService.registerUser("    ", "Amogus", "Amogussen"))
-            .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifySave(userMock, 0);
-    }
-
-    @Test
-    void registerUserNetIdEmptyTest() {
-        Assertions
-            .assertThatThrownBy(() ->
-                userService.registerUser("", "Amogus", "Amogussan"))
             .isInstanceOf(DataIntegrityViolationException.class);
 
         verifySave(userMock, 0);
@@ -177,25 +166,12 @@ class UserServiceTest {
     }
 
     @Test
-    void registerUserFirstNameEmptyTest() {
-        mockFindByUsername(netId, null);
-
-        Assertions
-            .assertThatThrownBy(() ->
-                this.userService.registerUser(netId, "", "ogus"))
-            .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifyFindByUsername(netId);
-        verifySave(userMock, 0);
-    }
-
-    @Test
     void registerUserFirstNameBlankTest() {
         mockFindByUsername(netId, null);
 
         Assertions
             .assertThatThrownBy(() ->
-                this.userService.registerUser(netId, "      ", "ogus"))
+                this.userService.registerUser(netId, "", "ogus"))
             .isInstanceOf(DataIntegrityViolationException.class);
 
         verifyFindByUsername(netId);
@@ -216,25 +192,12 @@ class UserServiceTest {
     }
 
     @Test
-    void registerUserLastNameEmptyTest() {
-        mockFindByUsername(netId, null);
-
-        Assertions
-                .assertThatThrownBy(() ->
-                        this.userService.registerUser(netId, "amog", ""))
-                .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifyFindByUsername(netId);
-        verifySave(userMock, 0);
-    }
-
-    @Test
     void registerUserLastNameBlankTest() {
         mockFindByUsername(netId, null);
 
         Assertions
                 .assertThatThrownBy(() ->
-                        this.userService.registerUser(netId, "amog", "    "))
+                        this.userService.registerUser(netId, "amog", " "))
                 .isInstanceOf(DataIntegrityViolationException.class);
 
         verifyFindByUsername(netId);
@@ -499,6 +462,20 @@ class UserServiceTest {
 
         verifyFindByUserId(userId);
         verifySave(userSaved, 1);
+    }
+
+    @Test
+    void changeRoleUserNotFoundTest() {
+        mockFindByUserId(userId, null);
+
+        Assertions
+            .assertThat(userService.changeRole(userId, UserRole.CANDIDATE_TA, UserRole.ADMIN))
+            .isFalse();
+
+        verifyFindByUserId(userId);
+        Mockito
+            .verify(userRepository, Mockito.times(0))
+            .save(Mockito.any());
     }
 
     @Test

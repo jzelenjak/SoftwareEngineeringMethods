@@ -7,11 +7,13 @@ import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.repositories.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * A class that represents a User Service.
  */
 @Service
+@Transactional
 public class UserService {
 
     private final transient UserRepository userRepository;
@@ -42,7 +44,7 @@ public class UserService {
     public long registerUser(String netId, String firstName, String lastName)
             throws DataIntegrityViolationException {
 
-        if (netId == null || netId.isBlank() || netId.isEmpty()) {
+        if (netId == null || netId.isBlank()) {
             throw new DataIntegrityViolationException("Please specify the netID!");
         }
 
@@ -51,11 +53,11 @@ public class UserService {
             throw new DataIntegrityViolationException(msg);
         }
 
-        if (firstName == null || firstName.isBlank() || firstName.isEmpty()) {
+        if (firstName == null || firstName.isBlank()) {
             throw new DataIntegrityViolationException("Please specify the first name!");
         }
 
-        if (lastName == null || lastName.isBlank() || lastName.isEmpty()) {
+        if (lastName == null || lastName.isBlank()) {
             throw new DataIntegrityViolationException("Please specify the last name!");
         }
 
@@ -126,11 +128,13 @@ public class UserService {
         // Both lecturers and admins can make someone else a TA, CANDIDATE_TA or STUDENT
 
         Optional<User> optionalUser = this.userRepository.findByUserId(userId);
-        assert optionalUser.isPresent();
+        if (optionalUser.isEmpty()) {
+            return false;
+        }
         User user = optionalUser.get();
 
         // Only an admin can downgrade another admin
-        if (user.getRole().equals(UserRole.ADMIN) && !newRole.equals(UserRole.ADMIN)
+        if (user.getRole().equals(UserRole.ADMIN) /*&& !newRole.equals(UserRole.ADMIN)*/
                 && !requesterRole.equals(UserRole.ADMIN)) {
             return false;
         }
