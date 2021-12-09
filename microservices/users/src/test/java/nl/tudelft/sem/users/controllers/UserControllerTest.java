@@ -1,9 +1,12 @@
 package nl.tudelft.sem.users.controllers;
 
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -13,27 +16,40 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+
+import java.io.IOException;
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import javax.crypto.spec.SecretKeySpec;
+
+import nl.tudelft.sem.users.config.GatewayConfig;
 import nl.tudelft.sem.users.entities.User;
 import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.services.UserService;
+import okhttp3.HttpUrl;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
-
 
 
 @WebMvcTest(controllers = UserController.class)
@@ -43,23 +59,26 @@ class UserControllerTest {
     @Autowired
     private transient MockMvc mockMvc;
 
+    private static transient MockWebServer mockWebServer;
+
+    @Value("${jwt.secretKeyString}")
+    private transient String secretKeyString;
+
+    private transient Key secretKey;
+
+    @MockBean
+    private transient GatewayConfig gatewayConfig;
+
     @MockBean
     private transient UserService userService;
 
-    private final transient String utf8Str = "uft-8";
-
-    private final transient String secretKeyString =
-            "nbvfrtyujhghgdvagsdfsdgadflgpprqoewjfmanvxcmiq"
-                    + "ertyuisgnsdfasdfayuiokjhfgsfsgfgfhgdgsfgs";
-
-    private final transient Key secretKey = new SecretKeySpec(secretKeyString.getBytes(),
-            SignatureAlgorithm.HS256.getJcaName());
 
     // Some constants for JSON fields
     private static final transient String USERID = "userId";
     private static final transient String USERNAME = "username";
     private static final transient String ROLE = "role";
     private static final transient String BEARER = "Bearer ";
+    private static final transient String UTF8 = "uft-8";
 
 
     // Constants for APIs
@@ -69,8 +88,6 @@ class UserControllerTest {
     private static final transient String BY_ROLE = "/api/users/by_role";
     private static final transient String CHANGE_ROLE_API = "/api/users/change_role";
     private static final transient String DELETE_API = "/api/users/delete";
-
-
 
     /**
      * Helper methods.
@@ -114,6 +131,12 @@ class UserControllerTest {
         }
     }
 
+    void configureGateway(String path) {
+        HttpUrl url = mockWebServer.url(path);
+        when(gatewayConfig.getHost()).thenReturn(url.host());
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+    }
+
     /**
      * Helper methods to mock userService and verify interactions with it.
      * Used to reduce code duplication in the test class
@@ -121,12 +144,10 @@ class UserControllerTest {
 
     private void mockRegister(String username, String firstName, String lastName, long toReturn) {
         if (toReturn == -1) {
-            Mockito
-                .when(userService.registerUser(username, firstName, lastName))
+            when(userService.registerUser(username, firstName, lastName))
                 .thenThrow(DataIntegrityViolationException.class);
         } else {
-            Mockito
-                .when(userService.registerUser(username, firstName, lastName))
+            when(userService.registerUser(username, firstName, lastName))
                 .thenReturn(toReturn);
         }
     }
@@ -139,12 +160,10 @@ class UserControllerTest {
 
     private void mockGetByUsername(String netId, User userToReturn) {
         if (userToReturn == null) {
-            Mockito
-                .when(userService.getUserByNetId(netId))
+            when(userService.getUserByNetId(netId))
                 .thenReturn(Optional.empty());
         } else {
-            Mockito
-                .when(userService.getUserByNetId(netId))
+            when(userService.getUserByNetId(netId))
                 .thenReturn(Optional.of(userToReturn));
         }
     }
@@ -157,12 +176,10 @@ class UserControllerTest {
 
     private void mockGetByUserId(long userId, User userToReturn) {
         if (userToReturn == null) {
-            Mockito
-                .when(userService.getUserByUserId(userId))
+            when(userService.getUserByUserId(userId))
                 .thenReturn(Optional.empty());
         } else {
-            Mockito
-                .when(userService.getUserByUserId(userId))
+            when(userService.getUserByUserId(userId))
                 .thenReturn(Optional.of(userToReturn));
         }
     }
@@ -174,8 +191,7 @@ class UserControllerTest {
     }
 
     private void mockGetByRole(UserRole role, List<User> usersToReturn) {
-        Mockito
-            .when(userService.getUsersByRole(role))
+        when(userService.getUsersByRole(role))
             .thenReturn(usersToReturn);
     }
 
@@ -186,8 +202,7 @@ class UserControllerTest {
     }
 
     private void mockChangeRole(long userId, UserRole newRole, UserRole requester, boolean result) {
-        Mockito
-            .when(userService.changeRole(userId, newRole, requester))
+        when(userService.changeRole(userId, newRole, requester))
             .thenReturn(result);
     }
 
@@ -198,8 +213,7 @@ class UserControllerTest {
     }
 
     private void mockDeleteByUserId(long userId, UserRole requesterRole, boolean result) {
-        Mockito
-            .when(userService.deleteUserByUserId(userId, requesterRole))
+        when(userService.deleteUserByUserId(userId, requesterRole))
             .thenReturn(result);
     }
 
@@ -218,7 +232,7 @@ class UserControllerTest {
                 .perform(post(path)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
-                        .characterEncoding(utf8Str));
+                        .characterEncoding(UTF8));
     }
 
     private ResultActions mockMvcGetByUsername(String path, String json) throws Exception {
@@ -226,7 +240,7 @@ class UserControllerTest {
                 .perform(get(path)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
-                        .characterEncoding(utf8Str));
+                        .characterEncoding(UTF8));
     }
 
     private ResultActions mockMvcGetByUserId(String path, String json) throws Exception {
@@ -234,7 +248,7 @@ class UserControllerTest {
                 .perform(get(path)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
-                        .characterEncoding(utf8Str));
+                        .characterEncoding(UTF8));
     }
 
     private ResultActions mockMvcGetByRole(String path, String json) throws Exception {
@@ -242,7 +256,7 @@ class UserControllerTest {
                 .perform(get(path)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
-                        .characterEncoding(utf8Str));
+                        .characterEncoding(UTF8));
     }
 
     private ResultActions mockMvcChangeRole(String path, String json,
@@ -252,7 +266,7 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
                         .header(HttpHeaders.AUTHORIZATION, token)
-                        .characterEncoding(utf8Str));
+                        .characterEncoding(UTF8));
     }
 
     private ResultActions mockMvcDeleteByUserId(String path, String json,
@@ -262,7 +276,25 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
                         .header(HttpHeaders.AUTHORIZATION, token)
-                        .characterEncoding(utf8Str));
+                        .characterEncoding(UTF8));
+    }
+
+    @BeforeAll
+    static void setUp() throws IOException {
+        mockWebServer = new MockWebServer();
+        mockWebServer.start();
+    }
+
+    @BeforeEach
+    void setup() {
+         this.secretKey = new SecretKeySpec(secretKeyString.getBytes(),
+                SignatureAlgorithm.HS256.getJcaName());
+
+    }
+
+    @Test
+    void dummy() {
+        System.out.println(this.secretKeyString);
     }
 
     /**
@@ -270,15 +302,64 @@ class UserControllerTest {
      */
 
     @Test
-    void registerUserAlreadyExistsTest() throws Exception {
+    void registerUserAlreadyExistsLocallyTest() throws Exception {
         String uname = "S.Bar@student.tudelft.nl";
         String fname = "Sasha";
         String lname = "Bar";
         String pass = "123";
+        configureGateway("/api/auth/register");
+
+        // Configure userService mock
         mockRegister(uname, fname, lname, -1);
+
+        // Test the register endpoint
+
         mockMvcRegister(REGISTER_API, createJson(USERNAME, uname, "firstName",
                     fname, "lastName", lname, "password", pass))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(content().string(""));
+
+        // Extra checks
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        Assertions
+            .assertThat(recordedRequest)
+            .isNull();
+
+        verifyRegister(uname, fname, lname, 1);
+    }
+
+    @Test
+    void registerUserAlreadyExistsOnlyInAuthTest() throws Exception {
+        String uname = "S.Bar@student.tudelft.nl";
+        String fname = "Sasha";
+        String lname = "Bar";
+        String pass = "123";
+        configureGateway("/api/auth/register");
+
+        mockRegister(uname, fname, lname, 5623546L);
+
+        // Configure mockWebServer to mock Authentication Server
+        mockWebServer
+                .enqueue(new MockResponse().setResponseCode(409));
+
+        // Test the register endpoint
+        MvcResult mvcRes = mockMvcRegister(REGISTER_API, createJson(USERNAME, uname, "firstName",
+                                    fname, "lastName", lname, "password", pass))
+                                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcRes))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(""));
+
+        // Extra checks
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+
+        Assertions
+                .assertThat(recordedRequest)
+                .isNotNull();
+
+        Assertions
+                .assertThat(recordedRequest.getMethod()).isEqualTo("POST");
 
         verifyRegister(uname, fname, lname, 1);
     }
@@ -289,18 +370,30 @@ class UserControllerTest {
         String fname = "Sasha";
         String lname = "Bar";
         String pass = "123";
+        String expectedJson = new ObjectMapper().createObjectNode().put(USERID, "3443546").toString();
+
         mockRegister(uname, fname, lname, 3443546L);
-        String res = mockMvcRegister(REGISTER_API,
-                            createJson(USERNAME, uname, "firstName",
-                                fname, "lastName", lname, "password", pass))
+
+        configureGateway("/api/auth/register");
+
+        mockWebServer
+                .enqueue(new MockResponse().setResponseCode(200));
+
+        MvcResult mvcRes = mockMvcRegister(REGISTER_API, createJson(USERNAME, uname,
+                "firstName", fname, "lastName", lname, "password", pass))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcRes))
                     .andExpect(status().isOk())
-                    .andReturn()
-                    .getResponse()
-                    .getContentAsString();
-        String userIdStr = new ObjectMapper().readTree(res).get("userId").asText();
+                .andExpect(content().string(expectedJson));
+
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
         Assertions
-                .assertThat(Long.parseLong(userIdStr))
-                .isEqualTo(3443546L);
+                .assertThat(recordedRequest)
+                .isNotNull();
+        Assertions
+                .assertThat(recordedRequest.getMethod()).isEqualTo("POST");
 
         verifyRegister(uname, fname, lname, 1);
     }
@@ -582,4 +675,10 @@ class UserControllerTest {
         mockMvcGetByUserId(BY_USER_ID_API, createJson("ID", "nan"))
                 .andExpect(status().isBadRequest());
     }
+
+    @AfterAll
+    static void tearDown() throws IOException {
+        mockWebServer.shutdown();
+    }
+
 }
