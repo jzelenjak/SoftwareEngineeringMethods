@@ -278,7 +278,25 @@ public class HourDeclarationControllerTest {
     }
 
     @Test
-    void getAllUnapproved() throws Exception {
+    void getAllUnapprovedDeclarations() throws Exception {
+        List<HourDeclaration> expectedResponseBody =
+                hourDeclarationRepository.findByCourseId(5678L);
+        DeclarationCourseFilter courseFilter = new DeclarationCourseFilter(List.of(5678L));
+
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/unapproved")
+                        .header(authorization, "")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(courseFilter)))
+                .andReturn();
+
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string(objectMapper.writeValueAsString(expectedResponseBody)));
+    }
+
+    @Test
+    void getAllUnapprovedNullBody() throws Exception {
         List<HourDeclaration> expectedResponseBody = hourDeclarationRepository
                 .findByApproved(false);
 
