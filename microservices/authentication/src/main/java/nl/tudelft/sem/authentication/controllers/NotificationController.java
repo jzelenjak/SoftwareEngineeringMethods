@@ -5,13 +5,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import nl.tudelft.sem.authentication.entities.Notification;
 import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
 import nl.tudelft.sem.authentication.security.UserRole;
 import nl.tudelft.sem.authentication.service.NotificationService;
+import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,6 +41,7 @@ public class NotificationController {
 
     private final transient NotificationService notificationService;
     private final transient JwtTokenProvider jwtTokenProvider;
+    private final transient JwtUtils jwtUtils;
     private final transient ObjectMapper objectMapper = new ObjectMapper();
 
 
@@ -43,11 +50,42 @@ public class NotificationController {
      *
      * @param notificationService   the notification service.
      * @param jwtTokenProvider      the jwt token provider.
+     * @param jwtUtils              the jwt utils library.
      */
     public NotificationController(NotificationService notificationService,
-                                  JwtTokenProvider jwtTokenProvider) {
+                                  JwtTokenProvider jwtTokenProvider, JwtUtils jwtUtils) {
         this.notificationService = notificationService;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.jwtUtils = jwtUtils;
+    }
+
+    /**
+     * Gets all notifications from user.
+     *
+     * @param req the HTTP request.
+     * @param res the HTTP response.
+     *
+     * @return all notifications from current user.
+     */
+    @GetMapping("/get")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public List<Notification> getAllNotificationsFromUser(HttpServletRequest req,
+                                   HttpServletResponse res) throws IOException {
+        // Get info from the user from the provided jwt token (claims).
+        String jwt = jwtTokenProvider.resolveToken(req);
+        Jws<Claims> claimsJws = jwtTokenProvider.validateAndParseToken(jwt);
+        final long requesterUserId = jwtUtils.getUserId(claimsJws);
+        JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
+        final long targetUserId = Long.parseLong(jsonNode.get(USERID).asText());
+
+        // If requester userId differs from the userId in the request.
+        if (requesterUserId != targetUserId) {
+            // Only admin can do that, so check this.
+            checkAdmin(req);
+        }
+
+        return this.notificationService.loadNotificationByUserId(targetUserId);
     }
 
     /**

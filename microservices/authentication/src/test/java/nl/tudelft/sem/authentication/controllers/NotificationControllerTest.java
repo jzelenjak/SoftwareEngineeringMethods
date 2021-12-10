@@ -2,6 +2,7 @@ package nl.tudelft.sem.authentication.controllers;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -64,6 +65,7 @@ class NotificationControllerTest {
     private static final transient long STUDENTID = 9864869L;
     private static transient String jwtStudent;
 
+    private static final transient String GET_URL = "/api/notifications/get";
     private static final transient String ADD_URL = "/api/notifications/add";
     private static final transient String CHANGE_USER_URL = "/api/notifications/change_user";
     private static final transient String CHANGE_MESSAGE_URL = "/api/notifications/change_message";
@@ -101,6 +103,73 @@ class NotificationControllerTest {
     void setupAfter() {
         this.userDataRepository.deleteById(ADMINUSERNAME);
         this.userDataRepository.deleteById(STUDENTUSERNAME);
+    }
+
+    @Test
+    @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
+    void getNotificationsFromExistingUserAsAdminSuccessTest() throws Exception {
+        Notification notification = new Notification(444L,
+                5695444L, "Hi Admin!");
+        this.notificationDataRepository.save(notification);
+
+        this.mockMvc
+                .perform(get(GET_URL)
+                        .contentType(APPLICATION_JSON)
+                        .content(createJson(USERID, "5695444"))
+                        .header(HttpHeaders.AUTHORIZATION, jwtAdmin)
+                        .characterEncoding(UTF8))
+                .andExpect(status().isOk());
+
+        Optional<List<Notification>> optionalList =
+                this.notificationDataRepository.findByUserId(5695444L);
+        assert optionalList.isPresent();
+
+        List<Notification> expectedList = new ArrayList<>();
+        expectedList.add(notification);
+
+        List<Notification> actualList = optionalList.get();
+        Assertions.assertEquals(expectedList.size(), actualList.size());
+        for (int i = 0; i < expectedList.size(); i++) {
+            Assertions.assertEquals(expectedList.get(i), actualList.get(i));
+        }
+
+        this.notificationDataRepository.deleteAll();
+    }
+
+    @Test
+    @WithMockUser(username = STUDENTUSERNAME, password = STUDENTPASSWORD)
+    void getNotificationsFromExistingUserStudentFailedTest() throws Exception {
+        Notification notification = new Notification(444L,
+                5695444L, "Hi Admin!");
+        this.notificationDataRepository.save(notification);
+
+        this.mockMvc
+                .perform(get(GET_URL)
+                        .contentType(APPLICATION_JSON)
+                        .content(createJson(USERID, "5695444"))
+                        .header(HttpHeaders.AUTHORIZATION, jwtStudent)
+                        .characterEncoding(UTF8))
+                .andExpect(status().isForbidden());
+
+        this.notificationDataRepository.deleteAll();
+    }
+
+    @Test
+    @WithMockUser(username = STUDENTUSERNAME, password = STUDENTPASSWORD)
+    void getNotificationsFromExistingUserStudentSuccessTest() throws Exception {
+        Notification notification = new Notification(123L,
+                STUDENTID, "Hi Student!");
+        this.notificationDataRepository.save(notification);
+
+        this.mockMvc
+                .perform(get(GET_URL)
+                        .contentType(APPLICATION_JSON)
+                        .content(createJson(USERID, String.valueOf(STUDENTID)))
+                        .header(HttpHeaders.AUTHORIZATION, jwtStudent)
+                        .characterEncoding(UTF8))
+                .andExpect(status().isOk());
+
+        this.notificationDataRepository.deleteAll();
     }
 
     @Test
