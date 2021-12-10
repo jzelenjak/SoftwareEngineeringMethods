@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import nl.tudelft.sem.jwt.JwtUtils;
 import nl.tudelft.sem.users.config.GatewayConfig;
 import nl.tudelft.sem.users.entities.User;
@@ -20,13 +19,13 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
@@ -80,16 +79,13 @@ public class UserController {
      *   'Authorization' header in the HTTP response.
      *
      * @param req   the HTTP request
-     * @param res   the HTTP response
      * @return If there is no user with the same username (netID) already,
      *              the user ID of a new registered user and 200 OK is sent back.
      *           If the user with the provided netID already exists in the database,
      *              then 409 CONFLICT status is sent back.
      */
     @PostMapping("/register")
-    public @ResponseBody
-    Mono<ResponseEntity<String>> registerUser(HttpServletRequest req,
-                                              HttpServletResponse res) {
+    public Mono<ResponseEntity<String>> registerUser(HttpServletRequest req) {
         JsonNode jsonNode = getJsonNode(req);
         String username = parseJsonField(jsonNode, USERNAME);
         String firstName = parseJsonField(jsonNode, "firstName");
@@ -102,6 +98,7 @@ public class UserController {
                 .post()
                 .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
                         "api", "auth", "register"))
+                .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
                 .body(Mono
                     .just(createJson(USERNAME, username, USERID, String.valueOf(userId),
                             "password", password)), String.class)
@@ -114,10 +111,14 @@ public class UserController {
                             .error(new ResponseStatusException(response.statusCode(),
                                             "Registration failed!"));
                     }
+
                     // Just forward the response from Auth Server and add the user ID in the body
                     return Mono
-                        .just(new ResponseEntity<>(createJson(USERID, String.valueOf(userId)),
-                                response.headers().asHttpHeaders(), HttpStatus.OK));
+                        .just(ResponseEntity
+                                .status(HttpStatus.OK)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .body(createJson(USERID, String.valueOf(userId)))
+                        );
                 });
     }
 
@@ -126,15 +127,13 @@ public class UserController {
      * Gets a user by their username (netID).
      *
      * @param req   the HTTP request
-     * @param res   the HTTP response
      * @return the user with the given username if they exist.
      *         If the user with the provided netID does not exist in the database,
      *           then 404 NOT FOUND status is sent back.
      * @throws IOException when something goes wrong with servlets
      */
     @GetMapping("/by_username")
-    public ResponseEntity<String> getByUsername(HttpServletRequest req,
-                                                HttpServletResponse res) throws IOException {
+    public ResponseEntity<String> getByUsername(HttpServletRequest req) throws IOException {
         String username = parseJsonField(getJsonNode(req), USERNAME);
         return new ResponseEntity<>(mapper
                         .writeValueAsString(getUserByUsername(username)), HttpStatus.OK);
@@ -145,15 +144,13 @@ public class UserController {
      * Gets a user by their user ID.
      *
      * @param req   the HTTP request
-     * @param res   the HTTP response
      * @return the user with the given user ID if they exist.
      *         If the user does not exist, then 404 NOT FOUND status is sent.
      *         If the provided user ID is not a number, then 400 BAD REQUEST is sent back.
      * @throws IOException when something goes wrong with servlets
      */
     @GetMapping("/by_userid")
-    public ResponseEntity<String> getByUserId(HttpServletRequest req,
-                                              HttpServletResponse res) throws IOException {
+    public ResponseEntity<String> getByUserId(HttpServletRequest req) throws IOException {
         long userId = parseUserId(parseJsonField(getJsonNode(req), USERID));
         return new ResponseEntity<>(mapper
                         .writeValueAsString(getUserByUserId(userId)), HttpStatus.OK);
@@ -163,14 +160,12 @@ public class UserController {
      * Gets users by the role.
      *
      * @param req   the HTTP request
-     * @param res   the HTTP response
      * @return the users with the given role.
      *         If no users are found, then 404 NOT FOUND is sent back.
      * @throws IOException when something goes wrong with servlets
      */
     @GetMapping("/by_role")
-    public ResponseEntity<String> getByRole(HttpServletRequest req,
-                                            HttpServletResponse res) throws IOException {
+    public ResponseEntity<String> getByRole(HttpServletRequest req) throws IOException {
         UserRole role = parseRole(parseJsonField(getJsonNode(req), ROLE).toUpperCase(Locale.ROOT));
 
         List<User> users = this.userService.getUsersByRole(role);
@@ -194,12 +189,10 @@ public class UserController {
      *      then 401 UNAUTHORIZED status is sent back.
      *
      * @param req   the HTTP request
-     * @param res   the HTTP response
      */
     @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     @PutMapping("/change_role")
-    public Mono<ResponseEntity<String>> changeRole(HttpServletRequest req,
-                                                   HttpServletResponse res) {
+    public Mono<ResponseEntity<String>> changeRole(HttpServletRequest req) {
         JsonNode jsonNode = getJsonNode(req);
 
         long userId = parseUserId(parseJsonField(jsonNode, USERID));
@@ -214,13 +207,15 @@ public class UserController {
         final String username = oldUser.getUsername();
 
         if (!this.userService.changeRole(userId, newRole, requesterRole)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                            "Operation not allowed!");
         }
 
         return webClient
                 .put()
                 .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
                             "api", "auth", "change_role"))
+                .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
                 .body(Mono
                         .just(createJson(USERNAME, username,
                                     ROLE, newRole.name())), String.class)
@@ -236,9 +231,11 @@ public class UserController {
                     // Just forward the response from Auth Server
                     //      and add the success message in the body
                     return Mono
-                            .just(new ResponseEntity<>(createJson("message",
-                                    "Changed the role successfully!"),
-                                    response.headers().asHttpHeaders(), HttpStatus.OK));
+                            .just(ResponseEntity
+                                .status(HttpStatus.OK)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .body(createJson("message",
+                                        "Changed the role successfully!")));
                 });
     }
 
@@ -255,12 +252,10 @@ public class UserController {
      *      then 401 UNAUTHORIZED status is sent back.
      *
      * @param req   the HTTP request
-     * @param res   the HTTP response
      */
     @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     @DeleteMapping("/delete")
-    public Mono<ResponseEntity<String>> deleteByUserId(HttpServletRequest req,
-                                                       HttpServletResponse res) {
+    public Mono<ResponseEntity<String>> deleteByUserId(HttpServletRequest req) {
         long userId = parseUserId(parseJsonField(getJsonNode(req), USERID));
 
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
@@ -276,6 +271,7 @@ public class UserController {
                 .method(HttpMethod.DELETE)
                 .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
                         "api", "auth", "delete"))
+                .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
                 .body(
                         Mono.just(createJson(USERNAME, user.getUsername())), String.class)
                 .exchange()
@@ -290,9 +286,11 @@ public class UserController {
                     // Just forward the response from Auth Server
                     //      and add the success message in the body
                     return Mono
-                            .just(new ResponseEntity<>(createJson("message",
-                                    "User deleted successfully!"),
-                                    response.headers().asHttpHeaders(), HttpStatus.OK));
+                            .just(ResponseEntity
+                                .status(HttpStatus.OK)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .body(createJson("message",
+                                        "User deleted successfully!")));
                 });
     }
 
