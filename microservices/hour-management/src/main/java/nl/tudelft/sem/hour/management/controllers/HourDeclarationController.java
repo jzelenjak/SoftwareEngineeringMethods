@@ -1,11 +1,13 @@
 package nl.tudelft.sem.hour.management.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Data;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
+import nl.tudelft.sem.hour.management.dto.DeclarationCourseFilter;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
@@ -53,12 +55,16 @@ public class HourDeclarationController {
     /**
      * Gets all the stored declarations in the system.
      *
-     * @return all stored declaration in the system
+     * @param headers the headers of the request.
+     * @param courseFilter the course filter to apply to the declarations (optional).
+     * @return all stored declaration in the system.
+     * @implNote If the course filter is null, all declarations are returned.
      */
     @GetMapping("/declaration")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody Mono<List<HourDeclaration>> getAllDeclarations(
-            @RequestHeader HttpHeaders headers) {
+            @RequestHeader HttpHeaders headers,
+            @RequestBody(required = false) DeclarationCourseFilter courseFilter) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
@@ -68,7 +74,19 @@ public class HourDeclarationController {
 
         // Validate the request, if it succeeds, attempt to return the declarations
         return head.validate(headers, "").flatMap((valid) -> {
-            List<HourDeclaration> result = hourDeclarationRepository.findAll();
+            List<HourDeclaration> result;
+
+            // If the course filter is null, fetch all declarations
+            // If not, fetch all declarations for the given courses
+            if (courseFilter == null) {
+                result = hourDeclarationRepository.findAll();
+            } else {
+                result = new LinkedList<>();
+
+                for (Long course : courseFilter.getCourseList()) {
+                    result.addAll(hourDeclarationRepository.findByCourseId(course));
+                }
+            }
 
             if (result.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
