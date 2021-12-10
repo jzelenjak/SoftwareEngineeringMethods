@@ -12,4 +12,6 @@ public interface HourDeclarationRepository extends JpaRepository<HourDeclaration
     List<HourDeclaration> findByCourseId(long courseId);
 
     List<HourDeclaration> findByApproved(boolean approved);
+
+    List<HourDeclaration> findByCourseIdAndApproved(long courseId, boolean approved);
 }

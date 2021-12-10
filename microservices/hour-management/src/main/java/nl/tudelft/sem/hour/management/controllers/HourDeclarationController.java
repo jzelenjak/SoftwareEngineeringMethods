@@ -241,8 +241,10 @@ public class HourDeclarationController {
      */
     @GetMapping("/declaration/unapproved")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    Mono<List<HourDeclaration>> getAllUnapprovedDeclarations(@RequestHeader HttpHeaders headers) {
+    public @ResponseBody Mono<List<HourDeclaration>>
+    getAllUnapprovedDeclarations(@RequestHeader HttpHeaders headers,
+                                 @RequestBody(required = false)
+                                         DeclarationCourseFilter courseFilter) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
@@ -251,7 +253,20 @@ public class HourDeclarationController {
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
-            List<HourDeclaration> result = hourDeclarationRepository.findByApproved(false);
+            List<HourDeclaration> result;
+
+            // If the course filter is null, fetch all declarations
+            // If not, fetch all declarations for the given courses
+            if (courseFilter == null) {
+                result = hourDeclarationRepository.findByApproved(false);
+            } else {
+                result = new LinkedList<>();
+
+                for (Long course : courseFilter.getCourseList()) {
+                    result.addAll(hourDeclarationRepository
+                            .findByCourseIdAndApproved(course, false));
+                }
+            }
 
             if (result.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
