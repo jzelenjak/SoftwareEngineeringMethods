@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -48,6 +49,7 @@ class NotificationControllerTest {
 
     private final transient ObjectMapper objectMapper = new ObjectMapper();
 
+    // Some fixed values we use often.
     private static final transient String NOTIFICATIONID = "notificationId";
     private static final transient String USERID = "userId";
     private static final transient String MESSAGE = "message";
@@ -59,10 +61,13 @@ class NotificationControllerTest {
     private static final transient String ADMINUSERNAME = "IAmAllMightyAdmin ";
     private static final transient String ADMINPASSWORD = "ThisIsEncrypted ";
     private static final transient long ADMINID = 4864861L;
-    private static transient String jwtAdmin;
     private static final transient String STUDENTUSERNAME = "IAmSimpleStudent";
     private static final transient String STUDENTPASSWORD = "ThisIsAlsoEncrypted ";
     private static final transient long STUDENTID = 9864869L;
+    private static final transient LocalDateTime notificationDate = LocalDateTime.now();
+
+    // Some values we initialize before each test.
+    private static transient String jwtAdmin;
     private static transient String jwtStudent;
 
     private static final transient String GET_URL = "/api/notifications/get";
@@ -109,7 +114,7 @@ class NotificationControllerTest {
     @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
     void getNotificationsFromExistingUserAsAdminSuccessTest() throws Exception {
         Notification notification = new Notification(444L,
-                5695444L, "Hi Admin!");
+                5695444L, "Hi Admin!", notificationDate);
         this.notificationDataRepository.save(notification);
 
         this.mockMvc
@@ -140,7 +145,7 @@ class NotificationControllerTest {
     @WithMockUser(username = STUDENTUSERNAME, password = STUDENTPASSWORD)
     void getNotificationsFromExistingUserStudentFailedTest() throws Exception {
         Notification notification = new Notification(444L,
-                5695444L, "Hi Admin!");
+                5695444L, "Hi Admin!", notificationDate);
         this.notificationDataRepository.save(notification);
 
         this.mockMvc
@@ -150,24 +155,6 @@ class NotificationControllerTest {
                         .header(HttpHeaders.AUTHORIZATION, jwtStudent)
                         .characterEncoding(UTF8))
                 .andExpect(status().isForbidden());
-
-        this.notificationDataRepository.deleteAll();
-    }
-
-    @Test
-    @WithMockUser(username = STUDENTUSERNAME, password = STUDENTPASSWORD)
-    void getNotificationsFromExistingUserStudentSuccessTest() throws Exception {
-        Notification notification = new Notification(123L,
-                STUDENTID, "Hi Student!");
-        this.notificationDataRepository.save(notification);
-
-        this.mockMvc
-                .perform(get(GET_URL)
-                        .contentType(APPLICATION_JSON)
-                        .content(createJson(USERID, String.valueOf(STUDENTID)))
-                        .header(HttpHeaders.AUTHORIZATION, jwtStudent)
-                        .characterEncoding(UTF8))
-                .andExpect(status().isOk());
 
         this.notificationDataRepository.deleteAll();
     }
@@ -217,7 +204,7 @@ class NotificationControllerTest {
     @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
     void addNotificationAlreadyExistsFailedTest() throws Exception {
         Notification notification = new Notification(33L,
-                4864864L, "Hello there!");
+                4864864L, "Hello there!", notificationDate);
         this.notificationDataRepository.save(notification);
 
         this.mockMvc
@@ -240,7 +227,7 @@ class NotificationControllerTest {
     @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
     void changeUserFromNotificationSuccessTest() throws Exception {
         Notification notification = new Notification(330L,
-                4648648L, "Hello!");
+                4648648L, "Hello!", notificationDate);
         this.notificationDataRepository.save(notification);
 
         this.mockMvc
@@ -265,7 +252,7 @@ class NotificationControllerTest {
     @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
     void changeMessageFromNotificationSuccessTest() throws Exception {
         Notification notification = new Notification(60L,
-                4648648L, "Hi JavAa!");
+                4648648L, "Hi JavAa!", notificationDate);
         this.notificationDataRepository.save(notification);
 
         this.mockMvc
@@ -290,7 +277,7 @@ class NotificationControllerTest {
     @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
     void deleteExistingNotificationByIdTest() throws Exception {
         Notification notification = new Notification(3309L,
-                1212121L, "Delete me!");
+                1212121L, "Delete me!", notificationDate);
         this.notificationDataRepository.save(notification);
         this.mockMvc
                 .perform(delete(DELETE_BY_ID_URL)
@@ -307,11 +294,11 @@ class NotificationControllerTest {
     @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
     void deleteExistingNotificationByUserIdTest() throws Exception {
         Notification notification1 = new Notification(1001L,
-                1212121L, "Delete me!");
+                1212121L, "Delete me!", notificationDate);
         Notification notification2 = new Notification(1002L,
-                1212121L, "Be gone!");
+                1212121L, "Be gone!", notificationDate);
         Notification notification3 = new Notification(1003L,
-                1212121L, "Lorem Ipsum!");
+                1212121L, "Lorem Ipsum!", notificationDate);
 
         List<Notification> list = new ArrayList<>();
         list.add(notification1);

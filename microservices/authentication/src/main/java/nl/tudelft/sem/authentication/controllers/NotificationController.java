@@ -60,7 +60,7 @@ public class NotificationController {
     }
 
     /**
-     * Gets all notifications from user.
+     * Gets all notifications from specified user. Only possible by admin.
      *
      * @param req the HTTP request.
      * @param res the HTTP response.
@@ -72,18 +72,11 @@ public class NotificationController {
     @ResponseBody
     public List<Notification> getAllNotificationsFromUser(HttpServletRequest req,
                                    HttpServletResponse res) throws IOException {
-        // Get info from the user from the provided jwt token (claims).
-        String jwt = jwtTokenProvider.resolveToken(req);
-        Jws<Claims> claimsJws = jwtTokenProvider.validateAndParseToken(jwt);
-        final long requesterUserId = jwtUtils.getUserId(claimsJws);
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         final long targetUserId = Long.parseLong(jsonNode.get(USERID).asText());
 
-        // If requester userId differs from the userId in the request.
-        if (requesterUserId != targetUserId) {
-            // Only admin can do that, so check this.
-            checkAdmin(req);
-        }
+        // Only admin can do that, so check this.
+        checkAdmin(req);
 
         return this.notificationService.loadNotificationByUserId(targetUserId);
     }

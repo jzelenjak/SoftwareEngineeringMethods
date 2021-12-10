@@ -1,5 +1,6 @@
 package nl.tudelft.sem.authentication.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import javax.persistence.EntityNotFoundException;
 import nl.tudelft.sem.authentication.entities.Notification;
@@ -34,7 +35,7 @@ public class NotificationService {
             return false;
         }
         this.notificationDataRepository
-                .save(new Notification(notificationId, userId, message));
+                .save(new Notification(notificationId, userId, message, LocalDateTime.now()));
         return true;
     }
 

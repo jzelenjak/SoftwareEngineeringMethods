@@ -6,13 +6,18 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import nl.tudelft.sem.authentication.entities.Notification;
 import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
 import nl.tudelft.sem.authentication.security.UserRole;
 import nl.tudelft.sem.authentication.service.AuthService;
+import nl.tudelft.sem.authentication.service.NotificationService;
+import org.aspectj.weaver.ast.Not;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,29 +40,31 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+    // Some constant values we use often.
     private static final transient String USERNAME = "username";
     private static final transient String PASSWORD = "password";
     private static final transient String USERID = "userId";
 
     private final transient AuthService authService;
-
+    private final transient NotificationService notificationService;
     private final transient JwtTokenProvider jwtTokenProvider;
-
     private final transient AuthenticationManager authenticationManager;
-
     private final transient ObjectMapper objectMapper = new ObjectMapper();
 
 
     /**
      * Instantiates a new AuthenticationController object.
      *
-     * @param authService           the authentication service
-     * @param jwtTokenProvider      the class with JWT utilities
-     * @param authenticationManager the authentication manager
+     * @param authService                the authentication service.
+     * @param notificationService        the notification service.
+     * @param jwtTokenProvider           the class with JWT utilities.
+     * @param authenticationManager      the authentication manager.
      */
-    public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider,
+    public AuthController(AuthService authService, NotificationService notificationService,
+                          JwtTokenProvider jwtTokenProvider,
                           AuthenticationManager authenticationManager) {
         this.authService = authService;
+        this.notificationService = notificationService;
         this.jwtTokenProvider = jwtTokenProvider;
         this.authenticationManager = authenticationManager;
     }
@@ -66,8 +73,8 @@ public class AuthController {
     /**
      * Registers a new user to the system, if (s)he is not already registered.
      *
-     * @param req the HTTP request
-     * @param res the HTTP response
+     * @param req the HTTP request.
+     * @param res the HTTP response.
      * @throws IOException IO exception if something goes wrong with the servlets.
      */
     @PostMapping("/register")
@@ -90,8 +97,8 @@ public class AuthController {
     /**
      * Changes the password of a user if the provided credentials are correct.
      *
-     * @param req the HTTP request
-     * @param res the HTTP response
+     * @param req the HTTP request.
+     * @param res the HTTP response.
      * @throws IOException IO exception if something goes wrong with the servlets.
      */
     @PutMapping("/change_password")
@@ -137,8 +144,15 @@ public class AuthController {
 
             res.setHeader(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", jwt));
             res.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+
+            // Fetch notifications from user.
+            List<Notification> list = getAllNotificationsFromUser(user.getUserId());
+            String json = turnListInJsonResponse(list);
+            res.getWriter().write(json);
         } catch (AuthenticationException e) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid credentials.");
+        } catch (EntityNotFoundException e) {
+            res.getWriter().write("No new notifications.");
         }
     }
 
@@ -218,5 +232,35 @@ public class AuthController {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Please enter a valid role.");
         }
+    }
+
+    /**
+     * Gets all notifications from specific user.
+     *
+     * @param targetUserId the target user id.
+     * @return all notifications from user.
+     */
+    public List<Notification> getAllNotificationsFromUser(long targetUserId) {
+        return this.notificationService.loadNotificationByUserId(targetUserId);
+    }
+
+    /**
+     * Turn list of notifications in json response string.
+     *
+     * @param list the list of notifications.
+     *
+     * @return string representation of list of notifications.
+     */
+    public String turnListInJsonResponse(List<Notification> list) {
+        StringBuilder json = new StringBuilder("{\"notifications\":[");
+        for (int i = 0; i < list.size(); i++) {
+            Notification n = list.get(i);
+            json.append(n.toJsonResponse());
+            if (i < list.size() - 1) {
+                json.append(", ");
+            }
+        }
+        json.append("]}");
+        return json.toString();
     }
 }

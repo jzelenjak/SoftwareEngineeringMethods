@@ -1,5 +1,6 @@
 package nl.tudelft.sem.authentication.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -40,7 +41,8 @@ class NotificationServiceTest {
     void addExistingNotificationFailedTest() {
         final long notificationId = 1L;
         Notification notification = new Notification(
-                notificationId, 1234567L, "You have been selected!");
+                notificationId, 1234567L,
+                "You have been selected!", LocalDateTime.now());
         this.notificationDataRepository.save(notification);
         Assertions.assertFalse(this.notificationService.addNewNotification(
                 notificationId, 7654321L, "You have been promoted to head TA!"));
@@ -51,8 +53,8 @@ class NotificationServiceTest {
     void changeUserFromNotificationSuccessTest() {
         final long notificationId = 10L;
         final long userId = 5555333L;
-        this.notificationDataRepository.save(
-                new Notification(notificationId, userId, "You have been selected!"));
+        this.notificationDataRepository.save(new Notification(notificationId, userId,
+                        "You have been selected!", LocalDateTime.now()));
 
         final long newUserId = 5555334L;
         this.notificationService.changeUserIdFromNotification(notificationId, newUserId);
@@ -79,8 +81,8 @@ class NotificationServiceTest {
     void changeMessageFromNotificationSuccessTest() {
         final long notificationId = 21L;
         final long userId = 5555336L;
-        this.notificationDataRepository.save(
-                new Notification(notificationId, userId, "You have been selected!"));
+        this.notificationDataRepository.save(new Notification(notificationId, userId,
+                        "You have been selected!", LocalDateTime.now()));
 
         final String newMessage = "You have been rejected.";
         this.notificationService.changeMessageFromNotification(notificationId,
@@ -109,8 +111,8 @@ class NotificationServiceTest {
     void loadByNotificationIdFoundTest() {
         final long notificationId = 55L;
         final long userId = 4477991L;
-        Notification notification = new Notification(
-                notificationId, userId, "You have not been selected.");
+        Notification notification = new Notification(notificationId, userId,
+                "You have not been selected.", LocalDateTime.now());
         this.notificationDataRepository.save(notification);
 
         Assertions.assertEquals(notification, this.notificationService
@@ -129,12 +131,12 @@ class NotificationServiceTest {
     void loadByUserIdFoundTest() {
         final long notificationId = 520L;
         final long userId = 2913889L;
-        Notification notification1 = new Notification(
-                notificationId, userId, "Your hours have been rejected.");
+        Notification notification1 = new Notification(notificationId, userId,
+                "Your hours have been rejected.", LocalDateTime.now());
         this.notificationDataRepository.save(notification1);
 
         Notification notification2 = new Notification(notificationId + 1, userId,
-                "Your contract has been voided.");
+                "Your contract has been voided.", LocalDateTime.now());
         this.notificationDataRepository.save(notification2);
 
         List<Notification> notificationList = new ArrayList<>();
@@ -161,7 +163,8 @@ class NotificationServiceTest {
         final long notificationId = 950L;
         final long userId = 6651934L;
         this.notificationDataRepository.save(
-                new Notification(notificationId, userId, "Your contract has been extended!"));
+                new Notification(notificationId, userId,
+                        "Your contract has been extended!", LocalDateTime.now()));
 
         Optional<Notification> beforeDeletionNotification = notificationDataRepository
                 .findByNotificationId(notificationId);
@@ -186,8 +189,8 @@ class NotificationServiceTest {
     void deleteNotificationsByUserIdSuccessTest() {
         final long notificationId = 999L;
         final long userId = 9651548L;
-        this.notificationDataRepository.save(
-                new Notification(notificationId, userId, "Your application has been withdrawn."));
+        this.notificationDataRepository.save(new Notification(notificationId, userId,
+                        "Your application has been withdrawn.", LocalDateTime.now()));
 
         Optional<List<Notification>> beforeDeletionNotification = notificationDataRepository
                 .findByUserId(userId);
