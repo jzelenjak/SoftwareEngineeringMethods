@@ -1,14 +1,17 @@
 package nl.tudelft.sem.hour.management.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Data;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
+import nl.tudelft.sem.hour.management.dto.StatisticsRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
+import nl.tudelft.sem.hour.management.services.StatisticsService;
 import nl.tudelft.sem.hour.management.validation.AsyncAuthValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator.Roles;
@@ -39,6 +42,7 @@ public class HourDeclarationController {
     private final transient GatewayConfig gatewayConfig;
     private final transient JwtUtils jwtUtils;
     private final transient ObjectMapper objectMapper;
+    private final transient StatisticsService statisticsService;
 
     /**
      * Entry point of the repo, also acts as a sanity check.
@@ -46,7 +50,8 @@ public class HourDeclarationController {
      * @return a simple greeting
      */
     @GetMapping
-    public @ResponseBody String hello() {
+    public @ResponseBody
+    String hello() {
         return "Hello from Hour Management";
     }
 
@@ -57,7 +62,8 @@ public class HourDeclarationController {
      */
     @GetMapping("/declaration")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody Mono<List<HourDeclaration>> getAllDeclarations(
+    public @ResponseBody
+    Mono<List<HourDeclaration>> getAllDeclarations(
             @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
@@ -272,6 +278,42 @@ public class HourDeclarationController {
             }
 
             return Mono.just(result);
+        });
+    }
+
+    /**
+     * Retrieves the total amount of hours declared by a student for a particular course.
+     *
+     * @param headers           headers of the request.
+     * @param statisticsRequest request containing the student id and course id.
+     * @return total amount of hours declared by a student for a particular course.
+     */
+    @GetMapping("/declaration/statistics/total-hours")
+    @ResponseStatus(HttpStatus.OK)
+    public @ResponseBody
+    Mono<String> getTotalHours(@RequestHeader HttpHeaders headers,
+                               @RequestBody StatisticsRequest statisticsRequest) {
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+                .addValidators(
+                        new AsyncAuthValidator(gatewayConfig, jwtUtils),
+                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
+                                Set.of(Roles.ADMIN, Roles.LECTURER, Roles.TA))
+                ).build();
+
+        return head.validate(headers, "").flatMap(valid -> {
+            Optional<Double> totalHours = statisticsService.getTotalHoursPerStudentPerCourse(
+                    statisticsRequest.getStudentId(), statisticsRequest.getCourseId());
+
+            // Check if the student has declared hours for the course
+            if (totalHours.isEmpty()) {
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "No statistics found for the specified student and course."));
+            }
+
+            // Return the response as json
+            JsonObject result = new JsonObject();
+            result.addProperty("totalHours", totalHours.get());
+            return Mono.just(result.toString());
         });
     }
 }
