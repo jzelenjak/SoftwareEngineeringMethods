@@ -2,8 +2,6 @@ package nl.tudelft.sem.authentication.entities;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import org.apache.tomcat.jni.Local;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,7 +60,8 @@ class NotificationTest {
 
     @Test
     void getNotificationDateTest() {
-        Assertions.assertEquals(notificationDate, notification.getNotificationDate());
+        Assertions.assertEquals(notificationDate.toLocalDate(),
+                notification.getNotificationDate().toLocalDate());
     }
 
     @Test
