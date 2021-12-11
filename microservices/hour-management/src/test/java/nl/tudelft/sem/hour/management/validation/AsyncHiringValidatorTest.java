@@ -79,6 +79,30 @@ public class AsyncHiringValidatorTest {
 
         assertEquals(get, recordedRequest.getMethod());
         assertEquals("/api/hiring-service/get-contract?courseID=1", recordedRequest.getPath());
+        assertEquals(token, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
+    }
+
+    @Test
+    void testValidateUnauthorized() throws InterruptedException {
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 12, 10);
+        AsyncHiringValidator validator = new AsyncHiringValidator(gatewayConfig);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(authorization, "");
+
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(403)
+                .addHeader(content, applicationJson));
+
+        // check the state
+        Mono<Boolean> result = validator.validate(headers, declarationRequest.toJson());
+        assertThatExceptionOfType(ResponseStatusException.class).isThrownBy(result::block);
+
+        // check that request was made to correct place
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+
+        assertEquals(get, recordedRequest.getMethod());
+        assertEquals("/api/hiring-service/get-contract?courseID=12", recordedRequest.getPath());
+        assertEquals("", recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
@@ -101,6 +125,7 @@ public class AsyncHiringValidatorTest {
 
         assertEquals(get, recordedRequest.getMethod());
         assertEquals("/api/hiring-service/get-contract?courseID=12", recordedRequest.getPath());
+        assertEquals(token, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
@@ -124,6 +149,7 @@ public class AsyncHiringValidatorTest {
 
         assertEquals(get, recordedRequest.getMethod());
         assertEquals("/api/hiring-service/get-contract?courseID=1", recordedRequest.getPath());
+        assertEquals(token, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
@@ -147,6 +173,7 @@ public class AsyncHiringValidatorTest {
 
         assertEquals(get, recordedRequest.getMethod());
         assertEquals("/api/hiring-service/get-contract?courseID=1", recordedRequest.getPath());
+        assertEquals(token, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
 }
