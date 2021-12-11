@@ -9,6 +9,7 @@ import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
+import nl.tudelft.sem.hour.management.services.NotificationService;
 import nl.tudelft.sem.hour.management.validation.AsyncAuthValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator.Roles;
@@ -35,6 +36,7 @@ import reactor.core.publisher.Mono;
 @Data
 public class HourDeclarationController {
 
+    private final NotificationService notificationService;
     private final HourDeclarationRepository hourDeclarationRepository;
     private final transient GatewayConfig gatewayConfig;
     private final transient JwtUtils jwtUtils;
@@ -46,7 +48,8 @@ public class HourDeclarationController {
      * @return a simple greeting
      */
     @GetMapping
-    public @ResponseBody String hello() {
+    public @ResponseBody
+    String hello() {
         return "Hello from Hour Management";
     }
 
@@ -57,7 +60,8 @@ public class HourDeclarationController {
      */
     @GetMapping("/declaration")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody Mono<List<HourDeclaration>> getAllDeclarations(
+    public @ResponseBody
+    Mono<List<HourDeclaration>> getAllDeclarations(
             @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
@@ -148,8 +152,8 @@ public class HourDeclarationController {
     @DeleteMapping("/declaration/{id}/reject")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    Mono<String> deleteDeclaredHour(@PathVariable("id") long declarationId,
-                                    @RequestHeader HttpHeaders headers) {
+    Mono<Void> deleteDeclaredHour(@PathVariable("id") long declarationId,
+                                  @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
@@ -158,21 +162,26 @@ public class HourDeclarationController {
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
+            // Fetch the declaration from the database
             Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository
                     .findById(declarationId);
 
+            // Verify that the declaration exists and has not been approved yet
             if (hourDeclaration.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Given declaration does not exists."));
             } else if (hourDeclaration.get().isApproved()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Given declaration has been approved."));
+                        "Given declaration has been approved already."));
             }
 
+            // Remove the declaration from the database
             hourDeclarationRepository.delete(hourDeclaration.get());
 
-            return Mono.just(String.format("Declaration with id %s has been successfully deleted.",
-                    declarationId));
+            // Add a notification to the student's notification pool
+            return notificationService.notify(hourDeclaration.get().getDeclarationId(),
+                    String.format("Your declaration with id %s has been rejected.", declarationId),
+                    headers.getFirst(HttpHeaders.AUTHORIZATION));
         });
     }
 
@@ -185,7 +194,7 @@ public class HourDeclarationController {
     @PutMapping("/declaration/{id}/approve")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    Mono<String> approveDeclaredHour(@PathVariable("id") long declarationId,
+    Mono<Void> approveDeclaredHour(@PathVariable("id") long declarationId,
                                      @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
@@ -210,8 +219,10 @@ public class HourDeclarationController {
             hourDeclaration.get().setApproved(true);
             hourDeclarationRepository.save(hourDeclaration.get());
 
-            return Mono.just(String.format("Declaration with id %s has been successfully approved.",
-                    declarationId));
+            // Add a notification to the student's notification pool
+            return notificationService.notify(hourDeclaration.get().getDeclarationId(),
+                    String.format("Your declaration with id %s has been approved.", declarationId),
+                    headers.getFirst(HttpHeaders.AUTHORIZATION));
         });
 
     }
