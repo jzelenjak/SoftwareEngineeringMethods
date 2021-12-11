@@ -11,11 +11,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import nl.tudelft.sem.hour.management.dto.DeclarationCourseFilter;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
@@ -30,6 +33,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -98,6 +102,24 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testGetAllDeclarations() throws Exception {
+        List<HourDeclaration> expectedResponseBody =
+                hourDeclarationRepository.findByCourseId(5678L);
+        DeclarationCourseFilter courseFilter = new DeclarationCourseFilter(List.of(5678L));
+
+        MvcResult mvcResult = mockMvc.perform(get(declarationPath)
+                        .header(authorization, "")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(courseFilter)))
+                .andReturn();
+
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string(objectMapper.writeValueAsString(expectedResponseBody)));
+    }
+
+    @Test
+    void testGetAllDeclarationsNullBody() throws Exception {
         List<HourDeclaration> expectedResponseBody = hourDeclarationRepository.findAll();
 
         MvcResult mvcResult = mockMvc.perform(get(declarationPath)
@@ -126,7 +148,7 @@ public class HourDeclarationControllerTest {
     @Test
     void testPostDeclaration() throws Exception {
         MvcResult mvcResult = mockMvc.perform(post(declarationPath)
-                        .contentType("application/json")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(hourDeclarationRequestNew))
                         .header(authorization, ""))
             .andReturn();
@@ -146,7 +168,7 @@ public class HourDeclarationControllerTest {
     @Test
     void testPostDeclarationInvalid() throws Exception {
         mockMvc.perform(post(declarationPath)
-                    .contentType("application/json")
+                    .contentType(MediaType.APPLICATION_JSON)
                     .content("")
                     .header(authorization, ""))
                 .andExpect(status().isBadRequest());
@@ -219,7 +241,7 @@ public class HourDeclarationControllerTest {
     @Test
     void testApproveDeclaration() throws Exception {
         MvcResult mvcResult = mockMvc.perform(put("/api/hour-management/declaration/1/approve")
-                .contentType("application/json")
+                .contentType(MediaType.APPLICATION_JSON)
                 .header(authorization, ""))
                 .andReturn();
 
@@ -256,7 +278,25 @@ public class HourDeclarationControllerTest {
     }
 
     @Test
-    void getAllUnapproved() throws Exception {
+    void getAllUnapprovedDeclarations() throws Exception {
+        List<HourDeclaration> expectedResponseBody =
+                hourDeclarationRepository.findByCourseId(5678L);
+        DeclarationCourseFilter courseFilter = new DeclarationCourseFilter(List.of(5678L));
+
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/unapproved")
+                        .header(authorization, "")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(courseFilter)))
+                .andReturn();
+
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string(objectMapper.writeValueAsString(expectedResponseBody)));
+    }
+
+    @Test
+    void getAllUnapprovedNullBody() throws Exception {
         List<HourDeclaration> expectedResponseBody = hourDeclarationRepository
                 .findByApproved(false);
 

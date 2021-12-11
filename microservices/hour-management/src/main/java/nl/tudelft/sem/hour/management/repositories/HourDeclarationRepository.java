@@ -9,5 +9,9 @@ import org.springframework.stereotype.Repository;
 public interface HourDeclarationRepository extends JpaRepository<HourDeclaration, Long> {
     List<HourDeclaration> findByStudentId(long studentId);
 
+    List<HourDeclaration> findByCourseId(long courseId);
+
     List<HourDeclaration> findByApproved(boolean approved);
+
+    List<HourDeclaration> findByCourseIdAndApproved(long courseId, boolean approved);
 }

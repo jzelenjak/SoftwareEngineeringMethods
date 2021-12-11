@@ -1,11 +1,13 @@
 package nl.tudelft.sem.hour.management.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Data;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
+import nl.tudelft.sem.hour.management.dto.DeclarationCourseFilter;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
@@ -53,12 +55,16 @@ public class HourDeclarationController {
     /**
      * Gets all the stored declarations in the system.
      *
-     * @return all stored declaration in the system
+     * @param headers the headers of the request.
+     * @param courseFilter the course filter to apply to the declarations (optional).
+     * @return all stored declaration in the system.
+     * @implNote If the course filter is null, all declarations are returned.
      */
     @GetMapping("/declaration")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody Mono<List<HourDeclaration>> getAllDeclarations(
-            @RequestHeader HttpHeaders headers) {
+            @RequestHeader HttpHeaders headers,
+            @RequestBody(required = false) DeclarationCourseFilter courseFilter) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
@@ -68,7 +74,19 @@ public class HourDeclarationController {
 
         // Validate the request, if it succeeds, attempt to return the declarations
         return head.validate(headers, "").flatMap((valid) -> {
-            List<HourDeclaration> result = hourDeclarationRepository.findAll();
+            List<HourDeclaration> result;
+
+            // If the course filter is null, fetch all declarations
+            // If not, fetch all declarations for the given courses
+            if (courseFilter == null) {
+                result = hourDeclarationRepository.findAll();
+            } else {
+                result = new LinkedList<>();
+
+                for (Long course : courseFilter.getCourseList()) {
+                    result.addAll(hourDeclarationRepository.findByCourseId(course));
+                }
+            }
 
             if (result.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -82,6 +100,7 @@ public class HourDeclarationController {
     /**
      * Allows a user to post a new hour-declaration.
      *
+     * @param headers the headers of the request.
      * @param hourDeclarationRequest hour declaration that will be saved
      * @return an informative message about status of request
      */
@@ -110,6 +129,7 @@ public class HourDeclarationController {
      * Get a declaration associated with declarationId.
      *
      * @param declarationId id of the desired student
+     * @param headers the headers of the request.
      * @return all declared hours associated with a student
      */
     @GetMapping("/declaration/{id}")
@@ -143,6 +163,7 @@ public class HourDeclarationController {
      * Allows a lecturer to reject/delete an unapproved hour-declaration.
      *
      * @param declarationId id of declaration to be deleted
+     * @param headers the headers of the request.
      * @return an informative message about status of request
      */
     @DeleteMapping("/declaration/{id}/reject")
@@ -180,6 +201,7 @@ public class HourDeclarationController {
      * Allows a lecturer to approve an unapproved hour-declaration.
      *
      * @param declarationId id of declaration to be deleted
+     * @param headers the headers of the request.
      * @return an informative message about status of request
      */
     @PutMapping("/declaration/{id}/approve")
@@ -219,12 +241,17 @@ public class HourDeclarationController {
     /**
      * Gets all unapproved declarations in the system.
      *
-     * @return all stored unapproved declarations
+     * @param headers headers of the request.
+     * @param courseFilter the course filter to apply to the declarations (optional).
+     * @return all stored unapproved declarations.
+     * @implNote If the course filter is null, all declarations are returned.
      */
     @GetMapping("/declaration/unapproved")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    Mono<List<HourDeclaration>> getAllUnapprovedDeclarations(@RequestHeader HttpHeaders headers) {
+    public @ResponseBody Mono<List<HourDeclaration>>
+    getAllUnapprovedDeclarations(@RequestHeader HttpHeaders headers,
+                                 @RequestBody(required = false)
+                                         DeclarationCourseFilter courseFilter) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
@@ -233,7 +260,20 @@ public class HourDeclarationController {
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
-            List<HourDeclaration> result = hourDeclarationRepository.findByApproved(false);
+            List<HourDeclaration> result;
+
+            // If the course filter is null, fetch all declarations
+            // If not, fetch all declarations for the given courses
+            if (courseFilter == null) {
+                result = hourDeclarationRepository.findByApproved(false);
+            } else {
+                result = new LinkedList<>();
+
+                for (Long course : courseFilter.getCourseList()) {
+                    result.addAll(hourDeclarationRepository
+                            .findByCourseIdAndApproved(course, false));
+                }
+            }
 
             if (result.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -248,6 +288,7 @@ public class HourDeclarationController {
      * Gets all declarations associated with a student.
      *
      * @param studentId id of the desired student
+     * @param headers the headers of the request.
      * @return all declared hours associated with a student
      */
     @GetMapping("/declaration/student/{id}")
