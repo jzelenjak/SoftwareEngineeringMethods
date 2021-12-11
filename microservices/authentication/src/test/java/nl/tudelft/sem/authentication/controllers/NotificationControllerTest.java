@@ -9,7 +9,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -59,23 +58,26 @@ class NotificationControllerTest {
     private static final transient String PREFIX = "Bearer ";
 
     private static final transient String ADMINUSERNAME = "IAmAllMightyAdmin ";
-    private static final transient String ADMINPASSWORD = "ThisIsEncrypted ";
-    private static final transient long ADMINID = 4864861L;
+    private static final transient String LECTURERUSERNAME = "IAmBestLecturer";
     private static final transient String STUDENTUSERNAME = "IAmSimpleStudent";
-    private static final transient String STUDENTPASSWORD = "ThisIsAlsoEncrypted ";
-    private static final transient long STUDENTID = 9864869L;
-    private static final transient LocalDateTime notificationDate = LocalDateTime.now();
+    private static final transient String SHAREDPASSWORD = "ThisIsEncrypted ";
+    private static final transient long ADMINID = 4864861L;
+    private static final transient long LECTURERID = 9864869L;
+    private static final transient long STUDENTID = 8536291L;
 
     // Some values we initialize before each test.
     private static transient String jwtAdmin;
+    private static transient String jwtLecturer;
     private static transient String jwtStudent;
 
-    private static final transient String GET_URL = "/api/notifications/get";
-    private static final transient String ADD_URL = "/api/notifications/add";
-    private static final transient String CHANGE_USER_URL = "/api/notifications/change_user";
-    private static final transient String CHANGE_MESSAGE_URL = "/api/notifications/change_message";
-    private static final transient String DELETE_BY_ID_URL = "/api/notifications/delete";
-    private static final transient String DELETE_BY_USER_URL = "/api/notifications/delete_user";
+    private static final transient String GET_URL = "/api/auth/notifications/get";
+    private static final transient String ADD_URL = "/api/auth/notifications/add";
+    private static final transient String CHANGE_USER_URL = "/api/auth/notifications/change_user";
+    private static final transient String CHANGE_MESSAGE_URL
+            = "/api/auth/notifications/change_message";
+    private static final transient String DELETE_BY_ID_URL = "/api/auth/notifications/delete";
+    private static final transient String DELETE_BY_USER_URL
+            = "/api/auth/notifications/delete_user";
 
 
 
@@ -96,12 +98,18 @@ class NotificationControllerTest {
     @BeforeEach
     void setupBefore() {
         jwtAdmin = PREFIX + jwtTokenProvider.createToken(ADMINID, UserRole.ADMIN, new Date());
-        jwtStudent = PREFIX + jwtTokenProvider.createToken(STUDENTID, UserRole.STUDENT, new Date());
-        UserData admin = new UserData(ADMINUSERNAME, ADMINPASSWORD, UserRole.ADMIN, ADMINID);
-        UserData student = new UserData(STUDENTUSERNAME, STUDENTPASSWORD,
+        jwtLecturer = PREFIX + jwtTokenProvider.createToken(LECTURERID,
+                UserRole.LECTURER, new Date());
+        jwtStudent = PREFIX + jwtTokenProvider.createToken(STUDENTID,
+                UserRole.STUDENT, new Date());
+        UserData admin = new UserData(ADMINUSERNAME, SHAREDPASSWORD, UserRole.ADMIN, ADMINID);
+        UserData lecturer = new UserData(LECTURERUSERNAME, SHAREDPASSWORD,
+                UserRole.LECTURER, LECTURERID);
+        UserData student = new UserData(STUDENTUSERNAME, SHAREDPASSWORD,
                 UserRole.STUDENT, STUDENTID);
         this.userDataRepository.save(admin);
         this.userDataRepository.save(student);
+        this.userDataRepository.save(lecturer);
     }
 
     @AfterEach
@@ -111,10 +119,9 @@ class NotificationControllerTest {
     }
 
     @Test
-    @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
+    @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
     void getNotificationsFromExistingUserAsAdminSuccessTest() throws Exception {
-        Notification notification = new Notification(444L,
-                5695444L, "Hi Admin!", notificationDate);
+        Notification notification = new Notification(5695444L, "Hi Admin!");
         this.notificationDataRepository.save(notification);
 
         this.mockMvc
@@ -142,10 +149,9 @@ class NotificationControllerTest {
     }
 
     @Test
-    @WithMockUser(username = STUDENTUSERNAME, password = STUDENTPASSWORD)
+    @WithMockUser(username = STUDENTUSERNAME, password = SHAREDPASSWORD)
     void getNotificationsFromExistingUserStudentFailedTest() throws Exception {
-        Notification notification = new Notification(444L,
-                5695444L, "Hi Admin!", notificationDate);
+        Notification notification = new Notification(5695444L, "Hi Admin!");
         this.notificationDataRepository.save(notification);
 
         this.mockMvc
@@ -160,86 +166,124 @@ class NotificationControllerTest {
     }
 
     @Test
-    @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
-    void addNotificationSuccessTest() throws Exception {
+    @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
+    void addNotificationAsAdminSuccessTest() throws Exception {
         this.mockMvc
             .perform(post(ADD_URL)
                 .contentType(APPLICATION_JSON)
-                .content(createJson(NOTIFICATIONID, "66",
-                        USERID, "5555444", MESSAGE, "Hello World!"))
+                .content(createJson(USERID, "81395544414353", MESSAGE, "Hello World!"))
                     .header(HttpHeaders.AUTHORIZATION, jwtAdmin)
                 .characterEncoding(UTF8))
             .andExpect(status().isOk());
 
+        Optional<List<Notification>> optionalList =
+                this.notificationDataRepository.findByUserId(81395544414353L);
+        assert optionalList.isPresent();
+
+        List<Notification> list = optionalList.get();
+        Notification first = list.get(0);
+        final long notificationId = first.getNotificationId();
+
         Optional<Notification> optionalNotification =
-                this.notificationDataRepository.findByNotificationId(66);
+                this.notificationDataRepository.findByNotificationId(notificationId);
         assert optionalNotification.isPresent();
 
         Notification notification = optionalNotification.get();
-        Assertions.assertEquals(notification.getNotificationId(), 66);
+        Assertions.assertEquals(notification.getNotificationId(), notificationId);
 
         this.notificationDataRepository.deleteAll();
     }
 
     @Test
-    @WithMockUser(username = STUDENTUSERNAME, password = STUDENTPASSWORD)
+    @WithMockUser(username = LECTURERUSERNAME, password = SHAREDPASSWORD)
+    void addNotificationAsLecturerSuccessTest() throws Exception {
+        this.mockMvc
+                .perform(post(ADD_URL)
+                        .contentType(APPLICATION_JSON)
+                        .content(createJson(USERID, "4441435386473932",
+                                MESSAGE, "Hello class of 2021!"))
+                        .header(HttpHeaders.AUTHORIZATION, jwtLecturer)
+                        .characterEncoding(UTF8))
+                .andExpect(status().isOk());
+
+        Optional<List<Notification>> optionalList =
+                this.notificationDataRepository.findByUserId(4441435386473932L);
+        assert optionalList.isPresent();
+
+        List<Notification> list = optionalList.get();
+        Notification first = list.get(0);
+        final long notificationId = first.getNotificationId();
+
+        Optional<Notification> optionalNotification =
+                this.notificationDataRepository.findByNotificationId(notificationId);
+        assert optionalNotification.isPresent();
+
+        Notification notification = optionalNotification.get();
+        Assertions.assertEquals(notification.getNotificationId(), notificationId);
+
+        this.notificationDataRepository.deleteAll();
+    }
+
+    @Test
+    @WithMockUser(username = STUDENTUSERNAME, password = SHAREDPASSWORD)
     void addNotificationNoRightsFailedTest() throws Exception {
         this.mockMvc
                 .perform(post(ADD_URL)
                         .contentType(APPLICATION_JSON)
-                        .content(createJson(NOTIFICATIONID, "66",
-                                USERID, "5555444", MESSAGE, "Hello World!"))
+                        .content(createJson(USERID, "5555444", MESSAGE, "Hello World!"))
                         .header(HttpHeaders.AUTHORIZATION, jwtStudent)
                         .characterEncoding(UTF8))
                 .andExpect(status().isForbidden());
 
         Optional<Notification> optionalNotification =
-                this.notificationDataRepository.findByNotificationId(66);
+                this.notificationDataRepository.findByNotificationId(1L);
         assert optionalNotification.isEmpty();
 
         this.notificationDataRepository.deleteAll();
     }
 
     @Test
-    @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
-    void addNotificationAlreadyExistsFailedTest() throws Exception {
-        Notification notification = new Notification(33L,
-                4864864L, "Hello there!", notificationDate);
+    @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
+    void addNotificationWithAnotherNotificationSuccessTest() throws Exception {
+        Notification notification = new Notification(4864864486L, "Hello there!");
         this.notificationDataRepository.save(notification);
 
         this.mockMvc
                 .perform(post(ADD_URL)
                         .contentType(APPLICATION_JSON)
-                        .content(createJson(NOTIFICATIONID, "33",
-                                USERID, "4864864", MESSAGE, "Hello Java!"))
+                        .content(createJson(USERID, "4864864486",
+                                MESSAGE, "Hello Java!"))
                         .header(HttpHeaders.AUTHORIZATION, jwtAdmin)
                         .characterEncoding(UTF8))
-                .andExpect(status().isConflict());
+                .andExpect(status().isOk());
 
-        Optional<Notification> optionalNotification =
-                this.notificationDataRepository.findByNotificationId(33);
-        assert optionalNotification.isPresent();
+        Optional<List<Notification>> optionalNotifications =
+                this.notificationDataRepository.findByUserId(4864864486L);
+        assert optionalNotifications.isPresent();
+        List<Notification> list = optionalNotifications.get();
+        Assertions.assertEquals(list.size(), 2);
 
         this.notificationDataRepository.deleteAll();
     }
 
     @Test
-    @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
+    @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
     void changeUserFromNotificationSuccessTest() throws Exception {
-        Notification notification = new Notification(330L,
-                4648648L, "Hello!", notificationDate);
+        Notification notification = new Notification(4648648L, "Hello!");
         this.notificationDataRepository.save(notification);
+        final long targetNotificationId = notification.getNotificationId();
 
         this.mockMvc
                 .perform(put(CHANGE_USER_URL)
                         .contentType(APPLICATION_JSON)
-                        .content(createJson(NOTIFICATIONID, "330", NEWUSER, "1234567"))
+                        .content(createJson(NOTIFICATIONID,
+                                String.valueOf(targetNotificationId), NEWUSER, "1234567"))
                         .header(HttpHeaders.AUTHORIZATION, jwtAdmin)
                         .characterEncoding(UTF8))
                 .andExpect(status().isOk());
 
         Optional<Notification> optionalNotification =
-                this.notificationDataRepository.findByNotificationId(330L);
+                this.notificationDataRepository.findByNotificationId(targetNotificationId);
         assert optionalNotification.isPresent();
 
         Notification newNotification = optionalNotification.get();
@@ -249,22 +293,24 @@ class NotificationControllerTest {
     }
 
     @Test
-    @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
+    @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
     void changeMessageFromNotificationSuccessTest() throws Exception {
-        Notification notification = new Notification(60L,
-                4648648L, "Hi JavAa!", notificationDate);
+        Notification notification = new Notification(4648648L, "Hi JavAa!");
         this.notificationDataRepository.save(notification);
+        final long targetNotificationId = notification.getNotificationId();
 
         this.mockMvc
                 .perform(put(CHANGE_MESSAGE_URL)
                         .contentType(APPLICATION_JSON)
-                        .content(createJson(NOTIFICATIONID, "60", NEWMESSAGE, "Hi Java!"))
+                        .content(createJson(NOTIFICATIONID,
+                                String.valueOf(targetNotificationId),
+                                NEWMESSAGE, "Hi Java!"))
                         .header(HttpHeaders.AUTHORIZATION, jwtAdmin)
                         .characterEncoding(UTF8))
                 .andExpect(status().isOk());
 
         Optional<Notification> optionalNotification =
-                this.notificationDataRepository.findByNotificationId(60L);
+                this.notificationDataRepository.findByNotificationId(targetNotificationId);
         assert optionalNotification.isPresent();
 
         Notification newNotification = optionalNotification.get();
@@ -274,15 +320,16 @@ class NotificationControllerTest {
     }
 
     @Test
-    @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
+    @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
     void deleteExistingNotificationByIdTest() throws Exception {
-        Notification notification = new Notification(3309L,
-                1212121L, "Delete me!", notificationDate);
+        Notification notification = new Notification(1212121L, "Delete me!");
         this.notificationDataRepository.save(notification);
+        final long targetNotificationId = notification.getNotificationId();
         this.mockMvc
                 .perform(delete(DELETE_BY_ID_URL)
                         .contentType(APPLICATION_JSON)
-                        .content(createJson(NOTIFICATIONID, "3309"))
+                        .content(createJson(NOTIFICATIONID,
+                                String.valueOf(targetNotificationId)))
                         .header(HttpHeaders.AUTHORIZATION, jwtAdmin)
                         .characterEncoding(UTF8))
                 .andExpect(status().isOk());
@@ -291,14 +338,11 @@ class NotificationControllerTest {
     }
 
     @Test
-    @WithMockUser(username = ADMINUSERNAME, password = ADMINPASSWORD)
+    @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
     void deleteExistingNotificationByUserIdTest() throws Exception {
-        Notification notification1 = new Notification(1001L,
-                1212121L, "Delete me!", notificationDate);
-        Notification notification2 = new Notification(1002L,
-                1212121L, "Be gone!", notificationDate);
-        Notification notification3 = new Notification(1003L,
-                1212121L, "Lorem Ipsum!", notificationDate);
+        Notification notification1 = new Notification(1212121L, "Delete me!");
+        Notification notification2 = new Notification(1212121L, "Be gone!");
+        Notification notification3 = new Notification(1212121L, "Lorem Ipsum!");
 
         List<Notification> list = new ArrayList<>();
         list.add(notification1);

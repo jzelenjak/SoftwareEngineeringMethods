@@ -5,6 +5,8 @@ import java.time.ZoneId;
 import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
 
@@ -19,6 +21,7 @@ import javax.persistence.Id;
 public class Notification {
     @Id
     @Column(name = "notificationId", unique = true, nullable = false, updatable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long notificationId;
 
     @Column(name = "userId", nullable = false)
@@ -40,13 +43,10 @@ public class Notification {
     /**
      * Instantiates a new Notification.
      *
-     * @param notificationId the notification id.
      * @param userId         the user id connected to the notification.
      * @param message        the message of the notification.
      */
-    public Notification(long notificationId, long userId, String message,
-                        LocalDateTime notificationDate) {
-        this.notificationId = notificationId;
+    public Notification(long userId, String message) {
         this.userId = userId;
         this.message = message;
         this.notificationDate = LocalDateTime.now();

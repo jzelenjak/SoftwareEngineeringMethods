@@ -33,29 +33,28 @@ class NotificationServiceTest {
     @Test
     void addNotificationSuccessTest() {
         Assertions.assertTrue(this.notificationService
-                .addNewNotification(2L, 1324356L,
-                        "You have been promoted to head TA!"));
+                .addNewNotification(1324356L, "You have been promoted to head TA!"));
     }
 
     @Test
-    void addExistingNotificationFailedTest() {
-        final long notificationId = 1L;
-        Notification notification = new Notification(
-                notificationId, 1234567L,
-                "You have been selected!", LocalDateTime.now());
+    void addNotificationWithAnotherNotificationSuccessTest() {
+        Notification notification = new Notification(1234567L, "You have been selected!");
         this.notificationDataRepository.save(notification);
-        Assertions.assertFalse(this.notificationService.addNewNotification(
-                notificationId, 7654321L, "You have been promoted to head TA!"));
+        Assertions.assertTrue(this.notificationService
+                .addNewNotification(7654321L, "You have been promoted to head TA!"));
         this.notificationDataRepository.delete(notification);
     }
 
     @Test
     void changeUserFromNotificationSuccessTest() {
-        final long notificationId = 10L;
-        final long userId = 5555333L;
-        this.notificationDataRepository.save(new Notification(notificationId, userId,
-                        "You have been selected!", LocalDateTime.now()));
+        final long userId = 5534985230058255333L;
+        this.notificationDataRepository.save(new Notification(userId, "You have been selected!"));
 
+        Notification first = notificationService
+                .loadNotificationByUserId(userId)
+                .get(0);
+
+        final long notificationId = first.getNotificationId();
         final long newUserId = 5555334L;
         this.notificationService.changeUserIdFromNotification(notificationId, newUserId);
 
@@ -79,11 +78,14 @@ class NotificationServiceTest {
 
     @Test
     void changeMessageFromNotificationSuccessTest() {
-        final long notificationId = 21L;
-        final long userId = 5555336L;
-        this.notificationDataRepository.save(new Notification(notificationId, userId,
-                        "You have been selected!", LocalDateTime.now()));
+        final long userId = 55415553368669L;
+        this.notificationDataRepository.save(new Notification(userId, "You have been selected!"));
 
+        Notification first = notificationService
+                .loadNotificationByUserId(userId)
+                .get(0);
+
+        final long notificationId = first.getNotificationId();
         final String newMessage = "You have been rejected.";
         this.notificationService.changeMessageFromNotification(notificationId,
                 newMessage);
@@ -109,11 +111,15 @@ class NotificationServiceTest {
 
     @Test
     void loadByNotificationIdFoundTest() {
-        final long notificationId = 55L;
-        final long userId = 4477991L;
-        Notification notification = new Notification(notificationId, userId,
-                "You have not been selected.", LocalDateTime.now());
+        final long userId = 4477939004820391L;
+        Notification notification = new Notification(userId, "You have not been selected.");
         this.notificationDataRepository.save(notification);
+
+        Notification first = notificationService
+                .loadNotificationByUserId(userId)
+                .get(0);
+
+        final long notificationId = first.getNotificationId();
 
         Assertions.assertEquals(notification, this.notificationService
                         .loadNotificationByNotificationId(notificationId));
@@ -129,14 +135,11 @@ class NotificationServiceTest {
 
     @Test
     void loadByUserIdFoundTest() {
-        final long notificationId = 520L;
         final long userId = 2913889L;
-        Notification notification1 = new Notification(notificationId, userId,
-                "Your hours have been rejected.", LocalDateTime.now());
+        Notification notification1 = new Notification(userId, "Your hours have been rejected.");
         this.notificationDataRepository.save(notification1);
 
-        Notification notification2 = new Notification(notificationId + 1, userId,
-                "Your contract has been voided.", LocalDateTime.now());
+        Notification notification2 = new Notification(userId, "Your contract has been voided.");
         this.notificationDataRepository.save(notification2);
 
         List<Notification> notificationList = new ArrayList<>();
@@ -160,11 +163,15 @@ class NotificationServiceTest {
 
     @Test
     void deleteNotificationByNotificationIdSuccessTest() {
-        final long notificationId = 950L;
-        final long userId = 6651934L;
+        final long userId = 9665145305021934L;
         this.notificationDataRepository.save(
-                new Notification(notificationId, userId,
-                        "Your contract has been extended!", LocalDateTime.now()));
+                new Notification(userId, "Your contract has been extended!"));
+
+        Notification first = notificationService
+                .loadNotificationByUserId(userId)
+                .get(0);
+
+        final long notificationId = first.getNotificationId();
 
         Optional<Notification> beforeDeletionNotification = notificationDataRepository
                 .findByNotificationId(notificationId);
@@ -187,10 +194,9 @@ class NotificationServiceTest {
 
     @Test
     void deleteNotificationsByUserIdSuccessTest() {
-        final long notificationId = 999L;
         final long userId = 9651548L;
-        this.notificationDataRepository.save(new Notification(notificationId, userId,
-                        "Your application has been withdrawn.", LocalDateTime.now()));
+        this.notificationDataRepository.save(
+                new Notification(userId, "Your application has been withdrawn."));
 
         Optional<List<Notification>> beforeDeletionNotification = notificationDataRepository
                 .findByUserId(userId);

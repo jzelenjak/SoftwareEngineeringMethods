@@ -200,14 +200,17 @@ class AuthControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "admin2", password = "amooooogus")
-    void loginSuccessfullyTest() throws Exception {
+    @WithMockUser(username = "admin2", password = "passMyWord")
+    void loginSuccessfullyWithNotificationsTest() throws Exception {
         String username = "admin2";
-        String password = "amooooogus";
+        String password = "passMyWord";
+
+        this.notificationDataRepository.save(
+                new Notification(1048369L, "IMPOSTER!"));
 
         this.userDataRepository
                 .save(new UserData(username, encode(password), UserRole.TA, 1048369L));
-        String jwt = jwtTokenProvider.createToken(1048369L, UserRole.ADMIN, new Date());
+        String jwt = jwtTokenProvider.createToken(1048369L, UserRole.TA, new Date());
         String jwtPrefixed = PREFIX + jwt;
 
         this.mockMvc
@@ -221,6 +224,34 @@ class AuthControllerTest {
         Jws<Claims> claimsJws = this.jwtTokenProvider.validateAndParseToken(jwt);
         Assertions.assertNotNull(claimsJws);
         Assertions.assertEquals(1048369L,
+                Long.parseLong(this.jwtTokenProvider.getSubject(claimsJws)));
+        Assertions.assertEquals(this.jwtTokenProvider.getRole(claimsJws), UserRole.TA.name());
+
+        this.userDataRepository.deleteById(username);
+    }
+
+    @Test
+    @WithMockUser(username = "admin3", password = "GreedyStaysAhead")
+    void loginSuccessfullyWithNoNotificationsTest() throws Exception {
+        String username = "admin3";
+        String password = "GreedyStaysAhead";
+
+        this.userDataRepository
+                .save(new UserData(username, encode(password), UserRole.ADMIN, 9057302L));
+        String jwt = jwtTokenProvider.createToken(9057302L, UserRole.ADMIN, new Date());
+        String jwtPrefixed = PREFIX + jwt;
+
+        this.mockMvc
+                .perform(get(LOGIN_URL)
+                        .contentType(APPLICATION_JSON)
+                        .content(createJson(USERNAME, username, PASSWORD, password))
+                        .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
+                        .characterEncoding(UTF8))
+                .andExpect(status().isOk());
+
+        Jws<Claims> claimsJws = this.jwtTokenProvider.validateAndParseToken(jwt);
+        Assertions.assertNotNull(claimsJws);
+        Assertions.assertEquals(9057302L,
                 Long.parseLong(this.jwtTokenProvider.getSubject(claimsJws)));
         Assertions.assertEquals(this.jwtTokenProvider.getRole(claimsJws), UserRole.ADMIN.name());
 
@@ -576,8 +607,7 @@ class AuthControllerTest {
     @Test
     void toJsonSuccessTest() {
         String message = "Hi there :)";
-        Notification someNotification = new Notification(3003L, 41L,
-                message, notificationDate);
+        Notification someNotification = new Notification(41L, message);
         // Add notifications to list.
         List<Notification> list = new ArrayList<>();
         list.add(someNotification);
@@ -592,8 +622,7 @@ class AuthControllerTest {
                 message, timeStamp);
 
         String otherMessage = "Again, hi there (:";
-        Notification someOtherNotification = new Notification(3004L, 41L,
-                otherMessage, notificationDate);
+        Notification someOtherNotification = new Notification(41L, otherMessage);
         list.add(someOtherNotification);
 
         String second = String.format("{\"message\":\"%s\",\"notificationDate\":\"%s\"}",
@@ -606,8 +635,7 @@ class AuthControllerTest {
     @Test
     void toJsonFailedTest() {
         String message = "Hey welcome user :)";
-        Notification someNotification = new Notification(3004L, 1L,
-                message, notificationDate);
+        Notification someNotification = new Notification(1L, message);
         String json = String.format("{\"message\":\"%s,\"notificationDate\":\"%s\"}",
                 message, notificationDate.toLocalDate().toString());
         Assertions.assertNotEquals(json, someNotification.toJsonResponse());
@@ -616,11 +644,9 @@ class AuthControllerTest {
     @Test
     void getAllNotificationsFromUserTest() {
         final long myUserId = 2121212L;
-        Notification first = new Notification(4123L, myUserId, "I am the first.",
-                notificationDate);
+        Notification first = new Notification(myUserId, "I am the first.");
         this.notificationDataRepository.save(first);
-        Notification second = new Notification(4124L, myUserId, "I am the second.",
-                notificationDate);
+        Notification second = new Notification(myUserId, "I am the second.");
         this.notificationDataRepository.save(second);
 
         List<Notification> list = new ArrayList<>();

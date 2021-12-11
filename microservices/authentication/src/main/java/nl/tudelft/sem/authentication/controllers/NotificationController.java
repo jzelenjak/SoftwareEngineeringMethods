@@ -5,9 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import nl.tudelft.sem.authentication.entities.Notification;
@@ -31,7 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
  * A controller class for notifications.
  */
 @RestController
-@RequestMapping("/api/notifications")
+@RequestMapping("/api/auth/notifications")
 public class NotificationController {
     private static final transient String NOTIFICATIONID = "notificationId";
     private static final transient String USERID = "userId";
@@ -94,18 +92,15 @@ public class NotificationController {
     @ResponseBody
     public void addNewNotification(HttpServletRequest req,
                     HttpServletResponse res) throws IOException {
-        // Only admin is allowed to do this, so we check this.
-        checkAdmin(req);
+        // Only admin or lecturer is allowed to do this, so we check this.
+        checkAdminOrLecturer(req);
 
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
-        final long notificationId = Long.parseLong(jsonNode.get(NOTIFICATIONID).asText());
         final long userId = Long.parseLong(jsonNode.get(USERID).asText());
         final String message = jsonNode.get(MESSAGE).asText();
 
-        if (!this.notificationService.addNewNotification(notificationId, userId, message)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    String.format("Notification with id %d already exists!", notificationId));
-        }
+        // Create new notification.
+        this.notificationService.addNewNotification(userId, message);
     }
 
     /**
@@ -213,10 +208,27 @@ public class NotificationController {
     }
 
     /**
+     * Checks whether the user from the request is an admin/lecturer or not.
+     * If not, ResponseStatusException with 403 FORBIDDEN will be thrown.
+     *
+     * @param req the HTTP request.
+     */
+    private void checkAdminOrLecturer(HttpServletRequest req) {
+        // Get info from the user from the provided jwt token (claims).
+        String jwt = jwtTokenProvider.resolveToken(req);
+        Jws<Claims> claimsJws = jwtTokenProvider.validateAndParseToken(jwt);
+        UserRole role = UserRole.valueOf(jwtTokenProvider.getRole(claimsJws));
+
+        if (!isAdmin(claimsJws) && role != UserRole.LECTURER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not allowed to do that!");
+        }
+    }
+
+    /**
      * Checks whether a certain user is admin or not, based on the claims.
      *
-     * @param claimsJws     the claims from a parsed token.
-     *
+     * @param claimsJws the claims from a parsed token.
      * @return true if admin, false otherwise.
      */
     private boolean isAdmin(Jws<Claims> claimsJws) {
