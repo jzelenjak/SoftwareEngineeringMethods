@@ -1,5 +1,6 @@
-# sem-repo-13a
-# CSE2115 - Project
+# CSE2115 - Project (sem-repo-13a)
+
+![Aggregated coverage](https://gitlab.ewi.tudelft.nl/cse2115/2021-2022/sem-group-13a/sem-repo-13a/badges/main/coverage.svg)
 
 ### Running
 
@@ -23,6 +24,8 @@ After having finished the setup, you can run a microservice using the following 
 ```shell
 gradle microservices:<service-name>:bootRun
 ```
+
+It is recommended to run this task with Gradle version >=6.7. Older versions of gradle may not work.
 
 ### Testing
 ```

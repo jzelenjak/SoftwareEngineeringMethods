@@ -18,9 +18,11 @@ checkStyle:
 PMD:
   stage: staticAnalysis
   script:
-      gradle pmdMain pmdTest
+    gradle pmdMain pmdTest
 
 test:
   stage: test
   script:
-    gradle test
+    - gradle test codeCoverageReport
+    - cat build/reports/jacoco/codeCoverageReport/html/index.html | grep -Po "Total.*?([0-9]{1,3})%"
+  coverage: /([0-9]{1,3})%/
