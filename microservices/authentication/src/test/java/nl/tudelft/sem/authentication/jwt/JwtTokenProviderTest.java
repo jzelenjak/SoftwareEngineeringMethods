@@ -112,6 +112,7 @@ class JwtTokenProviderTest {
                 "Decoded subject does not match the original one");
         Assertions.assertEquals(UserRole.STUDENT.name(), jwtTokenProvider.getRole(claimsJws),
                 "Decoded role does not match the original one");
+        Assertions.assertEquals(1738290L, jwtTokenProvider.getUserId(claimsJws));
 
         this.userDataRepository.deleteById(username);
     }
