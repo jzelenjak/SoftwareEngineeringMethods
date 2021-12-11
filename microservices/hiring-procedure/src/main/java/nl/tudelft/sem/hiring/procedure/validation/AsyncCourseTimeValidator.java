@@ -1,6 +1,5 @@
 package nl.tudelft.sem.hiring.procedure.validation;
 
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.time.Period;
 import java.time.ZonedDateTime;
@@ -19,6 +18,9 @@ public class AsyncCourseTimeValidator extends AsyncBaseValidator {
     // Gateway configuration
     private final transient GatewayConfig gatewayConfig;
 
+    // Course ID
+    private final transient long courseId;
+
     // Web client used to perform requests
     private final transient WebClient webClient;
 
@@ -26,17 +28,16 @@ public class AsyncCourseTimeValidator extends AsyncBaseValidator {
      * Constructor of the course time validator class.
      *
      * @param gatewayConfig is the gateway configuration.
+     * @param courseId      is the course ID.
      */
-    public AsyncCourseTimeValidator(GatewayConfig gatewayConfig) {
+    public AsyncCourseTimeValidator(GatewayConfig gatewayConfig, long courseId) {
         this.gatewayConfig = gatewayConfig;
+        this.courseId = courseId;
         this.webClient = WebClient.create();
     }
 
     @Override
     public Mono<Boolean> validate(HttpHeaders headers, String body) {
-        JsonObject json = JsonParser.parseString(body).getAsJsonObject();
-        long courseId = json.get("courseId").getAsLong();
-
         return webClient.get()
                 .uri(UriComponentsBuilder.newInstance()
                         .scheme("http")
@@ -58,7 +59,8 @@ public class AsyncCourseTimeValidator extends AsyncBaseValidator {
 
                         // Check if the course registration period has not ended yet
                         if (!ZonedDateTime.now().minus(VALID_DURATION).isAfter(start)) {
-                            return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN));
+                            return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                                    "Course registration/withdrawal period has ended"));
                         }
 
                         // Continue with the request

@@ -52,15 +52,16 @@ public class AsyncCourseTimeValidatorTest {
 
     @Test
     public void testConstructor() {
-        AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock);
+        AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock, 42);
         assertNotNull(validator);
     }
 
     @Test
     public void testValidate() {
         // Construct validator instance and courseId object
-        final AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock);
         final long courseId = 1337;
+        final AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock,
+                courseId);
 
         // Fetch the local zoned date time, and make it a valid time
         ZonedDateTime current = ZonedDateTime.now()
@@ -91,8 +92,9 @@ public class AsyncCourseTimeValidatorTest {
     @Test
     public void testValidateOverDeadline() {
         // Construct validator instance and courseId object
-        final AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock);
         final long courseId = 1337;
+        final AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock,
+                courseId);
 
         // Fetch the local zoned date time, and make it a valid time
         ZonedDateTime current = ZonedDateTime.now()
@@ -123,8 +125,9 @@ public class AsyncCourseTimeValidatorTest {
     @Test
     public void testValidateNonExistingCourse() {
         // Construct validator instance and courseId object
-        AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock);
         long courseId = 1337;
+        AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock,
+                courseId);
 
         // Enqueue a response
         mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.value()));
