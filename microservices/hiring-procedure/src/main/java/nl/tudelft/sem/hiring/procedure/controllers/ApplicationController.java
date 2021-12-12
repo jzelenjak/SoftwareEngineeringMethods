@@ -69,7 +69,8 @@ public class ApplicationController {
      */
     @PostMapping("/apply")
     @ResponseBody
-    public void applyTa(@RequestParam() long courseId, @RequestHeader() HttpHeaders authHeader) {
+    public void applyTa(@RequestParam long courseId, @RequestHeader HttpHeaders authHeader) {
+        // TODO: Add AsyncPassingGradeValidator to validation chain when addressing issue #58
         long userId;
         String jsonParse;
         Boolean isStudent;
