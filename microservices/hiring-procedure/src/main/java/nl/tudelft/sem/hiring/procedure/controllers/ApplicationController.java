@@ -9,6 +9,7 @@ import java.util.Set;
 import javax.management.InstanceNotFoundException;
 import lombok.Data;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
+import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
 import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncAuthValidator;
@@ -206,6 +207,43 @@ public class ApplicationController {
         applicationService.hire(userId, courseId);
     }
 
+    /**
+     * Updates the status of an application to be rejected.
+     *
+     * @param applicationId id of the application to be rejected.
+     * @param headers       the headers of the request.
+     */
+    @PostMapping("reject")
+    public Mono<Void> reject(@RequestParam long applicationId, @RequestHeader HttpHeaders headers) {
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+                .addValidators(
+                        new AsyncAuthValidator(jwtUtils),
+                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN))
+                ).build();
+
+        // Perform validation, and reject application if exists
+        return head.validate(headers, "").flatMap(value -> {
+            // Fetch the application using the provided ID
+            Optional<Application> applicationOpt = applicationService.getApplication(applicationId);
+
+            // Check if the application exists
+            if (applicationOpt.isEmpty()) {
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Application not found"));
+            }
+
+            // Check if the application is already processed (withdrawn, rejected, or accepted)
+            Application application = applicationOpt.get();
+            if (application.getStatus() != ApplicationStatus.IN_PROGRESS) {
+                return Mono.error(new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
+                        "Application has already been processed"));
+            }
+
+            // Change the status of the application to rejected
+            applicationService.rejectApplication(applicationId);
+            return Mono.empty();
+        });
+    }
 
     /**
      * Allows students to withdraw their application.
@@ -237,8 +275,8 @@ public class ApplicationController {
                         "Application does not exist"));
             }
 
-            // Remove the application
-            applicationService.removeApplication(application.get());
+            // Change the status of the application to 'withdrawn'
+            applicationService.withdrawApplication(application.get().getApplicationId());
             return Mono.empty();
         });
     }

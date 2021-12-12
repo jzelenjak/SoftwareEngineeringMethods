@@ -70,6 +70,16 @@ public class ApplicationService {
     }
 
     /**
+     * Returns the application associated to the id.
+     *
+     * @param applicationId is the id of the application.
+     * @return the application associated to the id, if exists.
+     */
+    public Optional<Application> getApplication(long applicationId) {
+        return applicationRepository.findById(applicationId);
+    }
+
+    /**
      * Returns the optional application associated to the user and course.
      * There is only one application per user per course at most.
      *
@@ -82,12 +92,27 @@ public class ApplicationService {
     }
 
     /**
-     * Removes an application from the database.
+     * Function for updating the status of an application to be rejected.
      *
-     * @param application is the application to be removed.
+     * @param applicationId is the ID of the application.
      */
-    public void removeApplication(Application application) {
-        applicationRepository.delete(application);
+    public void rejectApplication(long applicationId) {
+        applicationRepository.findById(applicationId).ifPresent(application -> {
+            application.setStatus(ApplicationStatus.REJECTED);
+            applicationRepository.save(application);
+        });
+    }
+
+    /**
+     * Function for updating the status of an application to be withdrawn.
+     *
+     * @param applicationId is the ID of the application.
+     */
+    public void withdrawApplication(long applicationId) {
+        applicationRepository.findById(applicationId).ifPresent(application -> {
+            application.setStatus(ApplicationStatus.WITHDRAWN);
+            applicationRepository.save(application);
+        });
     }
 
     /**
