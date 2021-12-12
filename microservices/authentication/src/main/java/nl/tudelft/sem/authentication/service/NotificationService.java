@@ -23,19 +23,14 @@ public class NotificationService {
     /**
      * Add new notification.
      *
-     * @param notificationId the notification id of the notification.
      * @param userId         the user id of the notification.
      * @param message        the message of the notification.
      *
-     * @return true when successfully added, false otherwise.
+     * @return true when successfully added.
      */
-    public boolean addNewNotification(long notificationId, long userId, String message) {
-        if (this.notificationDataRepository.findByNotificationId(notificationId)
-                .isPresent()) {
-            return false;
-        }
+    public boolean addNewNotification(long userId, String message) {
         this.notificationDataRepository
-                .save(new Notification(notificationId, userId, message, LocalDateTime.now()));
+                .save(new Notification(userId, message));
         return true;
     }
 

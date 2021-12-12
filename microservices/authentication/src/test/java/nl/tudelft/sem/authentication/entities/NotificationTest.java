@@ -18,12 +18,12 @@ class NotificationTest {
 
     @BeforeEach
     void setUp() {
-        notification = new Notification(notificationId, userId,
-                message, notificationDate);
+        notification = new Notification(userId, message);
     }
 
     @Test
     void getNotificationIdTest() {
+        notification.setNotificationId(notificationId);
         Assertions.assertEquals(notificationId, notification.getNotificationId());
     }
 
@@ -83,50 +83,45 @@ class NotificationTest {
 
     @Test
     void equalsEqualTest() {
-        Notification sameNotification = new Notification(notificationId, userId,
-                message, notificationDate);
+        Notification sameNotification = new Notification(userId, message);
         Assertions.assertEquals(notification, sameNotification);
     }
 
     @Test
     void equalsDifferentMessageTest() {
-        Notification notSameNotification = new Notification(notificationId, userId,
-                newMessage, notificationDate);
+        Notification notSameNotification = new Notification(userId, newMessage);
         Assertions.assertNotEquals(notification, notSameNotification);
     }
 
     @Test
     void equalsDifferentNotificationIdTest() {
-        Notification notSameNotification = new Notification(13L, userId,
-                newMessage, notificationDate);
+        Notification notSameNotification = new Notification(userId, newMessage);
+        notification.setNotificationId(123321L);
+        notSameNotification.setNotificationId(321123L);
         Assertions.assertNotEquals(notification, notSameNotification);
     }
 
     @Test
     void equalsDifferentUserIdTest() {
-        Notification notSameNotification = new Notification(notificationId, 1L,
-                newMessage, notificationDate);
+        Notification notSameNotification = new Notification(1L, newMessage);
         Assertions.assertNotEquals(notification, notSameNotification);
     }
 
     @Test
     void hashCodeSameTest() {
-        Notification otherNotification = new Notification(notificationId, userId,
-                message, notificationDate);
+        Notification otherNotification = new Notification(userId, message);
         Assertions.assertEquals(notification.hashCode(), otherNotification.hashCode());
     }
 
     @Test
     void hashCodeDifferentTest() {
-        Notification otherNotification = new Notification(notificationId, userId,
-                newMessage, notificationDate);
+        Notification otherNotification = new Notification(userId, newMessage);
         Assertions.assertNotEquals(notification.hashCode(), otherNotification.hashCode());
     }
 
     @Test
     void toJsonSuccessTest() {
-        Notification someNotification = new Notification(notificationId, userId,
-                message, notificationDate);
+        Notification someNotification = new Notification(userId, message);
         String json = String.format("{\"message\":\"%s\",\"notificationDate\":\"%s\"}",
                 this.message, this.notificationDate.getHour()
                         + ":" + this.notificationDate.getMinute()
@@ -139,8 +134,7 @@ class NotificationTest {
 
     @Test
     void toJsonFailedTest() {
-        Notification someNotification = new Notification(notificationId, userId,
-                message, notificationDate);
+        Notification someNotification = new Notification(userId, message);
         String json = String.format("{\"message\":\"%s,\"notificationDate\":\"%s\"}",
                 this.message, this.notificationDate.toLocalDate().toString());
         Assertions.assertNotEquals(json, someNotification.toJsonResponse());
