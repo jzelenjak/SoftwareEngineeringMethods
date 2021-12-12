@@ -4,17 +4,25 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import javax.management.InstanceNotFoundException;
 import lombok.Data;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
 import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
+import nl.tudelft.sem.hiring.procedure.validation.AsyncAuthValidator;
+import nl.tudelft.sem.hiring.procedure.validation.AsyncCourseTimeValidator;
+import nl.tudelft.sem.hiring.procedure.validation.AsyncRoleValidator;
+import nl.tudelft.sem.hiring.procedure.validation.AsyncRoleValidator.Roles;
+import nl.tudelft.sem.hiring.procedure.validation.AsyncValidator;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -56,7 +64,7 @@ public class ApplicationController {
     /**
      * Endpoint for students to apply for a TA position on a specific course.
      *
-     * @param courseId The course that the students wish to apply to.
+     * @param courseId   The course that the students wish to apply to.
      * @param authHeader The JWT token of the user's session.
      */
     @PostMapping("/apply")
@@ -69,7 +77,7 @@ public class ApplicationController {
             isStudent = checkStudent(authHeader);
             if (!isStudent) {
                 throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                    "User is not a student");
+                        "User is not a student");
             }
         } catch (InstanceNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
@@ -80,7 +88,7 @@ public class ApplicationController {
         try {
             courseStartMono = getCourseStartDate(courseId);
             jsonParse = courseStartMono.block();
-        }  catch (Exception e) {
+        } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, COURSE_NOT_FOUND);
         }
 
@@ -89,7 +97,7 @@ public class ApplicationController {
         // Check if student is within deadline
         if (!applicationService.checkDeadline(courseStart)) {
             throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                "Deadline has passed");
+                    "Deadline has passed");
         }
         try {
             userId = checkJwt(authHeader);
@@ -99,7 +107,7 @@ public class ApplicationController {
         // Check if application with same credentials exists
         if (applicationService.checkSameApplication(userId, courseId)) {
             throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                "User has already applied");
+                    "User has already applied");
         }
 
         // Register application
@@ -117,11 +125,11 @@ public class ApplicationController {
     @GetMapping("/get-applications")
     @ResponseBody
     public List<Application> getApplications(@RequestParam() long courseId,
-                                                @RequestHeader() HttpHeaders authHeader) {
+                                             @RequestHeader() HttpHeaders authHeader) {
         try {
             if (!checkLecturer(authHeader)) {
                 throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                    "User is not a lecturer");
+                        "User is not a lecturer");
             }
         } catch (InstanceNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
@@ -147,7 +155,7 @@ public class ApplicationController {
         try {
             if (!checkLecturer(authHeader)) {
                 throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                    "User is not a lecturer");
+                        "User is not a lecturer");
             }
             return applicationService.getAllApplications();
         } catch (InstanceNotFoundException e) {
@@ -159,8 +167,8 @@ public class ApplicationController {
      * Endpoint for hiring a TA. The selected student must be a candidate TA to that course and not
      * already hired. The client must be a lecturer.
      *
-     * @param userId The ID of the user that is to be hired
-     * @param courseId The ID of the course that the user will be hired to
+     * @param userId     The ID of the user that is to be hired
+     * @param courseId   The ID of the course that the user will be hired to
      * @param authHeader The JWT token of the client's session.
      */
     @PostMapping("/hire-TA")
@@ -172,7 +180,7 @@ public class ApplicationController {
             isLecturer = checkLecturer(authHeader);
             if (!isLecturer) {
                 throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                    "User is not a lecturer");
+                        "User is not a lecturer");
             }
         } catch (InstanceNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
@@ -192,10 +200,47 @@ public class ApplicationController {
 
         if (!applicationService.checkCandidate(userId, courseId)) {
             throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                "User is not a viable candidate");
+                    "User is not a viable candidate");
         }
         // Register hiring
         applicationService.hire(userId, courseId);
+    }
+
+
+    /**
+     * Allows students to withdraw their application.
+     *
+     * @param courseId is the ID of the course that was applied to.
+     * @param headers  is the list of request headers.
+     */
+    @PostMapping("withdraw")
+    public Mono<Void> withdraw(@RequestParam long courseId, @RequestHeader HttpHeaders headers) {
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+                .addValidators(
+                        new AsyncAuthValidator(jwtUtils),
+                        new AsyncRoleValidator(jwtUtils,
+                                Set.of(Roles.STUDENT, Roles.TA, Roles.ADMIN)),
+                        new AsyncCourseTimeValidator(gatewayConfig, courseId)
+                ).build();
+
+        // Perform validation, and map to an appropriate response
+        return head.validate(headers, "").flatMap(value -> {
+            String token = headers.getFirst(HttpHeaders.AUTHORIZATION);
+            String resolvedToken = jwtUtils.resolveToken(token);
+
+            long userId = jwtUtils.getUserId(jwtUtils.validateAndParseClaims(resolvedToken));
+            Optional<Application> application = applicationService.getApplication(userId, courseId);
+
+            // Check if the application is valid (exists)
+            if (application.isEmpty()) {
+                return Mono.error(new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
+                        "Application does not exist"));
+            }
+
+            // Remove the application
+            applicationService.removeApplication(application.get());
+            return Mono.empty();
+        });
     }
 
     /**
@@ -222,23 +267,23 @@ public class ApplicationController {
      * @return Mono of the course start date
      * @throws InstanceNotFoundException when Courses returns an error
      */
-    private Mono<String> getCourseStartDate(long courseId) throws InstanceNotFoundException {
+    private Mono<String> getCourseStartDate(long courseId) {
         System.out.println(gatewayConfig.getHost() + ":" + gatewayConfig.getPort());
         String uri = UriComponentsBuilder.newInstance().scheme("http")
-            .host(gatewayConfig.getHost())
-            .port(gatewayConfig.getPort())
-            .pathSegment("api", "courses", "get-start-date")
-            .queryParam("courseId", courseId)
-            .toUriString();
+                .host(gatewayConfig.getHost())
+                .port(gatewayConfig.getPort())
+                .pathSegment("api", "courses", "get-start-date")
+                .queryParam("courseId", courseId)
+                .toUriString();
         Mono<ClientResponse> response = webClient.get().uri(uri)
-            .exchange();
+                .exchange();
         return response
-            .flatMap(clientResponse -> {
-                if (clientResponse.statusCode().isError()) {
-                    return Mono.error(new InstanceNotFoundException(COURSE_NOT_FOUND));
-                }
-                return clientResponse.bodyToMono(String.class);
-            });
+                .flatMap(clientResponse -> {
+                    if (clientResponse.statusCode().isError()) {
+                        return Mono.error(new InstanceNotFoundException(COURSE_NOT_FOUND));
+                    }
+                    return clientResponse.bodyToMono(String.class);
+                });
     }
 
     /**
@@ -283,20 +328,20 @@ public class ApplicationController {
      */
     private Mono<Boolean> checkUserExists(long userId) throws InstanceNotFoundException {
         String uri = UriComponentsBuilder.newInstance().scheme("http")
-            .host(gatewayConfig.getHost())
-            .port(gatewayConfig.getPort())
-            .pathSegment("api", "users", "by-userid")
-            .queryParam("userId", userId)
-            .toUriString();
+                .host(gatewayConfig.getHost())
+                .port(gatewayConfig.getPort())
+                .pathSegment("api", "users", "by-userid")
+                .queryParam("userId", userId)
+                .toUriString();
         Mono<ClientResponse> response = webClient.get().uri(uri)
-            .exchange();
+                .exchange();
         return response
-            .flatMap(clientResponse -> {
-                if (clientResponse.statusCode().isError()) {
-                    return Mono.error(new InstanceNotFoundException(USER_NOT_FOUND));
-                }
-                return Mono.just(true);
-            });
+                .flatMap(clientResponse -> {
+                    if (clientResponse.statusCode().isError()) {
+                        return Mono.error(new InstanceNotFoundException(USER_NOT_FOUND));
+                    }
+                    return Mono.just(true);
+                });
     }
 
 }
