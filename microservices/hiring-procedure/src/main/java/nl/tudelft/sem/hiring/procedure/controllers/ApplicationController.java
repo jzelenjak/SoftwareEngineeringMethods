@@ -275,6 +275,12 @@ public class ApplicationController {
                         "Application does not exist"));
             }
 
+            // Check if the application has not been processed yet
+            if (application.get().getStatus() != ApplicationStatus.IN_PROGRESS) {
+                return Mono.error(new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
+                        "Application has already been processed"));
+            }
+
             // Change the status of the application to 'withdrawn'
             applicationService.withdrawApplication(application.get().getApplicationId());
             return Mono.empty();

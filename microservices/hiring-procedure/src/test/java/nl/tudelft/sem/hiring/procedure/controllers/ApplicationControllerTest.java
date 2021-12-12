@@ -606,6 +606,47 @@ public class ApplicationControllerTest {
     }
 
     @Test
+    void testWithdrawAlreadyProcessed() throws Exception {
+        // Configure the mocks
+        HttpUrl url = mockWebServer.url("/");
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
+
+        // Create new application
+        long userId = 1234L;
+        long courseId = 1337L;
+        ZonedDateTime start = ZonedDateTime.now();
+        Application application = new Application(userId, courseId, start.toLocalDateTime());
+        application.setStatus(ApplicationStatus.ACCEPTED);
+        when(applicationService.getApplication(userId, courseId))
+                .thenReturn(Optional.of(application));
+
+        // Configure request mock
+        when(jwtUtils.getUserId(Mockito.any())).thenReturn(userId);
+        when(jwtUtils.resolveToken(Mockito.any())).thenReturn("");
+        when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(claims);
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+
+        // Enqueue course validator response
+        JsonObject json = new JsonObject();
+        json.addProperty("startTime", start.minus(4, ChronoUnit.WEEKS).toString());
+        mockWebServer.enqueue(new MockResponse().setBody(json.toString()));
+
+        // Create request body and perform the call
+        MvcResult result = mockMvc.perform(post("/api/hiring-procedure/withdraw")
+                        .header(HttpHeaders.AUTHORIZATION, "")
+                        .queryParam("courseId", String.valueOf(courseId)))
+                .andReturn();
+
+        // Await the call
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isMethodNotAllowed());
+
+        // Verify that there was no attempt to change the application status
+        verify(applicationService, times(0)).withdrawApplication(application.getApplicationId());
+    }
+
+    @Test
     void testReject() throws Exception {
         // Configure the mocks
         HttpUrl url = mockWebServer.url("/");
