@@ -535,8 +535,6 @@ public class ApplicationControllerTest {
         when(gatewayConfig.getHost()).thenReturn(url.host());
 
         // Create new application
-        long userId = 1234L;
-        long courseId = 1337L;
         ZonedDateTime start = ZonedDateTime.now();
         Application application = new Application(userId, courseId, start.toLocalDateTime());
         when(applicationService.getApplication(userId, courseId))
@@ -574,10 +572,7 @@ public class ApplicationControllerTest {
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
 
-        // Create new application
-        long userId = 1234L;
-        long courseId = 1337L;
-        final ZonedDateTime start = ZonedDateTime.now();
+        // Create new application mock behaviour
         when(applicationService.getApplication(userId, courseId)).thenReturn(Optional.empty());
 
         // Configure request mock
@@ -588,6 +583,7 @@ public class ApplicationControllerTest {
 
         // Enqueue course validator response
         JsonObject json = new JsonObject();
+        ZonedDateTime start = ZonedDateTime.now();
         json.addProperty("startTime", start.minus(4, ChronoUnit.WEEKS).toString());
         mockWebServer.enqueue(new MockResponse().setBody(json.toString()));
 
@@ -613,8 +609,6 @@ public class ApplicationControllerTest {
         when(gatewayConfig.getHost()).thenReturn(url.host());
 
         // Create new application
-        long userId = 1234L;
-        long courseId = 1337L;
         ZonedDateTime start = ZonedDateTime.now();
         Application application = new Application(userId, courseId, start.toLocalDateTime());
         application.setStatus(ApplicationStatus.ACCEPTED);
