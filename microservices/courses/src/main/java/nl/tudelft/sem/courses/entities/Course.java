@@ -30,12 +30,12 @@ public class Course {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id")
+    @Column(name = "course_id")
     private long id;
 
 
-    @Column(name = "course_id")
-    public String courseId;
+    @Column(name = "course_code")
+    public String courseCode;
 
 
     @Column(name = "start_date")
@@ -55,10 +55,10 @@ public class Course {
      * generated when the entity is created.
      * This course ID can be changed later.
      *
-     * @param courseId - Course ID in a string format
+     * @param courseCode - Course ID in a string format
      */
-    public Course(String courseId, LocalDateTime startDate, LocalDateTime finishDate) {
-        this.courseId = courseId;
+    public Course(String courseCode, LocalDateTime startDate, LocalDateTime finishDate) {
+        this.courseCode = courseCode;
         this.startDate = startDate;
         this.finishDate = finishDate;
         grades = new HashSet<>();
@@ -71,11 +71,11 @@ public class Course {
      * when creating the course in this constructor.
      * This course ID can be changed later. Mainly used for testing purposes.
      *
-     * @param courseId - Course ID in a string format
+     * @param courseCode - Course ID in a string format
      */
-    public Course(long id, String courseId, LocalDateTime startDate, LocalDateTime finishDate) {
+    public Course(long id, String courseCode, LocalDateTime startDate, LocalDateTime finishDate) {
         this.id = id;
-        this.courseId = courseId;
+        this.courseCode = courseCode;
         this.startDate = startDate;
         this.finishDate = finishDate;
         grades = new HashSet<>();
@@ -91,21 +91,21 @@ public class Course {
             return false;
         }
         Course course = (Course) o;
-        return courseId.equals(course.courseId) && id == course.id
+        return courseCode.equals(course.courseCode) && id == course.id
                 && startDate.equals(course.startDate)
                 && finishDate.equals(course.finishDate);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(courseId, grades, id);
+        return Objects.hash(courseCode, grades, id);
     }
 
 
     @Override
     public String toString() {
         return "Course{"
-                + "courseID='" + courseId + '\''
+                + "courseID='" + courseCode + '\''
                 + ", users=" + grades.toString()
                 + '}';
     }

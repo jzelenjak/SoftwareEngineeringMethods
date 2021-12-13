@@ -70,5 +70,22 @@ public class CourseControllerTest {
 
     }
 
+    @Test
+    void testCourseDeletionAfterCourseCreation() throws Exception {
+        CourseRequest courseRequest = new CourseRequest("CSE2216",
+                LocalDateTime.now(), LocalDateTime.now());
+
+        mockMvc.perform(post("/api/courses/create")
+                .contentType(jsonContentHeader)
+                .content(objectMapper.writeValueAsString(courseRequest)))
+                .andExpect(status().isOk());
+
+
+        mockMvc.perform(post("/api/courses/delete")
+                .contentType(jsonContentHeader)
+                .content(objectMapper.writeValueAsString(courseRequest)))
+                .andExpect(status().isOk());
+    }
+
 
 }

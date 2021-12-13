@@ -1,8 +1,10 @@
 package nl.tudelft.sem.courses.controllers;
 
+import java.util.List;
 import java.util.Optional;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.entities.Course;
+import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
 import nl.tudelft.sem.courses.services.CourseService;
@@ -46,22 +48,40 @@ public class CourseController {
      */
     @PostMapping("/create")
     public String createNewCourse(@RequestBody CourseRequest request) throws Exception {
-
+        //TODO
+        //Add authorization
         return courseService.addNewCourses(request);
 
     }
 
     /**
-     * This method edits the course if it finds it in the directory.
+     * Removes a course in the courses repo if it exists.
      *
-     * @param request Course request object
+     * @param courseID -  Id of the course we want to delete
      * @return returns a http success or bad request
      */
-    @PostMapping("/edit")
-    public String editCourse(@PathVariable CourseRequest request) {
-        //functionality to be added.
+    @PostMapping("/delete/{id}")
+    public String editCourse(@PathVariable long courseID) throws Exception {
+        //TODO
+        //Add authorization
+        return courseService.deleteCourse(courseID);
+    }
 
-        return "Success. Edited Course";
+    /**
+     * Get a list of courses which made the course code
+     *
+     * @param code - the course code
+     * @return - can return multiple courses with the same code
+     */
+    @PostMapping("/get/courses/{code}")
+    public List<Course> getCourses(@PathVariable String code) {
+        //TODO
+        //Add authorization
+        List<Course> courses = courseService.getCourses(code);
+        if (!courses.isEmpty()) {
+            return courses;
+        }
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
 
 }

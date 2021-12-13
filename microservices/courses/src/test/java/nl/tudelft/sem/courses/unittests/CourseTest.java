@@ -14,20 +14,20 @@ public class CourseTest {
 
     @Test
     public void testingConstructor() {
-        String courseId = "CSE2215";
-        Course course = new Course(1, courseId, LocalDateTime.now(), LocalDateTime.now());
+        String courseCode = "CSE2215";
+        Course course = new Course(1, courseCode, LocalDateTime.now(), LocalDateTime.now());
         assertNotNull(course);
     }
 
     @Test
     public void testingEquals() {
-        String courseId = "CSE2215";
-        String course2Id = "CSE2225";
+        String courseCode = "CSE2215";
+        String course2Code = "CSE2225";
         LocalDateTime time = LocalDateTime.now();
 
-        Course course = new Course(1, courseId, time, time);
-        Course course2 = new Course(2, course2Id, time, time);
-        Course course3 = new Course(1, courseId, time, time);
+        Course course = new Course(1, courseCode, time, time);
+        Course course2 = new Course(2, course2Code, time, time);
+        Course course3 = new Course(1, courseCode, time, time);
         assertNotEquals(course, course2);
 
         assertEquals(course, course3);
@@ -35,10 +35,10 @@ public class CourseTest {
 
     @Test
     public void testingToString() {
-        String courseId = "CSE2215";
-        Course course = new Course(1, courseId, LocalDateTime.now(), LocalDateTime.now());
+        String courseCode = "CSE2215";
+        Course course = new Course(1, courseCode, LocalDateTime.now(), LocalDateTime.now());
         String testString = "Course{"
-                + "courseID='" + courseId + '\''
+                + "course code ='" + courseCode + '\''
                 + ", users=" + "[]"
                 + '}';
         assertEquals(testString, course.toString());

@@ -9,29 +9,29 @@ import lombok.Setter;
 @Setter
 public class CourseRequest {
 
-    private String courseId;
+    private String courseCode;
     private LocalDateTime startDate;
     private LocalDateTime finishDate;
 
     /**
      * General course request constructor requires start date , finish date and the course id.
      *
-     * @param courseId -  The id of the course
+     * @param courseCode -  The id of the course
      * @param startDate - The starting date of the course
      * @param finishDate - The finishing date of the course
      */
-    public CourseRequest(String courseId, LocalDateTime startDate, LocalDateTime finishDate) {
-        this.courseId = courseId;
+    public CourseRequest(String courseCode, LocalDateTime startDate, LocalDateTime finishDate) {
+        this.courseCode = courseCode;
         this.startDate = startDate;
         this.finishDate = finishDate;
     }
 
-    public String getCourseId() {
-        return courseId;
+    public String getCourseCode() {
+        return courseCode;
     }
 
-    public void setCourseId(String courseId) {
-        this.courseId = courseId;
+    public void setCourseCode(String courseCode) {
+        this.courseCode = courseCode;
     }
 
     public LocalDateTime getStartDate() {
