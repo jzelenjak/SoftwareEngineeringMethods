@@ -7,11 +7,13 @@ import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.repositories.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * A class that represents a User Service.
  */
 @Service
+@Transactional
 public class UserService {
 
     private final transient UserRepository userRepository;
@@ -42,7 +44,7 @@ public class UserService {
     public long registerUser(String netId, String firstName, String lastName)
             throws DataIntegrityViolationException {
 
-        if (netId == null || netId.isBlank() || netId.isEmpty()) {
+        if (netId == null || netId.isBlank()) {
             throw new DataIntegrityViolationException("Please specify the netID!");
         }
 
@@ -51,11 +53,11 @@ public class UserService {
             throw new DataIntegrityViolationException(msg);
         }
 
-        if (firstName == null || firstName.isBlank() || firstName.isEmpty()) {
+        if (firstName == null || firstName.isBlank()) {
             throw new DataIntegrityViolationException("Please specify the first name!");
         }
 
-        if (lastName == null || lastName.isBlank() || lastName.isEmpty()) {
+        if (lastName == null || lastName.isBlank()) {
             throw new DataIntegrityViolationException("Please specify the last name!");
         }
 
@@ -108,6 +110,28 @@ public class UserService {
      *         false if the requester does not have the required permissions
      */
     public boolean changeRole(long userId, UserRole newRole, UserRole requesterRole) {
+        if (!isAllowedToChangeRole(userId, newRole, requesterRole)) {
+            return false;
+        }
+
+        // The presence of the user has already been checked in isAllowedToChangeRole method
+        User user = this.userRepository.findByUserId(userId).get();
+
+        user.setRole(newRole);
+        this.userRepository.save(user);
+        return true;
+    }
+
+    /**
+     * A helper method that checks if the requester is allowed to change
+     *                          the role of a user with user ID userId.
+     *
+     * @param userId            the user ID of the user
+     * @param newRole           the new role of the user
+     * @param requesterRole     the role of the requester
+     * @return whether the requester has enough permissions to change the role of the user
+     */
+    public boolean isAllowedToChangeRole(long userId, UserRole newRole, UserRole requesterRole) {
         // Only admins and lecturers can change permissions
         if (!requesterRole.equals(UserRole.ADMIN) && !requesterRole.equals(UserRole.LECTURER)) {
             return false;
@@ -126,18 +150,13 @@ public class UserService {
         // Both lecturers and admins can make someone else a TA, CANDIDATE_TA or STUDENT
 
         Optional<User> optionalUser = this.userRepository.findByUserId(userId);
-        assert optionalUser.isPresent();
+        if (optionalUser.isEmpty()) {
+            return false;
+        }
         User user = optionalUser.get();
 
         // Only an admin can downgrade another admin
-        if (user.getRole().equals(UserRole.ADMIN) && !newRole.equals(UserRole.ADMIN)
-                && !requesterRole.equals(UserRole.ADMIN)) {
-            return false;
-        }
-
-        user.setRole(newRole);
-        this.userRepository.save(user);
-        return true;
+        return !user.getRole().equals(UserRole.ADMIN) || requesterRole.equals(UserRole.ADMIN);
     }
 
 
@@ -150,11 +169,21 @@ public class UserService {
      *         false if the requester does not have the required permissions (is not an admin)
      */
     public boolean deleteUserByUserId(long userId, UserRole requesterRole) {
-        if (!requesterRole.equals(UserRole.ADMIN)) {
+        if (!isAllowedToDelete(requesterRole)) {
             return false;
         }
 
         this.userRepository.deleteByUserId(userId);
         return true;
+    }
+
+    /**
+     * A helper method that checks if the requester is allowed to delete a user.
+     *
+     * @param requesterRole the role of the requester
+     * @return whether the requester has enough permissions to delete a user.
+     */
+    public boolean isAllowedToDelete(UserRole requesterRole) {
+        return requesterRole.equals(UserRole.ADMIN);
     }
 }

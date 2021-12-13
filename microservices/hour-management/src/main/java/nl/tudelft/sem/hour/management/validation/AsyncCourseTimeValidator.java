@@ -2,6 +2,8 @@ package nl.tudelft.sem.hour.management.validation;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -10,7 +12,9 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
-public class AsyncHiringValidator extends AsyncBaseValidator {
+public class AsyncCourseTimeValidator extends AsyncBaseValidator {
+    // Valid period for performing actions on the course
+    private static final Period VALID_DURATION = Period.ofWeeks(3);
 
     // WebClient used to communicate with the hiring microservice
     private final transient WebClient webClient;
@@ -20,7 +24,7 @@ public class AsyncHiringValidator extends AsyncBaseValidator {
      *
      * @param gatewayConfig The gateway configuration.
      */
-    public AsyncHiringValidator(GatewayConfig gatewayConfig) {
+    public AsyncCourseTimeValidator(GatewayConfig gatewayConfig) {
         super(gatewayConfig);
         this.webClient = WebClient.create();
     }
@@ -36,31 +40,34 @@ public class AsyncHiringValidator extends AsyncBaseValidator {
                         .scheme("http")
                         .host(getGatewayConfig().getHost())
                         .port(getGatewayConfig().getPort())
-                        .pathSegment("api", "hiring-service", "get-contract")
+                        .pathSegment("api", "courses", "info")
                         .queryParam("courseID", parsed.get("courseId"))
                         .toUriString())
-                .header(HttpHeaders.AUTHORIZATION, headers.getFirst(HttpHeaders.AUTHORIZATION))
                 .exchange()
                 .flatMap(response -> {
                     if (response.statusCode().isError()) {
-                        return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                                "Cannot find active contract"));
+                        return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                "Course not found"));
                     }
 
-                    return response.bodyToMono(String.class).flatMap(json -> {
-                        JsonObject contract = JsonParser.parseString(json).getAsJsonObject();
+                    return response.bodyToMono(String.class).flatMap(responseBody -> {
+                        JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
+                        ZonedDateTime start = ZonedDateTime
+                                .parse(json.get("startDate").getAsString());
+                        ZonedDateTime end = ZonedDateTime.parse(json.get("endDate").getAsString());
 
-                        if (parsed.get("declaredHours").getAsDouble() <= 0) {
+                        if (ZonedDateTime.now().isBefore(start)) {
                             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                                    "Declared hours cannot be negative or 0."));
+                                    "Course hasn't started yet"));
                         }
 
-                        if (parsed.get("declaredHours").getAsDouble()
-                                > contract.get("maxHours").getAsDouble()) {
+                        // Check if the course + grace period has ended
+                        if (ZonedDateTime.now().minus(VALID_DURATION).isAfter(end)) {
                             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                                    "Declared hours cannot exceed the maximum hours "
-                                            + "denoted in the contract."));
+                                    "Course does no longer accept declarations"));
                         }
+
+                        // Continue with the request
                         return evaluateNext(headers, body);
                     });
                 });
