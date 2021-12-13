@@ -200,6 +200,19 @@ class UserControllerTest {
         }
     }
 
+    private void mockIsAllowedToChangeRole(long userId, UserRole newRole,
+                                           UserRole requester, boolean allowed) {
+        Mockito.when(userService.isAllowedToChangeRole(userId, newRole, requester))
+                .thenReturn(allowed);
+    }
+
+    private void verifyIsAllowedToChangeRole(long userId, UserRole newRole,
+                                             UserRole requester, int times) {
+        Mockito
+            .verify(userService, Mockito.times(times))
+            .isAllowedToChangeRole(userId, newRole, requester);
+    }
+
     private void mockDeleteByUserId(long userId, UserRole requesterRole, boolean result) {
         Mockito.when(userService.deleteUserByUserId(userId, requesterRole))
             .thenReturn(result);
@@ -217,14 +230,15 @@ class UserControllerTest {
         }
     }
 
-    private void verifySaveUserAgain(User user, int times) {
-        if (user == null) {
-            Mockito.verify(userService, Mockito.times(times))
-                    .saveUserAgain(Mockito.any());
-        } else {
-            Mockito.verify(userService, Mockito.times(times))
-                    .saveUserAgain(user);
-        }
+    private void mockIsAllowedToDelete(UserRole requesterRole, boolean result) {
+        Mockito.when(userService.isAllowedToDelete(requesterRole))
+                .thenReturn(result);
+    }
+
+    private void verifyIsAllowedToDelete(UserRole requester, int times) {
+        Mockito
+            .verify(userService, Mockito.times(times))
+            .isAllowedToDelete(requester);
     }
 
     /**
@@ -621,13 +635,8 @@ class UserControllerTest {
                 UserRole.TA.name(), new Date(), 3000);
 
         // Prepare and mock the objects
-        User userFromRepo = new User("sus@tudelft.nl", "suss",
-                "sass", UserRole.STUDENT);
-        userFromRepo.setUserId(2376889L);
-
         configureGateway(CHANGE_ROLE_API);
-        mockChangeRole(2376889L, UserRole.TA, UserRole.TA, false);
-        mockGetByUserId(2376889L, userFromRepo);
+        mockIsAllowedToChangeRole(2376889L, UserRole.TA, UserRole.TA, false);
 
 
         // Assert
@@ -641,8 +650,8 @@ class UserControllerTest {
 
 
         // Verify mocks
-        verifyChangeRole(2376889L, UserRole.TA, UserRole.TA, 1);
-        verifyGetByUserId(2376889L, 1);
+        verifyIsAllowedToChangeRole(2376889L, UserRole.TA, UserRole.TA, 1);
+        verifyChangeRole(-1, UserRole.TA, UserRole.TA, 0);
         verifyDeleteByUserId(-1, UserRole.ADMIN, 0);
     }
 
@@ -660,8 +669,7 @@ class UserControllerTest {
         configureGateway(CHANGE_ROLE_API);
         mockWebServer
                 .enqueue(new MockResponse().setResponseCode(403));
-        mockChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, true);
-        mockChangeRole(5465321L, UserRole.STUDENT, UserRole.ADMIN, true);
+        mockIsAllowedToChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, true);
         mockGetByUserId(5465321L, userFromRepo);
 
 
@@ -681,9 +689,9 @@ class UserControllerTest {
                 .assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
 
         // Verify mocks
-        verifyChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, 1);
-        verifyChangeRole(5465321L, UserRole.STUDENT, UserRole.ADMIN, 1);
-        verifyDeleteByUserId(-1, UserRole.ADMIN, 0);
+        verifyGetByUserId(5465321L, 1);
+        verifyChangeRole(-1, UserRole.LECTURER, UserRole.ADMIN, 0);
+        verifyIsAllowedToChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, 1);
     }
 
     @Test
@@ -702,6 +710,7 @@ class UserControllerTest {
                 .enqueue(new MockResponse().setResponseCode(200));
         mockChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, true);
         mockGetByUserId(5465321L, userFromRepo);
+        mockIsAllowedToChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, true);
 
         // Assert
         MvcResult mvcResult = mockMvcChangeRole(CHANGE_ROLE_API,
@@ -720,7 +729,7 @@ class UserControllerTest {
 
         // Verify mocks
         verifyChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, 1);
-        verifyDeleteByUserId(5465321L, UserRole.ADMIN, 0);
+        verifyIsAllowedToChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, 1);
     }
 
 
@@ -741,8 +750,7 @@ class UserControllerTest {
                 UserRole.STUDENT.name(), new Date(), 25);
 
         // Prepare and mock the objects
-        mockDeleteByUserId(userId, UserRole.STUDENT, false);
-        mockGetByUserId(userId, user);
+        mockIsAllowedToDelete(UserRole.STUDENT, false);
         configureGateway("/api/auth/delete");
 
 
@@ -757,9 +765,8 @@ class UserControllerTest {
 
 
         // Verify mocks
-        verifyDeleteByUserId(userId, UserRole.STUDENT, 1);
-        verifyGetByUserId(userId, 1);
-        verifySaveUserAgain(null, 0);
+        verifyDeleteByUserId(-1, UserRole.STUDENT, 0);
+        verifyIsAllowedToDelete(UserRole.STUDENT, 1);
     }
 
     @Test
@@ -773,7 +780,7 @@ class UserControllerTest {
                 UserRole.ADMIN.name(), new Date(), 20);
 
         // Prepare and mock the objects
-        mockDeleteByUserId(userId, UserRole.ADMIN, true);
+        mockIsAllowedToDelete(UserRole.ADMIN, true);
         mockGetByUserId(userId, user);
         configureGateway("/api/auth/delete");
         mockWebServer
@@ -796,9 +803,9 @@ class UserControllerTest {
 
 
         // Verify mocks
-        verifyDeleteByUserId(userId, UserRole.ADMIN, 1);
+        verifyIsAllowedToDelete(UserRole.ADMIN, 1);
+        verifyDeleteByUserId(-1, UserRole.ADMIN, 0);
         verifyGetByUserId(userId, 1);
-        verifySaveUserAgain(user, 1);
     }
 
     @Test
@@ -812,6 +819,7 @@ class UserControllerTest {
                 UserRole.ADMIN.name(), new Date(), 20);
 
         // Prepare and mock the objects
+        mockIsAllowedToDelete(UserRole.ADMIN, true);
         mockDeleteByUserId(userId, UserRole.ADMIN, true);
         mockGetByUserId(userId, user);
         configureGateway("/api/auth/delete");
@@ -835,9 +843,9 @@ class UserControllerTest {
 
 
         // Verify mocks
+        verifyIsAllowedToDelete(UserRole.ADMIN, 1);
         verifyDeleteByUserId(userId, UserRole.ADMIN, 1);
         verifyGetByUserId(userId, 1);
-        verifySaveUserAgain(null, 0);
     }
 
 

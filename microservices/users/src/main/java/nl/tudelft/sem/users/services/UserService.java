@@ -110,6 +110,28 @@ public class UserService {
      *         false if the requester does not have the required permissions
      */
     public boolean changeRole(long userId, UserRole newRole, UserRole requesterRole) {
+        if (!isAllowedToChangeRole(userId, newRole, requesterRole)) {
+            return false;
+        }
+
+        // The presence of the user has already been checked in isAllowedToChangeRole method
+        User user = this.userRepository.findByUserId(userId).get();
+
+        user.setRole(newRole);
+        this.userRepository.save(user);
+        return true;
+    }
+
+    /**
+     * A helper method that checks if the requester is allowed to change
+     *                          the role of a user with user ID userId.
+     *
+     * @param userId            the user ID of the user
+     * @param newRole           the new role of the user
+     * @param requesterRole     the role of the requester
+     * @return whether the requester has enough permissions to change the role of the user
+     */
+    public boolean isAllowedToChangeRole(long userId, UserRole newRole, UserRole requesterRole) {
         // Only admins and lecturers can change permissions
         if (!requesterRole.equals(UserRole.ADMIN) && !requesterRole.equals(UserRole.LECTURER)) {
             return false;
@@ -134,14 +156,7 @@ public class UserService {
         User user = optionalUser.get();
 
         // Only an admin can downgrade another admin
-        if (user.getRole().equals(UserRole.ADMIN) /*&& !newRole.equals(UserRole.ADMIN)*/
-                && !requesterRole.equals(UserRole.ADMIN)) {
-            return false;
-        }
-
-        user.setRole(newRole);
-        this.userRepository.save(user);
-        return true;
+        return !user.getRole().equals(UserRole.ADMIN) || requesterRole.equals(UserRole.ADMIN);
     }
 
 
@@ -154,7 +169,7 @@ public class UserService {
      *         false if the requester does not have the required permissions (is not an admin)
      */
     public boolean deleteUserByUserId(long userId, UserRole requesterRole) {
-        if (!requesterRole.equals(UserRole.ADMIN)) {
+        if (!isAllowedToDelete(requesterRole)) {
             return false;
         }
 
@@ -163,12 +178,12 @@ public class UserService {
     }
 
     /**
-     * Saves the user that needs to be saved again due to a failure
-     *      in delete method in the UserController.
+     * A helper method that checks if the requester is allowed to delete a user.
      *
-     * @param user the user that needs to be saved again
+     * @param requesterRole the role of the requester
+     * @return whether the requester has enough permissions to delete a user.
      */
-    public void saveUserAgain(User user) {
-        this.userRepository.save(user);
+    public boolean isAllowedToDelete(UserRole requesterRole) {
+        return requesterRole.equals(UserRole.ADMIN);
     }
 }

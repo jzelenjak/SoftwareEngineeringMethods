@@ -190,7 +190,6 @@ public class UserController {
      *
      * @param req   the HTTP request
      */
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     @PutMapping("/change_role")
     public Mono<ResponseEntity<String>> changeRole(HttpServletRequest req) {
         JsonNode jsonNode = getJsonNode(req);
@@ -202,15 +201,13 @@ public class UserController {
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
         UserRole requesterRole = parseRole(claimsJws);
 
-        User oldUser = this.getUserByUserId(userId);
-        final UserRole oldRole = oldUser.getRole();
-        final String username = oldUser.getUsername();
-
-        if (!this.userService.changeRole(userId, newRole, requesterRole)) {
+        // If the requester is not allowed to change the role, send back 401 status
+        if (!this.userService.isAllowedToChangeRole(userId, newRole, requesterRole)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                             "Operation not allowed!");
         }
 
+        String username = this.getUserByUserId(userId).getUsername();
         return webClient
                 .put()
                 .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
@@ -222,14 +219,14 @@ public class UserController {
                 .exchange()
                 .flatMap(response -> {
                     if (response.statusCode().isError()) {
-                        // Change the role back if the operation failed at Auth Server
-                        this.userService.changeRole(userId, oldRole, UserRole.ADMIN);
+                        // Do not do anything locally to provide consistency
                         return Mono
                                 .error(new ResponseStatusException(response
                                         .statusCode(), "Could not change role"));
                     }
-                    // Just forward the response from Auth Server
-                    //      and add the success message in the body
+                    // Since the operation is successful in Auth server,
+                    //      change the role locally as well
+                    this.userService.changeRole(userId, newRole, UserRole.ADMIN);
                     return Mono
                             .just(ResponseEntity
                                 .status(HttpStatus.OK)
@@ -253,38 +250,35 @@ public class UserController {
      *
      * @param req   the HTTP request
      */
-    @SuppressWarnings("PMD.DataflowAnomalyAnalysis")
     @DeleteMapping("/delete")
     public Mono<ResponseEntity<String>> deleteByUserId(HttpServletRequest req) {
-        long userId = parseUserId(parseJsonField(getJsonNode(req), USERID));
-
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
         UserRole requesterRole = parseRole(claimsJws);
 
-        User user = getUserByUserId(userId);
-
-        if (!this.userService.deleteUserByUserId(userId, requesterRole)) {
+        if (!this.userService.isAllowedToDelete(requesterRole)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
         }
 
+        long userId = parseUserId(parseJsonField(getJsonNode(req), USERID));
+        String username = getUserByUserId(userId).getUsername();
         return this.webClient
                 .method(HttpMethod.DELETE)
                 .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
                         "api", "auth", "delete"))
                 .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
                 .body(
-                        Mono.just(createJson(USERNAME, user.getUsername())), String.class)
+                        Mono.just(createJson(USERNAME, username)), String.class)
                 .exchange()
                 .flatMap(response -> {
                     if (response.statusCode().isError()) {
-                        // Save the user back if the operation failed at Auth Server
-                        this.userService.saveUserAgain(user);
+                        // Do not do anything locally to provide consistency
                         return Mono
-                                .error(new ResponseStatusException(response
-                                        .statusCode(), "Could not delete the user!"));
+                            .error(new ResponseStatusException(response
+                                    .statusCode(), "Could not delete the user!"));
                     }
-                    // Just forward the response from Auth Server
-                    //      and add the success message in the body
+                    // Since the operation is successful in Auth server,
+                    //      delete the user locally as well
+                    this.userService.deleteUserByUserId(userId, requesterRole);
                     return Mono
                             .just(ResponseEntity
                                 .status(HttpStatus.OK)
