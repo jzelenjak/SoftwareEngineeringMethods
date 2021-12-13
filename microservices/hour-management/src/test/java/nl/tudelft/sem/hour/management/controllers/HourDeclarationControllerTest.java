@@ -21,6 +21,7 @@ import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 import nl.tudelft.sem.hour.management.dto.StatisticsRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
+import nl.tudelft.sem.hour.management.services.NotificationService;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,10 +33,13 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Mono;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -57,6 +61,9 @@ public class HourDeclarationControllerTest {
     private transient HourDeclarationRepository hourDeclarationRepository;
 
     @MockBean
+    private transient NotificationService notificationService;
+
+    @MockBean
     private transient JwtUtils jwtUtils;
 
     @Mock
@@ -67,7 +74,7 @@ public class HourDeclarationControllerTest {
     private final transient HourDeclarationRequest hourDeclarationRequest =
             new HourDeclarationRequest(1234, 5678, 1);
     private final transient HourDeclarationRequest hourDeclarationRequestSameStudent =
-            new HourDeclarationRequest(1234, 5678, 15);
+            new HourDeclarationRequest(1234, 567812, 12);
     private final transient HourDeclarationRequest hourDeclarationRequestNew =
             new HourDeclarationRequest(12345, 567812, 12);
 
@@ -184,16 +191,17 @@ public class HourDeclarationControllerTest {
     }
 
     @Test
-    void testDeleteDeclaration() throws Exception {
+    void testRejectDeclaration() throws Exception {
+        when(notificationService.notify(Mockito.anyLong(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.empty());
+
         MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/1/reject")
                         .header(authorization, ""))
                 .andReturn();
 
         // Wait for response
         mockMvc.perform(asyncDispatch(mvcResult))
-                .andExpect(status().isOk())
-                .andExpect(content()
-                        .string("Declaration with id 1 has been successfully deleted."));
+                .andExpect(status().isOk());
 
         Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository.findById(1L);
 
@@ -202,7 +210,7 @@ public class HourDeclarationControllerTest {
     }
 
     @Test
-    void testDeleteDeclarationInvalidId() throws Exception {
+    void testRejectDeclarationInvalidId() throws Exception {
         MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/20/reject")
                         .header(authorization, ""))
                 .andReturn();
@@ -212,7 +220,21 @@ public class HourDeclarationControllerTest {
     }
 
     @Test
-    void testDeleteDeclarationApproved() throws Exception {
+    void testRejectDeclarationNotificationFail() throws Exception {
+        when(notificationService.notify(Mockito.anyLong(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Failed to register notification")));
+
+        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/1/reject")
+                        .header(authorization, ""))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void testRejectDeclarationApproved() throws Exception {
         MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/2/reject")
                         .header(authorization, ""))
                 .andReturn();
@@ -223,6 +245,9 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testApproveDeclaration() throws Exception {
+        when(notificationService.notify(Mockito.anyLong(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.empty());
+
         MvcResult mvcResult = mockMvc.perform(put("/api/hour-management/declaration/1/approve")
                         .contentType("application/json")
                         .header(authorization, ""))
@@ -230,9 +255,7 @@ public class HourDeclarationControllerTest {
 
         // Wait for response
         mockMvc.perform(asyncDispatch(mvcResult))
-                .andExpect(status().isOk())
-                .andExpect(content()
-                        .string("Declaration with id 1 has been successfully approved."));
+                .andExpect(status().isOk());
 
         Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository.findById(1L);
 
@@ -248,6 +271,21 @@ public class HourDeclarationControllerTest {
 
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
+    }
+
+
+    @Test
+    void testApproveDeclarationNotificationFail() throws Exception {
+        when(notificationService.notify(Mockito.anyLong(), Mockito.any(), Mockito.any()))
+                .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Failed to register notification")));
+
+        MvcResult mvcResult = mockMvc.perform(put("/api/hour-management/declaration/1/approve")
+                        .header(authorization, ""))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isConflict());
     }
 
     @Test
@@ -322,10 +360,10 @@ public class HourDeclarationControllerTest {
         StatisticsRequest statisticsRequest = new StatisticsRequest(1234L, 5678L);
 
         MvcResult mvcResult = mockMvc.perform(
-                get("/api/hour-management/declaration/statistics/total-hours")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(statisticsRequest))
-                        .header(authorization, ""))
+                        get("/api/hour-management/declaration/statistics/total-hours")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(statisticsRequest))
+                                .header(authorization, ""))
                 .andReturn();
 
         assertThat(expectedTotalHours.isEmpty()).isFalse();
