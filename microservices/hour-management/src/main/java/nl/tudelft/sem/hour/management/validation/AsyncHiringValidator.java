@@ -2,7 +2,6 @@ package nl.tudelft.sem.hour.management.validation;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -40,6 +39,7 @@ public class AsyncHiringValidator extends AsyncBaseValidator {
                         .pathSegment("api", "hiring-service", "get-contract")
                         .queryParam("courseID", parsed.get("courseId"))
                         .toUriString())
+                .header(HttpHeaders.AUTHORIZATION, headers.getFirst(HttpHeaders.AUTHORIZATION))
                 .exchange()
                 .flatMap(response -> {
                     if (response.statusCode().isError()) {
