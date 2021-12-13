@@ -15,8 +15,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
+import nl.tudelft.sem.hour.management.dto.StatisticsRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
 import nl.tudelft.sem.hour.management.services.NotificationService;
@@ -32,6 +34,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -79,6 +82,8 @@ public class HourDeclarationControllerTest {
             hourDeclarationRequest, false, testDate);
     private final transient HourDeclaration hourDeclarationApproved = new HourDeclaration(2,
             hourDeclarationRequestNew, true, testDate);
+    private final transient HourDeclaration hourDeclarationSameStudent = new HourDeclaration(3,
+            hourDeclarationRequestSameStudent, false, testDate);
 
     @BeforeEach
     void init() {
@@ -343,5 +348,45 @@ public class HourDeclarationControllerTest {
 
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetTotalHours() throws Exception {
+        hourDeclarationRepository.save(hourDeclarationSameStudent);
+
+        Optional<Double> expectedTotalHours =
+                hourDeclarationRepository.aggregateHoursFor(1234L, 5678L);
+
+        StatisticsRequest statisticsRequest = new StatisticsRequest(1234L, 5678L);
+
+        MvcResult mvcResult = mockMvc.perform(
+                        get("/api/hour-management/declaration/statistics/total-hours")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(statisticsRequest))
+                                .header(authorization, ""))
+                .andReturn();
+
+        assertThat(expectedTotalHours.isEmpty()).isFalse();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content()
+                        .json(String.format(Locale.ROOT,
+                                "{\"totalHours\": %f}", expectedTotalHours.get())));
+    }
+
+    @Test
+    void testGetTotalHoursNotFound() throws Exception {
+        StatisticsRequest statisticsRequest = new StatisticsRequest(9999L, 5678L);
+
+        MvcResult mvcResult = mockMvc.perform(
+                        get("/api/hour-management/declaration/statistics/total-hours")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(statisticsRequest))
+                                .header(authorization, ""))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isNotFound());
     }
 }
