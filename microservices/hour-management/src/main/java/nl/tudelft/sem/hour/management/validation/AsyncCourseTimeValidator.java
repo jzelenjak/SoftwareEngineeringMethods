@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono;
 
 public class AsyncCourseTimeValidator extends AsyncBaseValidator {
     // Valid period for performing actions on the course
-    private static final Period VALID_DURATION = Period.ofWeeks(3);
+    private static final Period VALID_DURATION = Period.ofMonths(3);
 
     // WebClient used to communicate with the hiring microservice
     private final transient WebClient webClient;
