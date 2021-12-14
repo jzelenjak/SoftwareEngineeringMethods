@@ -64,6 +64,7 @@ public class ApplicationControllerTest {
     private static final long userId = 521234;
     private static final ZonedDateTime courseStartNextYear = ZonedDateTime.now().plusYears(1);
     private static final String START_TIME = "startTime";
+    private static final String BASE_URL = "/";
     private static final String RESOLVED_TOKEN = "yo";
     private static final String COURSES_TARGET = "get-start-date";
     private static final String COURSES_API = "/api/courses/";
@@ -107,8 +108,7 @@ public class ApplicationControllerTest {
         when(applicationService.checkSameApplication(userId, courseId)).thenReturn(false);
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
         JsonObject json = new JsonObject();
@@ -156,8 +156,7 @@ public class ApplicationControllerTest {
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
         JsonObject json = new JsonObject();
@@ -191,8 +190,7 @@ public class ApplicationControllerTest {
         when(applicationService.checkSameApplication(userId, courseId)).thenReturn(true);
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
         JsonObject json = new JsonObject();
@@ -224,8 +222,7 @@ public class ApplicationControllerTest {
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
@@ -368,8 +365,7 @@ public class ApplicationControllerTest {
         when(applicationService.checkCandidate(userId, courseId)).thenReturn(true);
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
         JsonObject json = new JsonObject();
@@ -442,8 +438,7 @@ public class ApplicationControllerTest {
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
@@ -474,8 +469,7 @@ public class ApplicationControllerTest {
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
         JsonObject json = new JsonObject();
@@ -514,8 +508,7 @@ public class ApplicationControllerTest {
         when(applicationService.checkCandidate(userId, courseId)).thenReturn(false);
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
         JsonObject json = new JsonObject();
@@ -548,7 +541,7 @@ public class ApplicationControllerTest {
     @Test
     void testWithdraw() throws Exception {
         // Configure the mocks
-        HttpUrl url = mockWebServer.url("/");
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
 
@@ -588,7 +581,7 @@ public class ApplicationControllerTest {
     @Test
     void testWithdrawNonExisting() throws Exception {
         // Configure the mocks
-        HttpUrl url = mockWebServer.url("/");
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
 

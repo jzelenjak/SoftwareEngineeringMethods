@@ -43,8 +43,7 @@ public class AsyncCourseTimeValidator extends AsyncBaseValidator {
                         .scheme("http")
                         .host(gatewayConfig.getHost())
                         .port(gatewayConfig.getPort())
-                        .pathSegment("api", "courses", "get-start-date")
-                        .queryParam("courseId", courseId)
+                        .pathSegment("api", "courses", "get", "course", String.valueOf(courseId))
                         .toUriString())
                 .exchange()
                 .flatMap(clientResponse -> {
