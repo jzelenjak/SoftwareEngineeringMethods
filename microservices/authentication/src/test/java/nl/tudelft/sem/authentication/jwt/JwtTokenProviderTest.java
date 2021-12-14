@@ -163,6 +163,8 @@ class JwtTokenProviderTest {
 
         this.userDataRepository.save(new UserData(username, password, UserRole.ADMIN, 9048182L));
 
+        // Wait just 10 ms to avoid flaky tests
+        Thread.sleep(10);
         HttpServletRequest request =
                 this.mockMvc
                         .perform(get(LOGIN_API_PATH)

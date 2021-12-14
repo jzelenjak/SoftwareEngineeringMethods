@@ -198,7 +198,8 @@ public class UserController {
         UserRole newRole =
                 parseRole(parseJsonField(jsonNode, ROLE).toUpperCase(Locale.US));
 
-        Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
+        String prefixedToken = req.getHeader(HttpHeaders.AUTHORIZATION);
+        Jws<Claims> claimsJws = parseAndValidateJwt(prefixedToken);
         UserRole requesterRole = parseRole(claimsJws);
 
         // If the requester is not allowed to change the role, send back 401 status
@@ -213,6 +214,7 @@ public class UserController {
                 .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
                             "api", "auth", "change_role"))
                 .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
+                .header(HttpHeaders.AUTHORIZATION, prefixedToken)
                 .body(Mono
                         .just(createJson(USERNAME, username,
                                     ROLE, newRole.name())), String.class)
@@ -252,7 +254,8 @@ public class UserController {
      */
     @DeleteMapping("/delete")
     public Mono<ResponseEntity<String>> deleteByUserId(HttpServletRequest req) {
-        Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
+        String prefixedToken = req.getHeader(HttpHeaders.AUTHORIZATION);
+        Jws<Claims> claimsJws = parseAndValidateJwt(prefixedToken);
         UserRole requesterRole = parseRole(claimsJws);
 
         if (!this.userService.isAllowedToDelete(requesterRole)) {
@@ -266,6 +269,7 @@ public class UserController {
                 .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
                         "api", "auth", "delete"))
                 .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
+                .header(HttpHeaders.AUTHORIZATION, prefixedToken)
                 .body(
                         Mono.just(createJson(USERNAME, username)), String.class)
                 .exchange()

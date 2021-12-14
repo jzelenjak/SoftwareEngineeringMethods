@@ -3,6 +3,7 @@ package nl.tudelft.sem.authentication.service;
 import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.repositories.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,9 +19,17 @@ public class AuthService implements UserDetailsService {
 
     private final transient PasswordEncoder passwordEncoder;
 
-    public AuthService(UserDataRepository userDataRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(UserDataRepository userDataRepository, PasswordEncoder passwordEncoder,
+                       @Value("${root.username}") String rootUsername,
+                       @Value("${root.password}") String rootPassword,
+                       @Value("${root.userid}") long rootUserId) {
         this.userDataRepository = userDataRepository;
         this.passwordEncoder = passwordEncoder;
+
+        if (this.userDataRepository.findByUsername(rootUsername).isEmpty()) {
+            this.userDataRepository.save(new UserData(rootUsername, this.passwordEncoder.encode(rootPassword),
+                     UserRole.ADMIN, rootUserId));
+        }
     }
 
     /**

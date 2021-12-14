@@ -111,7 +111,7 @@ public class GatewayController {
                 .method(HttpMethod.valueOf(request.getMethod()))
                 .uri(destination)
                 .body(Mono.justOrEmpty(body), String.class)
-                .headers(headers::addAll)
+                .headers(header -> header.addAll(headers))
                 .exchange()
                 .flatMap(response ->
                         response.bodyToMono(String.class).flatMap(responseBody -> {
