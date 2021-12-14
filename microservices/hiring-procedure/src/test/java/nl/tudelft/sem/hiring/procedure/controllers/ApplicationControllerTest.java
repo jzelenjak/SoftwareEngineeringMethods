@@ -622,4 +622,36 @@ public class ApplicationControllerTest {
         verify(applicationService, times(0)).removeApplication(Mockito.any());
     }
 
+    @Test
+    void getOwnContractTest() throws Exception {
+        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
+        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get("/api/hiring-procedure/"
+                + "get-contract?courseId=" + courseId)
+                .header(AUTH_BODY, JWT))
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void getContractTest() throws Exception {
+        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
+        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get("/api/hiring-procedure/"
+                + "get-contract?userId=" + userId + "&courseId=" + courseId)
+                .header(AUTH_BODY, JWT))
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isOk());
+    }
+
 }

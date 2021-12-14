@@ -2,6 +2,7 @@ package nl.tudelft.sem.hiring.procedure.controllers;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
@@ -206,6 +208,53 @@ public class ApplicationController {
             applicationService.removeApplication(application.get());
             return Mono.empty();
         });
+    }
+
+    /**
+     * Endpoint for retrieving the contract of a user, for a course.
+     * Current implementation just returns a template contract, to be filled by the TA.
+     *
+     * @param userId is the ID of the user for which the contract is requested.
+     *               Parameter may be null, in which case the contract was requested
+     *               by the userId in the JWT
+     * @param courseId is the ID of the course for which the contract is requested
+     * @param headers is the list of the request headers
+     * @return a byte stream of the contract pdf
+     */
+    @GetMapping("get-contract")
+    public Mono<byte[]> getContract(@RequestParam(required = false) Long userId,
+                                    @RequestParam long courseId,
+                                    @RequestHeader HttpHeaders headers) {
+        AsyncValidator.Builder builder = AsyncValidator.Builder.newBuilder();
+        builder.addValidator(new AsyncAuthValidator(jwtUtils));
+        if (userId != null) {
+            builder.addValidator(new AsyncRoleValidator(jwtUtils,
+                Set.of(Roles.LECTURER, Roles.ADMIN)));
+            AsyncValidator head = builder.build();
+            return head.validate(headers, "").flatMap(value -> {
+                try {
+                    return Mono.just(Thread.currentThread().getContextClassLoader()
+                        .getResourceAsStream("contracttemplate.md").readAllBytes());
+                } catch (IOException e) {
+                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Resource was not found"));
+                }
+            });
+        } else {
+            builder.addValidator(new AsyncRoleValidator(jwtUtils,
+                Set.of(Roles.STUDENT)));
+            AsyncValidator head = builder.build();
+            return head.validate(headers, "").flatMap(value -> {
+                try {
+                    byte[] contract = Thread.currentThread().getContextClassLoader()
+                        .getResourceAsStream("contracttemplate.md").readAllBytes();
+                    return Mono.just(contract);
+                } catch (IOException e) {
+                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Resource was not found"));
+                }
+            });
+        }
     }
 
     /**
