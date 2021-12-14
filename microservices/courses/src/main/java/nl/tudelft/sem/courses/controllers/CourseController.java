@@ -61,7 +61,7 @@ public class CourseController {
      * @return returns a http success or bad request
      */
     @PostMapping("/delete/{id}")
-    public String editCourse(@PathVariable long courseID) throws Exception {
+    public String deleteCourse(@PathVariable long courseID) throws Exception {
         //TODO
         //Add authorization
         return courseService.deleteCourse(courseID);
@@ -83,5 +83,29 @@ public class CourseController {
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
+
+    /**
+     *  Returns the grade of a user for a specific course.
+     *
+     * @param userid - the users id
+     * @param courseId - the courses id
+     * @return - a floating point value representing the grade.
+     */
+    @PostMapping("/get/grade/{userid}/{courseid}")
+    public float getGradeOfUser(@PathVariable("userid") long userid, @PathVariable("courseid") long courseId) {
+        //TODO
+        //Add authorization
+        Grade grade = courseService.getGrade(userid, courseId);
+
+        if (grade == null) {
+           throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        } else {
+            return grade.getGradeValue();
+        }
+
+    }
+
+       
+
 
 }

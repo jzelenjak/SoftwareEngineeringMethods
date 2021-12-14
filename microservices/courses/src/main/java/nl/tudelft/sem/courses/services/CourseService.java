@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.Optional;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.entities.Course;
+import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
+import nl.tudelft.sem.courses.respositories.GradeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,9 @@ public class CourseService {
 
     @Autowired
     private transient CourseRepository courseRepository;
+
+    @Autowired
+    private transient GradeRepository gradeRepository;
 
     /**
      * This method adds new courses to the repo.
@@ -55,12 +60,12 @@ public class CourseService {
     /**
      * This method attempts to remove an existing course.
      *
-     * @param courseID - id of the course we want to delete
+     * @param courseId - id of the course we want to delete
      * @return - returns whether delete was successful
      * @throws Exception - http exceptions for users
      */
-    public String deleteCourse(long courseID) throws Exception {
-        Optional<Course> course = courseRepository.findByCourseId(courseID);
+    public String deleteCourse(long courseId) throws Exception {
+        Optional<Course> course = courseRepository.findByCourseId(courseId);
 
         if (!course.isEmpty()) {
             try{
@@ -73,8 +78,45 @@ public class CourseService {
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * Returns a list of all course with the matching course code
+     *
+     * @param courseCode - Course code of the courses
+     * @return - List of all courses with matching course code
+     */
     public List<Course> getCourses(String courseCode) {
         return courseRepository.findAllByCourseCode(courseCode);
+    }
+
+    /**
+     * Gives back the grade of a user for a specific course
+     *
+     * @param userId - the id of the user.
+     * @param courseId - the id of the course.
+     * @return - if grade is found returns the grade
+     *           otherwise it returns null.
+     */
+    public Grade getGrade(long userId, long courseId) {
+        //First we get the course and see if it exists.
+        try{
+            Optional<Course> course = courseRepository.findByCourseId(courseId);
+
+            if (course.isEmpty()) {
+                return null;
+            } else {
+                //We try to get the grade of the user.
+                Optional<Grade> grade = gradeRepository.findByUserIdAndCourse(userId, course.get());
+
+                if (grade.isEmpty()) {
+                    return null;
+                } else {
+                    return grade.get();
+                }
+            }
+        } catch (Exception e) {
+            return null;
+        }
+
     }
 
 }
