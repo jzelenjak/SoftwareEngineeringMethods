@@ -122,12 +122,13 @@ class NotificationTest {
     @Test
     void toJsonSuccessTest() {
         Notification someNotification = new Notification(userId, message);
+        LocalDateTime timeStamp = someNotification.getNotificationDate();
         String json = String.format("{\"message\":\"%s\",\"notificationDate\":\"%s\"}",
-                this.message, this.notificationDate.getHour()
-                        + ":" + this.notificationDate.getMinute()
-                        + " " + this.notificationDate.getDayOfMonth()
-                        + "-" + this.notificationDate.getMonthValue()
-                        + "-" + this.notificationDate.getYear()
+                this.message, timeStamp.getHour()
+                        + ":" + timeStamp.getMinute()
+                        + " " + timeStamp.getDayOfMonth()
+                        + "-" + timeStamp.getMonthValue()
+                        + "-" + timeStamp.getYear()
                         + " " + ZoneId.systemDefault());
         Assertions.assertEquals(json, someNotification.toJsonResponse());
     }

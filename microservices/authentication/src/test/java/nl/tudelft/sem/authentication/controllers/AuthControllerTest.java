@@ -611,11 +611,12 @@ class AuthControllerTest {
         // Add notifications to list.
         List<Notification> list = new ArrayList<>();
         list.add(someNotification);
-        String timeStamp = notificationDate.getHour()
-                + ":" + notificationDate.getMinute()
-                + " " + notificationDate.getDayOfMonth()
-                + "-" + notificationDate.getMonthValue()
-                + "-" + notificationDate.getYear()
+        LocalDateTime localDateTime = someNotification.getNotificationDate();
+        String timeStamp = localDateTime.getHour()
+                + ":" + localDateTime.getMinute()
+                + " " + localDateTime.getDayOfMonth()
+                + "-" + localDateTime.getMonthValue()
+                + "-" + localDateTime.getYear()
                 + " " + ZoneId.systemDefault();
 
         String first = String.format("{\"message\":\"%s\",\"notificationDate\":\"%s\"}",
