@@ -137,6 +137,13 @@ public class CourseService {
 
     }
 
+    /**
+     * Adds a grade to the repository
+     *
+     * @param request -  a grade request object containing all
+     *                the necessary objects for repository
+     * @return - if succeeded returns true otherwise returns false.
+     */
     public boolean addGrade(GradeRequest request) {
         //checking if a grade already exists for this user
         Grade existingGrade = getGrade(request.getUserId(), request.getCourseId());

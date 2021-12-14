@@ -3,6 +3,9 @@ package nl.tudelft.sem.courses.controllers;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
@@ -11,12 +14,15 @@ import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
 import nl.tudelft.sem.courses.services.CourseService;
+import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,6 +41,19 @@ public class CourseController {
     @Autowired
     transient CourseService courseService;
 
+    @Autowired
+    private JwtUtils jwtUtils;
+
+    /**
+     * Constructor for course controller.
+     *
+     * @param jwtUtils - A generable library to parse jwt tokens
+     * @param courseService - courses service.
+     */
+    public CourseController(JwtUtils jwtUtils, CourseService courseService){
+        this.jwtUtils = jwtUtils;
+    }
+
 
     @GetMapping
     public @ResponseBody String getHelloWorld() {
@@ -50,11 +69,15 @@ public class CourseController {
      * @return returns a http success or bad request
      */
     @PostMapping("/create/course")
-    public String createNewCourse(@RequestBody CourseRequest request) throws Exception {
+    public String createNewCourse(@RequestBody CourseRequest request, @RequestHeader HttpHeaders httpHeaders) throws Exception {
         //TODO
         //Add authorization
-        return courseService.addNewCourses(request);
 
+        Boolean authorized = isAuthorized(httpHeaders);
+        if (authorized) {
+            return courseService.addNewCourses(request);
+        }
+       throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
     }
 
     /**
@@ -64,10 +87,16 @@ public class CourseController {
      * @return returns a http success or bad request
      */
     @PostMapping("/delete/{id}")
-    public String deleteCourse(@PathVariable long courseID) throws Exception {
+    public String deleteCourse(@PathVariable long courseID, @RequestHeader HttpHeaders httpHeaders) throws Exception {
         //TODO
         //Add authorization
-        return courseService.deleteCourse(courseID);
+
+        Boolean authorized = isAuthorized(httpHeaders);
+        if (authorized) {
+            return courseService.deleteCourse(courseID);
+
+        }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
     }
 
     /**
@@ -77,24 +106,29 @@ public class CourseController {
      * @return - can return multiple courses with the same code
      */
     @PostMapping("/get/courses/{code}")
-    public List<CourseResponse> getCoursesByCode(@PathVariable String code) {
+    public List<CourseResponse> getCoursesByCode(@PathVariable String code, @RequestHeader HttpHeaders httpHeaders) throws Exception {
         //TODO
         //Add authorization
-        List<Course> courses = courseService.getCourses(code);
-        if (courses != null && !courses.isEmpty()) {
-            List<CourseResponse> courseResponses = new ArrayList<>();
-            for(Course course: courses){
-                CourseResponse courseResponse = new CourseResponse(
-                        course.getId(),
-                        course.getCourseCode(),
-                        course.getStartDate(),
-                        course.getFinishDate(),
-                        course.getGrades().size());
-                courseResponses.add(courseResponse);
+        Boolean authorized = isAuthorized(httpHeaders);
+
+        if (authorized) {
+            List<Course> courses = courseService.getCourses(code);
+            if (courses != null &&  !courses.isEmpty()) {
+                List<CourseResponse> courseResponses = new ArrayList<>();
+                for(Course course: courses){
+                    CourseResponse courseResponse = new CourseResponse(
+                            course.getId(),
+                            course.getCourseCode(),
+                            course.getStartDate(),
+                            course.getFinishDate(),
+                            course.getGrades().size());
+                    courseResponses.add(courseResponse);
+                }
+                return courseResponses;
             }
-            return courseResponses;
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
     }
 
     /**
@@ -105,16 +139,22 @@ public class CourseController {
      * @return - a floating point value representing the grade.
      */
     @PostMapping("/get/grade/{userid}/{courseid}")
-    public float getGradeOfUser(@PathVariable("userid") long userid, @PathVariable("courseid") long courseId) {
+    public float getGradeOfUser(@PathVariable("userid") long userid, @PathVariable("courseid") long courseId, @RequestHeader HttpHeaders httpHeaders) throws Exception {
         //TODO
         //Add authorization
-        Grade grade = courseService.getGrade(userid, courseId);
+        Boolean authorized = isAuthorized(httpHeaders);
 
-        if (grade == null) {
-           throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        } else {
-            return grade.getGradeValue();
+        if (authorized) {
+
+            Grade grade = courseService.getGrade(userid, courseId);
+
+            if (grade == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            } else {
+                return grade.getGradeValue();
+            }
         }
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
 
     }
 
@@ -130,43 +170,95 @@ public class CourseController {
      * @return - A courseResponse object (simplified course object)
      */
     @PostMapping("/get/course/{id}")
-    public CourseResponse getCourseById(@PathVariable long id) {
+    public CourseResponse getCourseById(@PathVariable long id, @RequestHeader HttpHeaders httpHeaders) throws Exception {
         //TODO
         //Add authorization
+        Boolean authorized = isAuthorized(httpHeaders);
 
-        Course course = courseService.getCourse(id);
+        if (authorized) {
 
-        if (course == null) {
-            throw new ResponseStatusException((HttpStatus.NOT_FOUND));
+            Course course = courseService.getCourse(id);
+
+            if (course == null) {
+                throw new ResponseStatusException((HttpStatus.NOT_FOUND));
+            }
+
+            CourseResponse courseResponse = new CourseResponse(
+                    course.getId(),
+                    course.getCourseCode(),
+                    course.getStartDate(),
+                    course.getFinishDate(),
+                    course.getGrades().size());
+
+            return courseResponse;
         }
 
-        CourseResponse courseResponse = new CourseResponse(
-                course.getId(),
-                course.getCourseCode(),
-                course.getStartDate(),
-                course.getFinishDate(),
-                course.getGrades().size());
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+    }
 
-        return courseResponse;
+    /**
+     * Accepts a request to add a grade to the repository.
+     * Passes on the grade to the courses service
+     *
+     * @param request -  a request object containing grade information
+     * @return - a string confirming whether or not the method is successful.
+     */
+    @PostMapping("/create/grade")
+    public String addGrade(@RequestBody GradeRequest request, @RequestHeader HttpHeaders httpHeaders) throws Exception {
+        //TODO
+        //Add authorization
+        Boolean authorized = isAuthorized(httpHeaders);
+
+        if (authorized) {
+            if (request == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+            }
+
+            if (courseService.addGrade(request)) {
+                return "Sucess! Grade has been added";
+            } else {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }
+
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
 
     }
 
 
-    @PostMapping("/create/grade")
-    public String addGrade(@RequestBody GradeRequest request) {
-        //TODO
-        //Add authorization
+    public boolean isAuthorized(HttpHeaders httpHeaders) throws Exception {
+        //first we try to get the authorization header information.
+        String authHeader = httpHeaders.getFirst("Authorization");
 
+        //if there is no such header return null
+        if (authHeader == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No authorization detected");
+        }
+        //we create a new token
+        String token = jwtUtils.resolveToken(authHeader);
 
-        if (request == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        if (token == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "JWT in the request");
         }
 
-        if (courseService.addGrade(request)) {
-            return "Sucess! Grade has been added";
-        } else {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        //a Json webtoken containing the parsed JWS claims
+        Jws<Claims> claimsJws = jwtUtils.validateAndParseClaims(token);
+
+        if (claimsJws == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid web token.");
         }
+
+        //now we check if there are any permissions for this method.
+        String role = jwtUtils.getRole(claimsJws);
+
+        if (role.equals("LECTURER")||role.equals("ADMIN")) {
+            return true;
+
+        }
+
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authrized to add course");
+
+
 
     }
 
