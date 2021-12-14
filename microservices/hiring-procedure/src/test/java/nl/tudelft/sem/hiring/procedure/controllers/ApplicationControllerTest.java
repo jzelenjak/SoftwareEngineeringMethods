@@ -2,7 +2,6 @@ package nl.tudelft.sem.hiring.procedure.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -21,7 +20,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
-import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
+import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
 import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncRoleValidator;
@@ -40,7 +39,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -529,9 +527,6 @@ public class ApplicationControllerTest {
         assertEquals(GET_METHOD, recordedRequest.getMethod());
     }
 
-    @Autowired
-    private ApplicationRepository applicationRepository;
-
     @Test
     void testWithdraw() throws Exception {
         // Configure the mocks
@@ -540,8 +535,6 @@ public class ApplicationControllerTest {
         when(gatewayConfig.getHost()).thenReturn(url.host());
 
         // Create new application
-        long userId = 1234L;
-        long courseId = 1337L;
         ZonedDateTime start = ZonedDateTime.now();
         Application application = new Application(userId, courseId, start.toLocalDateTime());
         when(applicationService.getApplication(userId, courseId))
@@ -568,8 +561,8 @@ public class ApplicationControllerTest {
         mockMvc.perform(asyncDispatch(result))
                 .andExpect(status().isOk());
 
-        // Verify that there was an attempt to remove it from the database
-        verify(applicationService, times(1)).removeApplication(application);
+        // Verify that there was an attempt to change the application status
+        verify(applicationService, times(1)).withdrawApplication(application.getApplicationId());
     }
 
     @Test
@@ -579,11 +572,48 @@ public class ApplicationControllerTest {
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
 
-        // Create new application
-        long userId = 1234L;
-        long courseId = 1337L;
-        final ZonedDateTime start = ZonedDateTime.now();
+        // Create new application mock behaviour
         when(applicationService.getApplication(userId, courseId)).thenReturn(Optional.empty());
+
+        // Configure request mock
+        when(jwtUtils.getUserId(Mockito.any())).thenReturn(userId);
+        when(jwtUtils.resolveToken(Mockito.any())).thenReturn("");
+        when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(claims);
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+
+        // Enqueue course validator response
+        JsonObject json = new JsonObject();
+        ZonedDateTime start = ZonedDateTime.now();
+        json.addProperty("startTime", start.minus(4, ChronoUnit.WEEKS).toString());
+        mockWebServer.enqueue(new MockResponse().setBody(json.toString()));
+
+        // Create request body and perform the call
+        MvcResult result = mockMvc.perform(post("/api/hiring-procedure/withdraw")
+                        .header(HttpHeaders.AUTHORIZATION, "")
+                        .queryParam("courseId", String.valueOf(courseId)))
+                .andReturn();
+
+        // Await the call
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isMethodNotAllowed());
+
+        // Verify that there was no attempt to change the application status
+        verify(applicationService, times(0)).withdrawApplication(Mockito.anyLong());
+    }
+
+    @Test
+    void testWithdrawAlreadyProcessed() throws Exception {
+        // Configure the mocks
+        HttpUrl url = mockWebServer.url("/");
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
+
+        // Create new application
+        ZonedDateTime start = ZonedDateTime.now();
+        Application application = new Application(userId, courseId, start.toLocalDateTime());
+        application.setStatus(ApplicationStatus.ACCEPTED);
+        when(applicationService.getApplication(userId, courseId))
+                .thenReturn(Optional.of(application));
 
         // Configure request mock
         when(jwtUtils.getUserId(Mockito.any())).thenReturn(userId);
@@ -606,8 +636,110 @@ public class ApplicationControllerTest {
         mockMvc.perform(asyncDispatch(result))
                 .andExpect(status().isMethodNotAllowed());
 
-        // Verify that there was an attempt to remove it from the database
-        verify(applicationService, times(0)).removeApplication(Mockito.any());
+        // Verify that there was no attempt to change the application status
+        verify(applicationService, times(0)).withdrawApplication(application.getApplicationId());
+    }
+
+    @Test
+    void testReject() throws Exception {
+        // Configure the mocks
+        HttpUrl url = mockWebServer.url("/");
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
+
+        // Application info
+        long applicationId = 1337L;
+        Application applicationMock = Mockito.mock(Application.class);
+        when(applicationService.getApplication(applicationId))
+                .thenReturn(Optional.of(applicationMock));
+        when(applicationMock.getStatus()).thenReturn(ApplicationStatus.IN_PROGRESS);
+
+        // Configure request mock
+        when(jwtUtils.getUserId(Mockito.any())).thenReturn(userId);
+        when(jwtUtils.resolveToken(Mockito.any())).thenReturn("");
+        when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(claims);
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        // Create request body and perform the call
+        MvcResult result = mockMvc.perform(post("/api/hiring-procedure/reject")
+                        .header(HttpHeaders.AUTHORIZATION, "")
+                        .queryParam("applicationId", String.valueOf(applicationId)))
+                .andReturn();
+
+        // Await the call
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk());
+
+        // Verify that there was an attempt to change the application status
+        verify(applicationService, times(1)).getApplication(applicationId);
+        verify(applicationService, times(1)).rejectApplication(applicationId);
+    }
+
+    @Test
+    void testRejectNonExisting() throws Exception {
+        // Configure the mocks
+        HttpUrl url = mockWebServer.url("/");
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
+
+        // Application info
+        long applicationId = 1337L;
+        when(applicationService.getApplication(applicationId)).thenReturn(Optional.empty());
+
+        // Configure request mock
+        when(jwtUtils.getUserId(Mockito.any())).thenReturn(userId);
+        when(jwtUtils.resolveToken(Mockito.any())).thenReturn("");
+        when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(claims);
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        // Create request body and perform the call
+        MvcResult result = mockMvc.perform(post("/api/hiring-procedure/reject")
+                        .header(HttpHeaders.AUTHORIZATION, "")
+                        .queryParam("applicationId", String.valueOf(applicationId)))
+                .andReturn();
+
+        // Await the call
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
+
+        // Verify that there was an attempt to fetch the application
+        verify(applicationService, times(1)).getApplication(applicationId);
+        verify(applicationService, times(0)).rejectApplication(applicationId);
+    }
+
+    @Test
+    void testRejectAlreadyProcessed() throws Exception {
+        // Configure the mocks
+        HttpUrl url = mockWebServer.url("/");
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
+
+        // Application info
+        long applicationId = 1337L;
+        Application applicationMock = Mockito.mock(Application.class);
+        when(applicationService.getApplication(applicationId))
+                .thenReturn(Optional.of(applicationMock));
+        when(applicationMock.getStatus()).thenReturn(ApplicationStatus.ACCEPTED);
+
+        // Configure request mock
+        when(jwtUtils.getUserId(Mockito.any())).thenReturn(userId);
+        when(jwtUtils.resolveToken(Mockito.any())).thenReturn("");
+        when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(claims);
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        // Create request body and perform the call
+        MvcResult result = mockMvc.perform(post("/api/hiring-procedure/reject")
+                        .header(HttpHeaders.AUTHORIZATION, "")
+                        .queryParam("applicationId", String.valueOf(applicationId)))
+                .andReturn();
+
+        // Await the call
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isMethodNotAllowed());
+
+        // Verify that there was an attempt to change the application status
+        verify(applicationService, times(1)).getApplication(applicationId);
+        verify(applicationService, times(0)).rejectApplication(applicationId);
     }
 
 }
