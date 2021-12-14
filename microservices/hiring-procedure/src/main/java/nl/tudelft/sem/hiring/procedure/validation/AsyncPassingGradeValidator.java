@@ -1,9 +1,8 @@
 package nl.tudelft.sem.hiring.procedure.validation;
 
 import com.google.gson.JsonParser;
-import java.time.Period;
-import java.time.ZonedDateTime;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
+import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -11,9 +10,12 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
-public class AsyncCourseTimeValidator extends AsyncBaseValidator {
-    /// Duration used to validate course correctness (3 weeks in advance)
-    public static final Period VALID_DURATION = Period.ofWeeks(3);
+public class AsyncPassingGradeValidator extends AsyncBaseValidator {
+    // Minimum passing grade constant
+    public static final float MIN_PASSING_GRADE = 5.75f;
+
+    // JWT utility class for extracting info from the authorization token
+    private final transient JwtUtils jwtUtils;
 
     // Gateway configuration
     private final transient GatewayConfig gatewayConfig;
@@ -25,12 +27,15 @@ public class AsyncCourseTimeValidator extends AsyncBaseValidator {
     private final transient WebClient webClient;
 
     /**
-     * Constructor of the course time validator class.
+     * Constructor of the passing grade validator class.
      *
+     * @param jwtUtils      JWT utility class.
      * @param gatewayConfig is the gateway configuration.
-     * @param courseId      is the course ID.
+     * @param courseId      is the id of the course.
      */
-    public AsyncCourseTimeValidator(GatewayConfig gatewayConfig, long courseId) {
+    public AsyncPassingGradeValidator(JwtUtils jwtUtils, GatewayConfig gatewayConfig,
+                                      long courseId) {
+        this.jwtUtils = jwtUtils;
         this.gatewayConfig = gatewayConfig;
         this.courseId = courseId;
         this.webClient = WebClient.create();
@@ -38,28 +43,39 @@ public class AsyncCourseTimeValidator extends AsyncBaseValidator {
 
     @Override
     public Mono<Boolean> validate(HttpHeaders headers, String body) {
+        // Extract the user id from the authorization header
+        String token = headers.getFirst(HttpHeaders.AUTHORIZATION);
+        String resolvedToken = jwtUtils.resolveToken(token);
+        var claims = jwtUtils.validateAndParseClaims(resolvedToken);
+        long userId = jwtUtils.getUserId(claims);
+
+        // Perform the request, and check if the user has passed the course
         return webClient.get()
                 .uri(UriComponentsBuilder.newInstance()
                         .scheme("http")
                         .host(gatewayConfig.getHost())
                         .port(gatewayConfig.getPort())
-                        .pathSegment("api", "courses", "get", "course", String.valueOf(courseId))
+                        .pathSegment("api", "courses", "grade")
+                        .queryParam("courseId", courseId)
+                        .queryParam("userId", userId)
                         .toUriString())
                 .exchange()
                 .flatMap(clientResponse -> {
                     if (clientResponse.statusCode().isError()) {
                         return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                                "Course not found"));
+                                "Course/grade not found"));
                     }
 
                     return clientResponse.bodyToMono(String.class).flatMap(responseBody -> {
                         var response = JsonParser.parseString(responseBody).getAsJsonObject();
-                        var start = ZonedDateTime.parse(response.get("startTime").getAsString());
+                        var grade = response.get("grade").getAsFloat();
 
-                        // Check if the course registration period has not ended yet
-                        if (ZonedDateTime.now().plus(VALID_DURATION).isAfter(start)) {
-                            return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
-                                    "Course registration/withdrawal period has ended"));
+                        // Check if the user passed the course
+                        if (grade < MIN_PASSING_GRADE) {
+                            return Mono.error(
+                                    new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
+                                            "You cannot apply to be a TA for this course since "
+                                                    + "you did not pass it yet"));
                         }
 
                         // Continue with the request
@@ -67,5 +83,4 @@ public class AsyncCourseTimeValidator extends AsyncBaseValidator {
                     });
                 });
     }
-
 }

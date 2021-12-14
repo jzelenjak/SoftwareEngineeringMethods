@@ -1,5 +1,6 @@
 package nl.tudelft.sem.hiring.procedure.validation;
 
+import com.google.gson.JsonObject;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -8,6 +9,10 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
+/**
+ * Validator class for checking with the Users microservice if a user exists.
+ * Used as a security redundancy for hiring and other final procedures.
+ */
 public class AsyncUserExistsValidator extends AsyncBaseValidator {
     // Gateway configuration
     private final transient GatewayConfig gatewayConfig;
@@ -32,6 +37,8 @@ public class AsyncUserExistsValidator extends AsyncBaseValidator {
 
     @Override
     public Mono<Boolean> validate(HttpHeaders headers, String body) {
+        JsonObject json = new JsonObject();
+        json.addProperty("userId", userId);
         return webClient.get()
             .uri(UriComponentsBuilder.newInstance().scheme("http")
                 .host(gatewayConfig.getHost())

@@ -10,6 +10,10 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
+/**
+ * Validator class for checking with the Courses microservice if a given course exists.
+ * Used for methods that don't take the start time of the course in consideration.
+ */
 public class AsyncCourseExistsValidator extends AsyncBaseValidator {
     // Gateway configuration
     private final transient GatewayConfig gatewayConfig;
@@ -39,8 +43,7 @@ public class AsyncCourseExistsValidator extends AsyncBaseValidator {
                 .scheme("http")
                 .host(gatewayConfig.getHost())
                 .port(gatewayConfig.getPort())
-                .pathSegment("api", "courses", "get-start-date")
-                .queryParam("courseId", courseId)
+                .pathSegment("api", "courses", "get", "course", String.valueOf(courseId))
                 .toUriString())
             .exchange()
             .flatMap(clientResponse -> {
