@@ -24,16 +24,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -76,14 +73,14 @@ public class ApplicationController {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
             .addValidators(
                 new AsyncAuthValidator(jwtUtils),
-                new AsyncRoleValidator(jwtUtils, Set.of(Roles.STUDENT)),
+                new AsyncRoleValidator(jwtUtils, Set.of(Roles.STUDENT, Roles.TA)),
                 new AsyncCourseTimeValidator(gatewayConfig, courseId))
             .build();
 
         return head.validate(authHeader, "").flatMap(value -> {
             long userId;
             try {
-                userId = checkJwt(authHeader);
+                userId = getUserIdFromToken(authHeader);
             } catch (InstanceNotFoundException e) {
                 return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN));
             }
@@ -112,7 +109,7 @@ public class ApplicationController {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
             .addValidators(
                 new AsyncAuthValidator(jwtUtils),
-                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER)))
+                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)))
             .build();
 
         return head.validate(authHeader, "").flatMap(value ->
@@ -133,7 +130,7 @@ public class ApplicationController {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
             .addValidators(
                 new AsyncAuthValidator(jwtUtils),
-                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER)))
+                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)))
             .build();
 
         return head.validate(authHeader, "").flatMap(value ->
@@ -155,7 +152,7 @@ public class ApplicationController {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
             .addValidators(
                 new AsyncAuthValidator(jwtUtils),
-                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER)),
+                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)),
                 new AsyncCourseExistsValidator(gatewayConfig, courseId),
                 new AsyncUserExistsValidator(gatewayConfig, userId))
             .build();
@@ -215,7 +212,7 @@ public class ApplicationController {
      * @return The userId
      * @throws InstanceNotFoundException when the JWT is invalid
      */
-    private long checkJwt(HttpHeaders authJwt) throws InstanceNotFoundException {
+    private long getUserIdFromToken(HttpHeaders authJwt) throws InstanceNotFoundException {
         String resolvedToken = jwtUtils.resolveToken(authJwt.getFirst("Authorization"));
         Jws<Claims> userClaims = jwtUtils.validateAndParseClaims(resolvedToken);
         if (userClaims != null) {
