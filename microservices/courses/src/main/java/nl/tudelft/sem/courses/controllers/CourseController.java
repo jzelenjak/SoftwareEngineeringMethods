@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
+import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
@@ -48,7 +49,7 @@ public class CourseController {
      * @param request request object that must be supplied by the front end.
      * @return returns a http success or bad request
      */
-    @PostMapping("/create")
+    @PostMapping("/create/course")
     public String createNewCourse(@RequestBody CourseRequest request) throws Exception {
         //TODO
         //Add authorization
@@ -150,5 +151,23 @@ public class CourseController {
 
     }
 
+
+    @PostMapping("/create/grade")
+    public String addGrade(@RequestBody GradeRequest request) {
+        //TODO
+        //Add authorization
+
+
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+
+        if (courseService.addGrade(request)) {
+            return "Sucess! Grade has been added";
+        } else {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+    }
 
 }

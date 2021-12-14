@@ -3,6 +3,7 @@ package nl.tudelft.sem.courses.services;
 import java.util.List;
 import java.util.Optional;
 import nl.tudelft.sem.courses.communication.CourseRequest;
+import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
@@ -134,6 +135,30 @@ public class CourseService {
             return null;
         }
 
+    }
+
+    public boolean addGrade(GradeRequest request) {
+        //checking if a grade already exists for this user
+        Grade existingGrade = getGrade(request.getUserId(), request.getCourseId());
+
+        if (existingGrade != null) {
+            return false;
+        }
+
+        try {
+            Course course = getCourse(request.getCourseId());
+
+            Grade grade = new Grade();
+            grade.setCourse(course);
+            grade.setGradeValue(request.getGrade());
+            grade.setUserId(request.getUserId());
+
+            gradeRepository.save(grade);
+            return true;
+
+        } catch (Exception e) {
+            return false;
+        }
     }
 
 }
