@@ -69,8 +69,33 @@ public class ApplicationController {
      */
     @PostMapping("/apply")
     @ResponseBody
-    public void applyTa(@RequestParam() long courseId, @RequestHeader() HttpHeaders authHeader) {
-        long userId;
+    public Mono<Void> applyTa(@RequestParam() long courseId, @RequestHeader() HttpHeaders authHeader) {
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+            .addValidators(
+                new AsyncAuthValidator(jwtUtils),
+                new AsyncRoleValidator(jwtUtils, Set.of(Roles.STUDENT)),
+                new AsyncCourseTimeValidator(gatewayConfig, courseId))
+            .build();
+
+        return head.validate(authHeader, "").flatMap(value -> {
+            long userId;
+            try {
+                userId = checkJwt(authHeader);
+            } catch (InstanceNotFoundException e) {
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN));
+            }
+
+            if (applicationService.checkSameApplication(userId, courseId)) {
+                return Mono.error(new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
+                    "User has already applied"));
+            }
+
+            applicationService.createApplication(userId, courseId, LocalDateTime.now());
+            return Mono.empty();
+        });
+
+
+        /*long userId;
         String jsonParse;
         Boolean isStudent;
         try {
@@ -112,7 +137,7 @@ public class ApplicationController {
 
         // Register application
         LocalDateTime now = LocalDateTime.now();
-        applicationService.createApplication(userId, courseId, now);
+        applicationService.createApplication(userId, courseId, now);*/
     }
 
     /**

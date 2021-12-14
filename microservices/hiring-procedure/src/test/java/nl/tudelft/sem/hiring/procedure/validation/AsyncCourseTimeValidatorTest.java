@@ -64,9 +64,7 @@ public class AsyncCourseTimeValidatorTest {
                 courseId);
 
         // Fetch the local zoned date time, and make it a valid time
-        ZonedDateTime current = ZonedDateTime.now()
-                .minus(AsyncCourseTimeValidator.VALID_DURATION)
-                .minus(1, ChronoUnit.DAYS);
+        ZonedDateTime current = ZonedDateTime.now().plusYears(1);
 
         // Construct the json object used for testing
         JsonObject json = new JsonObject();
@@ -98,8 +96,7 @@ public class AsyncCourseTimeValidatorTest {
 
         // Fetch the local zoned date time, and make it a valid time
         ZonedDateTime current = ZonedDateTime.now()
-                .minus(AsyncCourseTimeValidator.VALID_DURATION)
-                .plus(1, ChronoUnit.DAYS);
+                .plus(2, ChronoUnit.WEEKS);
 
         // Construct the json object used for testing
         JsonObject json = new JsonObject();
