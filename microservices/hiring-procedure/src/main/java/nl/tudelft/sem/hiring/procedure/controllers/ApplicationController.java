@@ -234,7 +234,7 @@ public class ApplicationController {
             return head.validate(headers, "").flatMap(value -> {
                 try {
                     return Mono.just(Thread.currentThread().getContextClassLoader()
-                        .getResourceAsStream("contracttemplate.md").readAllBytes());
+                        .getResourceAsStream("templatecontract.pdf").readAllBytes());
                 } catch (IOException e) {
                     return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Resource was not found"));
@@ -247,7 +247,7 @@ public class ApplicationController {
             return head.validate(headers, "").flatMap(value -> {
                 try {
                     byte[] contract = Thread.currentThread().getContextClassLoader()
-                        .getResourceAsStream("contracttemplate.md").readAllBytes();
+                        .getResourceAsStream("templatecontract.pdf").readAllBytes();
                     return Mono.just(contract);
                 } catch (IOException e) {
                     return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
