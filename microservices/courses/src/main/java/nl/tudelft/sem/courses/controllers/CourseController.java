@@ -81,7 +81,7 @@ public class CourseController {
         //TODO
         //Add authorization
         List<Course> courses = courseService.getCourses(code);
-        if (!courses.isEmpty()) {
+        if (courses != null && !courses.isEmpty()) {
             List<CourseResponse> courseResponses = new ArrayList<>();
             for(Course course: courses){
                 CourseResponse courseResponse = new CourseResponse(

@@ -50,7 +50,7 @@ public class CourseService {
             newCourse.setFinishDate(request.getFinishDate());
 
             if (courses.contains(newCourse)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
             } else {
                 courseRepository.save(newCourse);
                 return "Success. Added course";
@@ -73,7 +73,7 @@ public class CourseService {
                 courseRepository.delete(course.get());
                 return "Success. Added course";
             } catch (Exception e){
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
