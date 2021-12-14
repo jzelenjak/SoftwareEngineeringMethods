@@ -276,13 +276,15 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(LECTURER_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
         // Perform the call
-        mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
+        MvcResult result = mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
                         .header(AUTH_BODY, JWT))
-                .andExpect(status().isOk())
                 .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isOk());
     }
 
     @Test
@@ -290,13 +292,15 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(STUDENT_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         // Perform the call
-        mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isMethodNotAllowed())
-                .andReturn();
+        MvcResult result = mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
+                .header(AUTH_BODY, JWT))
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
     }
 
     @Test
@@ -304,11 +308,14 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
+
         // Perform the call
-        mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isNotFound())
-                .andReturn();
+        MvcResult result = mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
+                .header(AUTH_BODY, JWT))
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
     }
 
     @Test

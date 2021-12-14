@@ -69,7 +69,8 @@ public class ApplicationController {
      */
     @PostMapping("/apply")
     @ResponseBody
-    public Mono<Void> applyTa(@RequestParam() long courseId, @RequestHeader() HttpHeaders authHeader) {
+    public Mono<Void> applyTa(@RequestParam() long courseId,
+                              @RequestHeader() HttpHeaders authHeader) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
             .addValidators(
                 new AsyncAuthValidator(jwtUtils),
@@ -127,16 +128,16 @@ public class ApplicationController {
      */
     @GetMapping("/get-all-applications")
     @ResponseBody
-    public List<Application> getAllApplications(@RequestHeader() HttpHeaders authHeader) {
-        try {
-            if (!checkLecturer(authHeader)) {
-                throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                        "User is not a lecturer");
-            }
-            return applicationService.getAllApplications();
-        } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
-        }
+    public Mono<List<Application>> getAllApplications(@RequestHeader() HttpHeaders authHeader) {
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+            .addValidators(
+                new AsyncAuthValidator(jwtUtils),
+                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER)))
+            .build();
+
+        return head.validate(authHeader, "").flatMap(value -> {
+            return Mono.just(applicationService.getAllApplications());
+        });
     }
 
     /**
