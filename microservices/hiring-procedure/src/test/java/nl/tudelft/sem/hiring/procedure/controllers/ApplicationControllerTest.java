@@ -66,8 +66,6 @@ public class ApplicationControllerTest {
     private static final String START_TIME = "startTime";
     private static final String BASE_URL = "/";
     private static final String RESOLVED_TOKEN = "yo";
-    private static final String COURSES_TARGET = "get-start-date";
-    private static final String COURSES_API = "/api/courses/";
     private static final String COURSE_ID_PARAM = "courseId=";
     private static final String USER_ID_PARAM = "userId=";
     private static final String PARAM_STARTER = "?";
@@ -633,7 +631,7 @@ public class ApplicationControllerTest {
 
         // Enqueue course validator response
         JsonObject json = new JsonObject();
-        json.addProperty("startTime", start.minus(4, ChronoUnit.WEEKS).toString());
+        json.addProperty(START_TIME, courseStartNextYear.toString());
         mockWebServer.enqueue(new MockResponse().setBody(json.toString()));
 
         // Create request body and perform the call
