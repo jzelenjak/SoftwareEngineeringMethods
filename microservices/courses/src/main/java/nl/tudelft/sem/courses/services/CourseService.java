@@ -65,7 +65,7 @@ public class CourseService {
      * @throws Exception - http exceptions for users
      */
     public String deleteCourse(long courseId) throws Exception {
-        Optional<Course> course = courseRepository.findByCourseId(courseId);
+        Optional<Course> course = courseRepository.findById(courseId);
 
         if (!course.isEmpty()) {
             try{
@@ -99,7 +99,7 @@ public class CourseService {
     public Grade getGrade(long userId, long courseId) {
         //First we get the course and see if it exists.
         try{
-            Optional<Course> course = courseRepository.findByCourseId(courseId);
+            Optional<Course> course = courseRepository.findById(courseId);
 
             if (course.isEmpty()) {
                 return null;
@@ -114,6 +114,23 @@ public class CourseService {
                 }
             }
         } catch (Exception e) {
+            return null;
+        }
+
+    }
+
+    /**
+     * Gives the course corresponding to a specific course id
+     *
+     * @param courseId - the id of the course (not the course code)
+     * @return - A course object
+     */
+    public Course getCourse(long courseId) {
+        Optional<Course> course = courseRepository.findById(courseId);
+
+        if (!course.isEmpty()) {
+            return course.get();
+        } else {
             return null;
         }
 

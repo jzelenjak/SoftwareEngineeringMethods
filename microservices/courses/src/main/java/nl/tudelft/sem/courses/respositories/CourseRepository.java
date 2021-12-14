@@ -12,8 +12,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CourseRepository extends CrudRepository<Course, Long> {
 
-    Optional<Course> findByCourseId(long courseId);
+//    Optional<Course> findByCourseId(long courseId);
 
+    @Override
+    Optional<Course> findById(Long aLong);
 
     List<Course> findAllByCourseCode(String courseCode);
 

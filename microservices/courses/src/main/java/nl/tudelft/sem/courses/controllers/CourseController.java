@@ -1,8 +1,10 @@
 package nl.tudelft.sem.courses.controllers;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import nl.tudelft.sem.courses.communication.CourseRequest;
+import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
@@ -74,12 +76,22 @@ public class CourseController {
      * @return - can return multiple courses with the same code
      */
     @PostMapping("/get/courses/{code}")
-    public List<Course> getCourses(@PathVariable String code) {
+    public List<CourseResponse> getCoursesByCode(@PathVariable String code) {
         //TODO
         //Add authorization
         List<Course> courses = courseService.getCourses(code);
         if (!courses.isEmpty()) {
-            return courses;
+            List<CourseResponse> courseResponses = new ArrayList<>();
+            for(Course course: courses){
+                CourseResponse courseResponse = new CourseResponse(
+                        course.getId(),
+                        course.getCourseCode(),
+                        course.getStartDate(),
+                        course.getFinishDate(),
+                        course.getGrades().size());
+                courseResponses.add(courseResponse);
+            }
+            return courseResponses;
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND);
     }
@@ -105,7 +117,38 @@ public class CourseController {
 
     }
 
-       
+    /**
+     * Gives back course information including:
+     * - Course id
+     * - Course code
+     * - Start date of the course
+     * - End date of the course
+     * - Number of students in the course
+     *
+     * @param id - id of the course
+     * @return - A courseResponse object (simplified course object)
+     */
+    @PostMapping("/get/course/{id}")
+    public CourseResponse getCourseById(@PathVariable long id) {
+        //TODO
+        //Add authorization
+
+        Course course = courseService.getCourse(id);
+
+        if (course == null) {
+            throw new ResponseStatusException((HttpStatus.NOT_FOUND));
+        }
+
+        CourseResponse courseResponse = new CourseResponse(
+                course.getId(),
+                course.getCourseCode(),
+                course.getStartDate(),
+                course.getFinishDate(),
+                course.getGrades().size());
+
+        return courseResponse;
+
+    }
 
 
 }
