@@ -1,9 +1,13 @@
 package nl.tudelft.sem.users.controllers;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -13,27 +17,38 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import java.io.IOException;
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import javax.crypto.spec.SecretKeySpec;
+import nl.tudelft.sem.users.config.GatewayConfig;
 import nl.tudelft.sem.users.entities.User;
 import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.services.UserService;
+import okhttp3.HttpUrl;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
-
 
 
 @WebMvcTest(controllers = UserController.class)
@@ -43,23 +58,26 @@ class UserControllerTest {
     @Autowired
     private transient MockMvc mockMvc;
 
+    private static transient MockWebServer mockWebServer;
+
+    @Value("${jwt.secretKeyString}")
+    private transient String secretKeyString;
+
+    private transient Key secretKey;
+
+    @MockBean
+    private transient GatewayConfig gatewayConfig;
+
     @MockBean
     private transient UserService userService;
 
-    private final transient String utf8Str = "uft-8";
-
-    private final transient String secretKeyString =
-            "nbvfrtyujhghgdvagsdfsdgadflgpprqoewjfmanvxcmiq"
-                    + "ertyuisgnsdfasdfayuiokjhfgsfsgfgfhgdgsfgs";
-
-    private final transient Key secretKey = new SecretKeySpec(secretKeyString.getBytes(),
-            SignatureAlgorithm.HS256.getJcaName());
 
     // Some constants for JSON fields
     private static final transient String USERID = "userId";
     private static final transient String USERNAME = "username";
     private static final transient String ROLE = "role";
     private static final transient String BEARER = "Bearer ";
+    private static final transient String UTF8 = "uft-8";
 
 
     // Constants for APIs
@@ -69,8 +87,6 @@ class UserControllerTest {
     private static final transient String BY_ROLE = "/api/users/by_role";
     private static final transient String CHANGE_ROLE_API = "/api/users/change_role";
     private static final transient String DELETE_API = "/api/users/delete";
-
-
 
     /**
      * Helper methods.
@@ -98,20 +114,10 @@ class UserControllerTest {
                 .compact();
     }
 
-    public Jws<Claims> validateAndParseClaims(String token) {
-        try {
-            Jws<Claims> claims =
-                    Jwts
-                        .parserBuilder()
-                        .setSigningKey(secretKey)
-                        .build()
-                        .parseClaimsJws(token);
-
-            Long.parseLong(claims.getBody().getSubject());
-            return claims;
-        } catch (Exception e) {
-            return null;
-        }
+    void configureGateway(String path) {
+        HttpUrl url = mockWebServer.url(path);
+        Mockito.when(gatewayConfig.getHost()).thenReturn(url.host());
+        Mockito.when(gatewayConfig.getPort()).thenReturn(url.port());
     }
 
     /**
@@ -121,12 +127,10 @@ class UserControllerTest {
 
     private void mockRegister(String username, String firstName, String lastName, long toReturn) {
         if (toReturn == -1) {
-            Mockito
-                .when(userService.registerUser(username, firstName, lastName))
+            Mockito.when(userService.registerUser(username, firstName, lastName))
                 .thenThrow(DataIntegrityViolationException.class);
         } else {
-            Mockito
-                .when(userService.registerUser(username, firstName, lastName))
+            Mockito.when(userService.registerUser(username, firstName, lastName))
                 .thenReturn(toReturn);
         }
     }
@@ -139,12 +143,10 @@ class UserControllerTest {
 
     private void mockGetByUsername(String netId, User userToReturn) {
         if (userToReturn == null) {
-            Mockito
-                .when(userService.getUserByNetId(netId))
+            Mockito.when(userService.getUserByNetId(netId))
                 .thenReturn(Optional.empty());
         } else {
-            Mockito
-                .when(userService.getUserByNetId(netId))
+            Mockito.when(userService.getUserByNetId(netId))
                 .thenReturn(Optional.of(userToReturn));
         }
     }
@@ -157,12 +159,10 @@ class UserControllerTest {
 
     private void mockGetByUserId(long userId, User userToReturn) {
         if (userToReturn == null) {
-            Mockito
-                .when(userService.getUserByUserId(userId))
+            Mockito.when(userService.getUserByUserId(userId))
                 .thenReturn(Optional.empty());
         } else {
-            Mockito
-                .when(userService.getUserByUserId(userId))
+            Mockito.when(userService.getUserByUserId(userId))
                 .thenReturn(Optional.of(userToReturn));
         }
     }
@@ -174,8 +174,7 @@ class UserControllerTest {
     }
 
     private void mockGetByRole(UserRole role, List<User> usersToReturn) {
-        Mockito
-            .when(userService.getUsersByRole(role))
+        Mockito.when(userService.getUsersByRole(role))
             .thenReturn(usersToReturn);
     }
 
@@ -186,27 +185,60 @@ class UserControllerTest {
     }
 
     private void mockChangeRole(long userId, UserRole newRole, UserRole requester, boolean result) {
-        Mockito
-            .when(userService.changeRole(userId, newRole, requester))
-            .thenReturn(result);
+        Mockito.when(userService.changeRole(userId, newRole, requester))
+                .thenReturn(result);
     }
 
     private void verifyChangeRole(long userId, UserRole newRole, UserRole requester, int times) {
+        if (userId == -1) {
+            Mockito.verify(userService, Mockito.times(times))
+                    .changeRole(anyLong(), any(), any());
+        } else {
+            Mockito
+                .verify(userService, Mockito.times(times))
+                .changeRole(userId, newRole, requester);
+        }
+    }
+
+    private void mockIsAllowedToChangeRole(long userId, UserRole newRole,
+                                           UserRole requester, boolean allowed) {
+        Mockito.when(userService.isAllowedToChangeRole(userId, newRole, requester))
+                .thenReturn(allowed);
+    }
+
+    private void verifyIsAllowedToChangeRole(long userId, UserRole newRole,
+                                             UserRole requester, int times) {
         Mockito
             .verify(userService, Mockito.times(times))
-            .changeRole(userId, newRole, requester);
+            .isAllowedToChangeRole(userId, newRole, requester);
     }
 
     private void mockDeleteByUserId(long userId, UserRole requesterRole, boolean result) {
-        Mockito
-            .when(userService.deleteUserByUserId(userId, requesterRole))
+        Mockito.when(userService.deleteUserByUserId(userId, requesterRole))
             .thenReturn(result);
     }
 
     private void verifyDeleteByUserId(long userId, UserRole requester, int times) {
+        if (userId == -1) {
+            Mockito
+                    .verify(userService, Mockito.times(times))
+                    .deleteUserByUserId(Mockito.anyLong(), any());
+        } else {
+            Mockito
+                    .verify(userService, Mockito.times(times))
+                    .deleteUserByUserId(userId, requester);
+        }
+    }
+
+    private void mockIsAllowedToDelete(UserRole requesterRole, boolean result) {
+        Mockito.when(userService.isAllowedToDelete(requesterRole))
+                .thenReturn(result);
+    }
+
+    private void verifyIsAllowedToDelete(UserRole requester, int times) {
         Mockito
-                .verify(userService, Mockito.times(times))
-                .deleteUserByUserId(userId, requester);
+            .verify(userService, Mockito.times(times))
+            .isAllowedToDelete(requester);
     }
 
     /**
@@ -218,7 +250,7 @@ class UserControllerTest {
                 .perform(post(path)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
-                        .characterEncoding(utf8Str));
+                        .characterEncoding(UTF8));
     }
 
     private ResultActions mockMvcGetByUsername(String path, String json) throws Exception {
@@ -226,7 +258,7 @@ class UserControllerTest {
                 .perform(get(path)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
-                        .characterEncoding(utf8Str));
+                        .characterEncoding(UTF8));
     }
 
     private ResultActions mockMvcGetByUserId(String path, String json) throws Exception {
@@ -234,7 +266,7 @@ class UserControllerTest {
                 .perform(get(path)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
-                        .characterEncoding(utf8Str));
+                        .characterEncoding(UTF8));
     }
 
     private ResultActions mockMvcGetByRole(String path, String json) throws Exception {
@@ -242,7 +274,7 @@ class UserControllerTest {
                 .perform(get(path)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
-                        .characterEncoding(utf8Str));
+                        .characterEncoding(UTF8));
     }
 
     private ResultActions mockMvcChangeRole(String path, String json,
@@ -252,7 +284,7 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
                         .header(HttpHeaders.AUTHORIZATION, token)
-                        .characterEncoding(utf8Str));
+                        .characterEncoding(UTF8));
     }
 
     private ResultActions mockMvcDeleteByUserId(String path, String json,
@@ -262,7 +294,24 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json)
                         .header(HttpHeaders.AUTHORIZATION, token)
-                        .characterEncoding(utf8Str));
+                        .characterEncoding(UTF8));
+    }
+
+    @BeforeAll
+    static void setUp() throws IOException {
+        mockWebServer = new MockWebServer();
+        mockWebServer.start();
+    }
+
+    @BeforeEach
+    void setup() {
+        this.secretKey = new SecretKeySpec(secretKeyString.getBytes(),
+                            SignatureAlgorithm.HS256.getJcaName());
+    }
+
+    @Test
+    void dummy() {
+        System.out.println(this.secretKeyString);
     }
 
     /**
@@ -270,39 +319,102 @@ class UserControllerTest {
      */
 
     @Test
-    void registerUserAlreadyExistsTest() throws Exception {
+    void registerUserAlreadyExistsLocallyTest() throws Exception {
         String uname = "S.Bar@student.tudelft.nl";
         String fname = "Sasha";
         String lname = "Bar";
         String pass = "123";
+        configureGateway("/api/auth/register");
+
+        // Configure userService mock
         mockRegister(uname, fname, lname, -1);
+
+        // Assert
         mockMvcRegister(REGISTER_API, createJson(USERNAME, uname, "firstName",
                     fname, "lastName", lname, "password", pass))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(content().string(""));
 
+        // Extra checks
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        Assertions
+            .assertThat(recordedRequest)
+            .isNull();
+
+        // Verify mocks
         verifyRegister(uname, fname, lname, 1);
+        verifyDeleteByUserId(-1, UserRole.ADMIN, 0);
+    }
+
+    @Test
+    void registerUserAlreadyExistsOnlyInAuthTest() throws Exception {
+        // Prepare and mock the objects
+        String uname = "S.Bar@student.tudelft.nl";
+        String fname = "Sasha";
+        String lname = "Bar";
+
+        configureGateway("/api/auth/register");
+        mockRegister(uname, fname, lname, 5623546L);
+        mockDeleteByUserId(5623546L, UserRole.ADMIN, true);
+        mockWebServer
+                .enqueue(new MockResponse().setResponseCode(409));
+
+
+        // Assert
+        MvcResult mvcRes = mockMvcRegister(REGISTER_API, createJson(USERNAME, uname, "firstName",
+                                    fname, "lastName", lname, "password", "123"))
+                                .andReturn();
+        mockMvc.perform(asyncDispatch(mvcRes))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(""));
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        Assertions
+                .assertThat(recordedRequest)
+                .isNotNull();
+        Assertions
+                .assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+
+
+        // Verify mocks
+        verifyRegister(uname, fname, lname, 1);
+        verifyDeleteByUserId(5623546L, UserRole.ADMIN, 1);
     }
 
     @Test
     void registerUserSuccessTest() throws Exception {
+        // Prepare and mock the objects
         String uname = "S.Bar@student.tudelft.nl";
         String fname = "Sasha";
         String lname = "Bar";
-        String pass = "123";
-        mockRegister(uname, fname, lname, 3443546L);
-        String res = mockMvcRegister(REGISTER_API,
-                            createJson(USERNAME, uname, "firstName",
-                                fname, "lastName", lname, "password", pass))
-                    .andExpect(status().isOk())
-                    .andReturn()
-                    .getResponse()
-                    .getContentAsString();
-        String userIdStr = new ObjectMapper().readTree(res).get("userId").asText();
-        Assertions
-                .assertThat(Long.parseLong(userIdStr))
-                .isEqualTo(3443546L);
+        final String expectedJson = new ObjectMapper().createObjectNode()
+                                    .put(USERID, "3443546").toString();
 
+        configureGateway("/api/auth/register");
+        mockRegister(uname, fname, lname, 3443546L);
+        mockWebServer
+                .enqueue(new MockResponse().setResponseCode(200));
+
+
+        // Assert
+        MvcResult mvcRes = mockMvcRegister(REGISTER_API, createJson(USERNAME, uname,
+                "firstName", fname, "lastName", lname, "password", "1234"))
+                .andReturn();
+        mockMvc.perform(asyncDispatch(mvcRes))
+                    .andExpect(status().isOk())
+                .andExpect(content().string(expectedJson));
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        Assertions
+                .assertThat(recordedRequest)
+                .isNotNull();
+        Assertions
+                .assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+
+
+        // Verify mocks
         verifyRegister(uname, fname, lname, 1);
+        verifyDeleteByUserId(3443546L, UserRole.ADMIN, 0);
     }
 
 
@@ -440,77 +552,184 @@ class UserControllerTest {
 
     @Test
     void changeRoleInvalidTokenTest() throws Exception {
+        // Generate the JWT token
         String token = createToken(3456445L,
                 UserRole.STUDENT.name(), new Date(), 15);
         String badToken = "oupps" + token;
         String prefixedBadToken = BEARER + badToken;
 
+        // Prepare
+        configureGateway(CHANGE_ROLE_API);
 
+
+        // Assert
         mockMvcChangeRole(CHANGE_ROLE_API,
                 createJson(USERID, String.valueOf(5422341L), ROLE,
                         UserRole.TA.name()), prefixedBadToken)
                 .andExpect(status().isUnauthorized());
+        Assertions
+                .assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS))
+                .isNull();
 
-        verifyChangeRole(5422341L, UserRole.TA, UserRole.STUDENT, 0);
+
+        // Verify mocks
+        verifyChangeRole(-1, UserRole.TA, UserRole.STUDENT, 0);
+        verifyDeleteByUserId(-1, UserRole.ADMIN, 0);
     }
 
     @Test
     void changeRoleTokenDoesNotStartWithBearerTest() throws Exception {
+        // Generate the JWT token
         String token = createToken(3456445L,
                 UserRole.STUDENT.name(), new Date(), 15);
         String prefixedToken = "Prefix " + token;
 
+        // Prepare
+        configureGateway(CHANGE_ROLE_API);
 
+
+        // Assert
         mockMvcChangeRole(CHANGE_ROLE_API,
                 createJson(USERID, String.valueOf(3456774L), ROLE,
                         UserRole.TA.name()), prefixedToken)
                 .andExpect(status().isBadRequest());
+        Assertions
+                .assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS))
+                .isNull();
 
-        verifyChangeRole(3456774L, UserRole.TA, UserRole.STUDENT, 0);
+
+        // Verify mocks
+        verifyChangeRole(-1, UserRole.TA, UserRole.STUDENT, 0);
+        verifyDeleteByUserId(-1, UserRole.ADMIN, 0);
     }
 
     @Test
     void changeRoleExpiredTest() throws Exception {
+        // Generate the JWT token
         String token = createToken(5456445L,
                 UserRole.ADMIN.name(), new Date(), 0);
-        String prefixedToken = BEARER + token;
+
+        // Prepare
+        configureGateway(CHANGE_ROLE_API);
 
 
+        // Assert
         mockMvcChangeRole(CHANGE_ROLE_API,
                 createJson(USERID, String.valueOf(4536654L), ROLE,
-                        UserRole.TA.name()), prefixedToken)
+                        UserRole.TA.name()), BEARER + token)
                 .andExpect(status().isUnauthorized());
+        Assertions
+                .assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS))
+                .isNull();
 
-        verifyChangeRole(4536654L, UserRole.TA, UserRole.ADMIN, 0);
+
+        // Verify mocks
+        verifyChangeRole(-1, UserRole.TA, UserRole.ADMIN, 0);
+        verifyDeleteByUserId(-1, UserRole.ADMIN, 0);
     }
 
     @Test
     void changeRoleUnauthorizedTest() throws Exception {
-        String token = createToken(5456445L,
+        // Generate the JWT token
+        final String token = createToken(5456445L,
                 UserRole.TA.name(), new Date(), 3000);
-        String prefixedToken = BEARER + token;
 
-        mockChangeRole(2376889L, UserRole.TA, UserRole.TA, false);
+        // Prepare and mock the objects
+        configureGateway(CHANGE_ROLE_API);
+        mockIsAllowedToChangeRole(2376889L, UserRole.TA, UserRole.TA, false);
+
+
+        // Assert
         mockMvcChangeRole(CHANGE_ROLE_API,
                 createJson(USERID, String.valueOf(2376889L), ROLE,
-                        UserRole.TA.name()), prefixedToken)
+                        UserRole.TA.name()), BEARER + token)
                 .andExpect(status().isUnauthorized());
+        Assertions
+                .assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS))
+                .isNull();
 
-        verifyChangeRole(2376889L, UserRole.TA, UserRole.TA, 1);
+
+        // Verify mocks
+        verifyIsAllowedToChangeRole(2376889L, UserRole.TA, UserRole.TA, 1);
+        verifyChangeRole(-1, UserRole.TA, UserRole.TA, 0);
+        verifyDeleteByUserId(-1, UserRole.ADMIN, 0);
+    }
+
+    @Test
+    void changeRoleFailureAtAuthTest() throws Exception {
+        // Generate the JWT token
+        final String token = createToken(3756849L,
+                UserRole.ADMIN.name(), new Date(), 20);
+
+        // Prepare and mock the objects
+        User userFromRepo = new User("sus@tudelft.nl", "suss",
+                "sass", UserRole.STUDENT);
+        userFromRepo.setUserId(5465321L);
+
+        configureGateway(CHANGE_ROLE_API);
+        mockWebServer
+                .enqueue(new MockResponse().setResponseCode(403));
+        mockIsAllowedToChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, true);
+        mockGetByUserId(5465321L, userFromRepo);
+
+
+        // Assert
+        MvcResult mvcResult = mockMvcChangeRole(CHANGE_ROLE_API,
+                createJson(USERID, String.valueOf(5465321L), ROLE,
+                        UserRole.LECTURER.name()), BEARER + token)
+                .andReturn();
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isForbidden());
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        Assertions
+                .assertThat(recordedRequest)
+                .isNotNull();
+        Assertions
+                .assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
+
+        // Verify mocks
+        verifyGetByUserId(5465321L, 1);
+        verifyChangeRole(-1, UserRole.LECTURER, UserRole.ADMIN, 0);
+        verifyIsAllowedToChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, 1);
     }
 
     @Test
     void changeRoleSuccessfulTest() throws Exception {
-        String token = createToken(3756849L,
+        // Generate the JWT token
+        final String token = createToken(3756849L,
                 UserRole.ADMIN.name(), new Date(), 20);
 
+        // Prepare
+        User userFromRepo = new User("sus@tudelft.nl", "suss",
+                "sass", UserRole.STUDENT);
+        userFromRepo.setUserId(5465321L);
+
+        configureGateway(CHANGE_ROLE_API);
+        mockWebServer
+                .enqueue(new MockResponse().setResponseCode(200));
         mockChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, true);
-        mockMvcChangeRole(CHANGE_ROLE_API,
+        mockGetByUserId(5465321L, userFromRepo);
+        mockIsAllowedToChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, true);
+
+        // Assert
+        MvcResult mvcResult = mockMvcChangeRole(CHANGE_ROLE_API,
                 createJson(USERID, String.valueOf(5465321L), ROLE,
                         UserRole.LECTURER.name()), BEARER + token)
+                .andReturn();
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk());
 
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        Assertions
+                .assertThat(recordedRequest)
+                .isNotNull();
+        Assertions
+                .assertThat(recordedRequest.getMethod()).isEqualTo("PUT");
+
+        // Verify mocks
         verifyChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, 1);
+        verifyIsAllowedToChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, 1);
     }
 
 
@@ -526,18 +745,67 @@ class UserControllerTest {
                 "random", UserRole.STUDENT);
         user.setUserId(userId);
 
-        String token = createToken(3006445L,
+        // Generate the JWT token
+        final String token = createToken(3006445L,
                 UserRole.STUDENT.name(), new Date(), 25);
 
-        mockDeleteByUserId(userId, UserRole.STUDENT, false);
-        mockGetByUserId(userId, user);
+        // Prepare and mock the objects
+        mockIsAllowedToDelete(UserRole.STUDENT, false);
+        configureGateway("/api/auth/delete");
+
+
+        // Assert
         mockMvcDeleteByUserId(DELETE_API, createJson(USERID,
                     String.valueOf(userId)), BEARER + token)
                 .andExpect(status().isUnauthorized());
 
-        verifyDeleteByUserId(userId, UserRole.STUDENT, 1);
-        verifyGetByUserId(userId, 1);
+        Assertions
+                .assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS))
+                .isNull();
 
+
+        // Verify mocks
+        verifyDeleteByUserId(-1, UserRole.STUDENT, 0);
+        verifyIsAllowedToDelete(UserRole.STUDENT, 1);
+    }
+
+    @Test
+    void deleteByUserIdFailureAtAuthTest() throws Exception {
+        long userId = 4323556L;
+        User user = new User("rrr@tudelft.nl", "r", "rr", UserRole.STUDENT);
+        user.setUserId(userId);
+
+        // Generate the JWT token
+        final String token = createToken(6545332L,
+                UserRole.ADMIN.name(), new Date(), 20);
+
+        // Prepare and mock the objects
+        mockIsAllowedToDelete(UserRole.ADMIN, true);
+        mockGetByUserId(userId, user);
+        configureGateway("/api/auth/delete");
+        mockWebServer
+                .enqueue(new MockResponse().setResponseCode(403));
+
+
+        // Assert
+        MvcResult mvcResult = mockMvcDeleteByUserId(DELETE_API, createJson(USERID,
+                String.valueOf(userId)), BEARER + token)
+                .andReturn();
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isForbidden());
+
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        Assertions
+                .assertThat(recordedRequest)
+                .isNotNull();
+        Assertions
+                .assertThat(recordedRequest.getMethod()).isEqualTo("DELETE");
+
+
+        // Verify mocks
+        verifyIsAllowedToDelete(UserRole.ADMIN, 1);
+        verifyDeleteByUserId(-1, UserRole.ADMIN, 0);
+        verifyGetByUserId(userId, 1);
     }
 
     @Test
@@ -546,15 +814,36 @@ class UserControllerTest {
         User user = new User("rrr@tudelft.nl", "r", "rr", UserRole.STUDENT);
         user.setUserId(userId);
 
-        String token = createToken(6545332L,
+        // Generate the JWT token
+        final String token = createToken(6545332L,
                 UserRole.ADMIN.name(), new Date(), 20);
 
+        // Prepare and mock the objects
+        mockIsAllowedToDelete(UserRole.ADMIN, true);
         mockDeleteByUserId(userId, UserRole.ADMIN, true);
         mockGetByUserId(userId, user);
-        mockMvcDeleteByUserId(DELETE_API, createJson(USERID,
+        configureGateway("/api/auth/delete");
+        mockWebServer
+                .enqueue(new MockResponse().setResponseCode(200));
+
+
+        // Assert
+        MvcResult mvcResult = mockMvcDeleteByUserId(DELETE_API, createJson(USERID,
                 String.valueOf(userId)), BEARER + token)
+                .andReturn();
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk());
 
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        Assertions
+                .assertThat(recordedRequest)
+                .isNotNull();
+        Assertions
+                .assertThat(recordedRequest.getMethod()).isEqualTo("DELETE");
+
+
+        // Verify mocks
+        verifyIsAllowedToDelete(UserRole.ADMIN, 1);
         verifyDeleteByUserId(userId, UserRole.ADMIN, 1);
         verifyGetByUserId(userId, 1);
     }
@@ -579,7 +868,57 @@ class UserControllerTest {
 
     @Test
     void notNumberTest() throws Exception {
-        mockMvcGetByUserId(BY_USER_ID_API, createJson("ID", "nan"))
+        mockMvcGetByUserId(BY_USER_ID_API, createJson("userId", "nan"))
                 .andExpect(status().isBadRequest());
     }
+
+    /**
+     * Remaining tests for 100% coverage.
+     */
+    @Test
+    void gatewayConfigHostTest() {
+        GatewayConfig config = new GatewayConfig();
+        config.setHost("google.com");
+        Assertions
+                .assertThat(config.getHost())
+                .isEqualTo("google.com");
+    }
+
+    @Test
+    void gatewayConfigPortTest() {
+        GatewayConfig config = new GatewayConfig();
+        config.setPort(8089);
+        Assertions
+                .assertThat(config.getPort())
+                .isEqualTo(8089);
+    }
+
+    @Test
+    void invalidRoleTest() throws Exception {
+        mockMvcGetByRole(BY_ROLE, createJson(ROLE, "MODERATOR"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void invalidJwsRole() throws Exception {
+        // Generate the JWT token
+        String token = createToken(2543432L,
+                "MODERATOR", new Date(), 10);
+        String prefixedToken = BEARER + token;
+
+        // Assert
+        mockMvcChangeRole(CHANGE_ROLE_API,
+                createJson(USERID, String.valueOf(34126654L), ROLE,
+                        UserRole.TA.name()), prefixedToken)
+                .andExpect(status().isBadRequest());
+
+        // Verify mocks
+        verifyChangeRole(-1, UserRole.TA, UserRole.ADMIN, 0);
+    }
+
+    @AfterAll
+    static void tearDown() throws IOException {
+        mockWebServer.shutdown();
+    }
+
 }

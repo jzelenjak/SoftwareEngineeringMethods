@@ -10,22 +10,27 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import nl.tudelft.sem.jwt.JwtUtils;
+import nl.tudelft.sem.users.config.GatewayConfig;
 import nl.tudelft.sem.users.entities.User;
 import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.services.UserService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
 /**
  * Controller class for users that provides the API.
@@ -36,10 +41,15 @@ public class UserController {
 
     private final transient UserService userService;
 
-    private final transient ObjectMapper mapper = new ObjectMapper();
+    private final transient ObjectMapper mapper;
 
     private final transient JwtUtils jwtUtils;
 
+    private final transient WebClient webClient;
+
+    private final transient GatewayConfig gatewayConfig;
+
+    private static final transient String USERNAME = "username";
     private static final transient String USERID = "userId";
     private static final transient String ROLE = "role";
 
@@ -47,11 +57,18 @@ public class UserController {
     /**
      * Instantiates a new User controller object.
      *
-     * @param userService the user service object
+     * @param userService       the user service object
+     * @param jwtUtils          the utilities for JWT
+     * @param gatewayConfig     the configuration for the gateway
      */
-    public UserController(UserService userService, JwtUtils jwtUtils) {
+    public UserController(UserService userService, JwtUtils jwtUtils, GatewayConfig gatewayConfig) {
         this.userService = userService;
         this.jwtUtils = jwtUtils;
+
+        this.mapper = new ObjectMapper();
+        this.webClient = WebClient.create();
+
+        this.gatewayConfig = gatewayConfig;
     }
 
 
@@ -62,34 +79,47 @@ public class UserController {
      *   'Authorization' header in the HTTP response.
      *
      * @param req   the HTTP request
-     * @param res   the HTTP response
-     * @return the user ID of a new registered user
-     *           if there is no user with the same username (netID) already.
-     *         In addition, in case of success the JWT token is sent in the
-     *           'Authorization' header in the HTTP response.
-     *
+     * @return If there is no user with the same username (netID) already,
+     *              the user ID of a new registered user and 200 OK is sent back.
      *           If the user with the provided netID already exists in the database,
-     *             then 409 CONFLICT status is sent back.
+     *              then 409 CONFLICT status is sent back.
      */
     @PostMapping("/register")
-    public @ResponseBody
-    String registerUser(HttpServletRequest req, HttpServletResponse res) {
+    public Mono<ResponseEntity<String>> registerUser(HttpServletRequest req) {
         JsonNode jsonNode = getJsonNode(req);
-        String username = parseJsonField(jsonNode, "username");
+        String username = parseJsonField(jsonNode, USERNAME);
         String firstName = parseJsonField(jsonNode, "firstName");
         String lastName = parseJsonField(jsonNode, "lastName");
-        //String password = parseJsonField(jsonNode, "password");
+        String password = parseJsonField(jsonNode, "password");
 
         long userId = attemptToRegister(username, firstName, lastName);
 
-        // TODO: register with Authentication Server,
-        //       forward the JWT token in the response
+        return webClient
+                .post()
+                .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
+                        "api", "auth", "register"))
+                .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
+                .body(Mono
+                    .just(createJson(USERNAME, username, USERID, String.valueOf(userId),
+                            "password", password)), String.class)
+                .exchange()
+                .flatMap(response -> {
+                    if (response.statusCode().isError()) {
+                        // Fail the registration if the user could not be registered in Auth Server
+                        this.userService.deleteUserByUserId(userId, UserRole.ADMIN);
+                        return Mono
+                            .error(new ResponseStatusException(response.statusCode(),
+                                            "Registration failed!"));
+                    }
 
-        String jwt = "somegibberishherejustfornow";
-        res.setHeader(HttpHeaders.AUTHORIZATION, String.format("Bearer %s", jwt));
-        ObjectNode response = mapper.createObjectNode();
-        response.put(USERID, userId);
-        return response.toString();
+                    // Just forward the response from Auth Server and add the user ID in the body
+                    return Mono
+                        .just(ResponseEntity
+                                .status(HttpStatus.OK)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .body(createJson(USERID, String.valueOf(userId)))
+                        );
+                });
     }
 
 
@@ -97,17 +127,16 @@ public class UserController {
      * Gets a user by their username (netID).
      *
      * @param req   the HTTP request
-     * @param res   the HTTP response
      * @return the user with the given username if they exist.
      *         If the user with the provided netID does not exist in the database,
      *           then 404 NOT FOUND status is sent back.
      * @throws IOException when something goes wrong with servlets
      */
     @GetMapping("/by_username")
-    public @ResponseBody
-    String getByUsername(HttpServletRequest req, HttpServletResponse res) throws IOException {
-        String username = parseJsonField(getJsonNode(req), "username");
-        return mapper.writeValueAsString(getUserByUsername(username));
+    public ResponseEntity<String> getByUsername(HttpServletRequest req) throws IOException {
+        String username = parseJsonField(getJsonNode(req), USERNAME);
+        return new ResponseEntity<>(mapper
+                        .writeValueAsString(getUserByUsername(username)), HttpStatus.OK);
     }
 
 
@@ -115,31 +144,28 @@ public class UserController {
      * Gets a user by their user ID.
      *
      * @param req   the HTTP request
-     * @param res   the HTTP response
      * @return the user with the given user ID if they exist.
      *         If the user does not exist, then 404 NOT FOUND status is sent.
      *         If the provided user ID is not a number, then 400 BAD REQUEST is sent back.
      * @throws IOException when something goes wrong with servlets
      */
     @GetMapping("/by_userid")
-    public @ResponseBody
-    String getByUserId(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    public ResponseEntity<String> getByUserId(HttpServletRequest req) throws IOException {
         long userId = parseUserId(parseJsonField(getJsonNode(req), USERID));
-        return mapper.writeValueAsString(getUserByUserId(userId));
+        return new ResponseEntity<>(mapper
+                        .writeValueAsString(getUserByUserId(userId)), HttpStatus.OK);
     }
 
     /**
      * Gets users by the role.
      *
      * @param req   the HTTP request
-     * @param res   the HTTP response
      * @return the users with the given role.
      *         If no users are found, then 404 NOT FOUND is sent back.
      * @throws IOException when something goes wrong with servlets
      */
     @GetMapping("/by_role")
-    public @ResponseBody
-    String getByRole(HttpServletRequest req, HttpServletResponse res) throws IOException {
+    public ResponseEntity<String> getByRole(HttpServletRequest req) throws IOException {
         UserRole role = parseRole(parseJsonField(getJsonNode(req), ROLE).toUpperCase(Locale.ROOT));
 
         List<User> users = this.userService.getUsersByRole(role);
@@ -147,7 +173,7 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     String.format("No users having role '%s' are found!", role));
         }
-        return mapper.writeValueAsString(users);
+        return new ResponseEntity<>(mapper.writeValueAsString(users), HttpStatus.OK);
     }
 
 
@@ -163,10 +189,9 @@ public class UserController {
      *      then 401 UNAUTHORIZED status is sent back.
      *
      * @param req   the HTTP request
-     * @param res   the HTTP response
      */
     @PutMapping("/change_role")
-    public void changeRole(HttpServletRequest req, HttpServletResponse res) {
+    public Mono<ResponseEntity<String>> changeRole(HttpServletRequest req) {
         JsonNode jsonNode = getJsonNode(req);
 
         long userId = parseUserId(parseJsonField(jsonNode, USERID));
@@ -176,12 +201,39 @@ public class UserController {
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
         UserRole requesterRole = parseRole(claimsJws);
 
-        if (!this.userService.changeRole(userId, newRole, requesterRole)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
+        // If the requester is not allowed to change the role, send back 401 status
+        if (!this.userService.isAllowedToChangeRole(userId, newRole, requesterRole)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                            "Operation not allowed!");
         }
 
-        // TODO: send a request to the Authentication server
-
+        String username = this.getUserByUserId(userId).getUsername();
+        return webClient
+                .put()
+                .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
+                            "api", "auth", "change_role"))
+                .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
+                .body(Mono
+                        .just(createJson(USERNAME, username,
+                                    ROLE, newRole.name())), String.class)
+                .exchange()
+                .flatMap(response -> {
+                    if (response.statusCode().isError()) {
+                        // Do not do anything locally to provide consistency
+                        return Mono
+                                .error(new ResponseStatusException(response
+                                        .statusCode(), "Could not change role"));
+                    }
+                    // Since the operation is successful in Auth server,
+                    //      change the role locally as well
+                    this.userService.changeRole(userId, newRole, UserRole.ADMIN);
+                    return Mono
+                            .just(ResponseEntity
+                                .status(HttpStatus.OK)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .body(createJson("message",
+                                        "Changed the role successfully!")));
+                });
     }
 
 
@@ -197,27 +249,81 @@ public class UserController {
      *      then 401 UNAUTHORIZED status is sent back.
      *
      * @param req   the HTTP request
-     * @param res   the HTTP response
      */
     @DeleteMapping("/delete")
-    public void deleteByUserId(HttpServletRequest req,
-                                HttpServletResponse res) {
-        long userId = parseUserId(parseJsonField(getJsonNode(req), USERID));
-
+    public Mono<ResponseEntity<String>> deleteByUserId(HttpServletRequest req) {
         Jws<Claims> claimsJws = parseAndValidateJwt(req.getHeader(HttpHeaders.AUTHORIZATION));
         UserRole requesterRole = parseRole(claimsJws);
 
-        getUserByUserId(userId);
-
-        if (!this.userService.deleteUserByUserId(userId, requesterRole)) {
+        if (!this.userService.isAllowedToDelete(requesterRole)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
         }
+
+        long userId = parseUserId(parseJsonField(getJsonNode(req), USERID));
+        String username = getUserByUserId(userId).getUsername();
+        return this.webClient
+                .method(HttpMethod.DELETE)
+                .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
+                        "api", "auth", "delete"))
+                .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
+                .body(
+                        Mono.just(createJson(USERNAME, username)), String.class)
+                .exchange()
+                .flatMap(response -> {
+                    if (response.statusCode().isError()) {
+                        // Do not do anything locally to provide consistency
+                        return Mono
+                            .error(new ResponseStatusException(response
+                                    .statusCode(), "Could not delete the user!"));
+                    }
+                    // Since the operation is successful in Auth server,
+                    //      delete the user locally as well
+                    this.userService.deleteUserByUserId(userId, requesterRole);
+                    return Mono
+                            .just(ResponseEntity
+                                .status(HttpStatus.OK)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .body(createJson("message",
+                                        "User deleted successfully!")));
+                });
     }
 
 
     /*
      * Helper methods to reduce code duplication.
      */
+
+    /**
+     * A helper method to create a URI for HTTP request.
+     *
+     * @param host      the host in the url
+     * @param port      the port in the url
+     * @param path      the path in the url
+     * @return          the complete String url
+     */
+    private String buildUri(String host, int port, String... path) {
+        return UriComponentsBuilder.newInstance()
+                .scheme("http")
+                .host(host)
+                .port(port)
+                .pathSegment(path)
+                .toUriString();
+    }
+
+    /**
+     * A helper method to create json string out of key-value pairs.
+     *
+     * @param kvPairs       list of key-values, must be an even number
+     * @return the json string that can be used in the response body
+     */
+    private String createJson(String... kvPairs) {
+        ObjectNode node = mapper.createObjectNode();
+
+        for (int i = 0; i < kvPairs.length; i += 2) {
+            node.put(kvPairs[i], kvPairs[i + 1]);
+        }
+        return node.toString();
+    }
 
     /**
      * A helper method to get jsonNode from HTTP request input stream
