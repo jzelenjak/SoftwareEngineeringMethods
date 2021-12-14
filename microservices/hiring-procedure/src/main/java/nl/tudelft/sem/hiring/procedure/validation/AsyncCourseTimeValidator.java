@@ -43,8 +43,7 @@ public class AsyncCourseTimeValidator extends AsyncBaseValidator {
                         .scheme("http")
                         .host(gatewayConfig.getHost())
                         .port(gatewayConfig.getPort())
-                        .pathSegment("api", "courses", "get-start-date")
-                        .queryParam("courseId", courseId)
+                        .pathSegment("api", "courses", "get", "course", String.valueOf(courseId))
                         .toUriString())
                 .exchange()
                 .flatMap(clientResponse -> {
@@ -58,7 +57,7 @@ public class AsyncCourseTimeValidator extends AsyncBaseValidator {
                         var start = ZonedDateTime.parse(response.get("startTime").getAsString());
 
                         // Check if the course registration period has not ended yet
-                        if (!ZonedDateTime.now().minus(VALID_DURATION).isAfter(start)) {
+                        if (ZonedDateTime.now().plus(VALID_DURATION).isAfter(start)) {
                             return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
                                     "Course registration/withdrawal period has ended"));
                         }

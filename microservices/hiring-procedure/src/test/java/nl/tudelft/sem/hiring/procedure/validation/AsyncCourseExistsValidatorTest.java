@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
@@ -25,8 +24,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
-public class AsyncCourseTimeValidatorTest {
-
+public class AsyncCourseExistsValidatorTest {
     @MockBean
     private transient GatewayConfig gatewayConfigMock;
 
@@ -52,7 +50,8 @@ public class AsyncCourseTimeValidatorTest {
 
     @Test
     public void testConstructor() {
-        AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock, 42);
+        AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(
+            gatewayConfigMock, 42);
         assertNotNull(validator);
     }
 
@@ -60,8 +59,8 @@ public class AsyncCourseTimeValidatorTest {
     public void testValidate() {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock,
-                courseId);
+        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(
+            gatewayConfigMock, courseId);
 
         // Fetch the local zoned date time, and make it a valid time
         ZonedDateTime current = ZonedDateTime.now().plusYears(1);
@@ -81,50 +80,18 @@ public class AsyncCourseTimeValidatorTest {
 
         // Perform the validation
         Boolean result = validator.validate(null, requestBody)
-                .onErrorReturn(false)
-                .block();
+            .onErrorReturn(false)
+            .block();
         assertNotNull(result);
         assertTrue(result);
     }
 
     @Test
-    public void testValidateOverDeadline() {
+    public void testNonExistentCourse() {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock,
-                courseId);
-
-        // Fetch the local zoned date time, and make it a valid time
-        ZonedDateTime current = ZonedDateTime.now()
-                .plus(2, ChronoUnit.WEEKS);
-
-        // Construct the json object used for testing
-        JsonObject json = new JsonObject();
-        json.addProperty("startTime", current.toString());
-        String responseBody = json.toString();
-
-        // Enqueue a response
-        mockWebServer.enqueue(new MockResponse().setBody(responseBody));
-
-        // Construct the json object used for testing
-        json = new JsonObject();
-        json.addProperty("courseId", courseId);
-        String requestBody = json.toString();
-
-        // Perform the validation
-        Boolean result = validator.validate(null, requestBody)
-                .onErrorReturn(false)
-                .block();
-        assertNotNull(result);
-        assertFalse(result);
-    }
-
-    @Test
-    public void testValidateNonExistingCourse() {
-        // Construct validator instance and courseId object
-        long courseId = 1337;
-        AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock,
-                courseId);
+        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(
+            gatewayConfigMock, courseId);
 
         // Enqueue a response
         mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.value()));
@@ -136,10 +103,9 @@ public class AsyncCourseTimeValidatorTest {
 
         // Perform the validation
         Boolean result = validator.validate(null, requestBody)
-                .onErrorReturn(false)
-                .block();
+            .onErrorReturn(false)
+            .block();
         assertNotNull(result);
         assertFalse(result);
     }
-
 }

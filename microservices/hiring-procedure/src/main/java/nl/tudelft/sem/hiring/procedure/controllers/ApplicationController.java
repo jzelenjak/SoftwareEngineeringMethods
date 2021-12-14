@@ -13,9 +13,11 @@ import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
 import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncAuthValidator;
+import nl.tudelft.sem.hiring.procedure.validation.AsyncCourseExistsValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncCourseTimeValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncRoleValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncRoleValidator.Roles;
+import nl.tudelft.sem.hiring.procedure.validation.AsyncUserExistsValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncValidator;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,16 +25,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -70,51 +69,31 @@ public class ApplicationController {
      */
     @PostMapping("/apply")
     @ResponseBody
-    public void applyTa(@RequestParam long courseId, @RequestHeader HttpHeaders authHeader) {
-        // TODO: Add AsyncPassingGradeValidator to validation chain when addressing issue #58
-        long userId;
-        String jsonParse;
-        Boolean isStudent;
-        try {
-            isStudent = checkStudent(authHeader);
-            if (!isStudent) {
-                throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                        "User is not a student");
+    public Mono<Void> applyTa(@RequestParam() long courseId,
+                              @RequestHeader() HttpHeaders authHeader) {
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+            .addValidators(
+                new AsyncAuthValidator(jwtUtils),
+                new AsyncRoleValidator(jwtUtils, Set.of(Roles.STUDENT, Roles.TA)),
+                new AsyncCourseTimeValidator(gatewayConfig, courseId))
+            .build();
+
+        return head.validate(authHeader, "").flatMap(value -> {
+            long userId;
+            try {
+                userId = getUserIdFromToken(authHeader);
+            } catch (InstanceNotFoundException e) {
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN));
             }
-        } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
-        }
 
-        LocalDateTime courseStart;
-        Mono<String> courseStartMono;
-        try {
-            courseStartMono = getCourseStartDate(courseId);
-            jsonParse = courseStartMono.block();
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, COURSE_NOT_FOUND);
-        }
+            if (applicationService.checkSameApplication(userId, courseId)) {
+                return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "User has already applied"));
+            }
 
-        jsonParse = jsonParse.split("\"")[3];
-        courseStart = LocalDateTime.parse(jsonParse);
-        // Check if student is within deadline
-        if (!applicationService.checkDeadline(courseStart)) {
-            throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                    "Deadline has passed");
-        }
-        try {
-            userId = checkJwt(authHeader);
-        } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
-        }
-        // Check if application with same credentials exists
-        if (applicationService.checkSameApplication(userId, courseId)) {
-            throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                    "User has already applied");
-        }
-
-        // Register application
-        LocalDateTime now = LocalDateTime.now();
-        applicationService.createApplication(userId, courseId, now);
+            applicationService.createApplication(userId, courseId, LocalDateTime.now());
+            return Mono.empty();
+        });
     }
 
     /**
@@ -126,23 +105,18 @@ public class ApplicationController {
      */
     @GetMapping("/get-applications")
     @ResponseBody
-    public List<Application> getApplications(@RequestParam() long courseId,
+    public Mono<List<Application>> getApplications(@RequestParam() long courseId,
                                              @RequestHeader() HttpHeaders authHeader) {
-        try {
-            if (!checkLecturer(authHeader)) {
-                throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                        "User is not a lecturer");
-            }
-        } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
-        }
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+            .addValidators(
+                new AsyncAuthValidator(jwtUtils),
+                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)))
+            .build();
 
-        try {
-            getCourseStartDate(courseId).block();
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, COURSE_NOT_FOUND);
-        }
-        return applicationService.getApplicationsForCourse(courseId);
+        return head.validate(authHeader, "").flatMap(value ->
+            Mono.just(applicationService.getApplicationsForCourse(courseId)));
+
+
     }
 
     /**
@@ -153,16 +127,15 @@ public class ApplicationController {
      */
     @GetMapping("/get-all-applications")
     @ResponseBody
-    public List<Application> getAllApplications(@RequestHeader() HttpHeaders authHeader) {
-        try {
-            if (!checkLecturer(authHeader)) {
-                throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                        "User is not a lecturer");
-            }
-            return applicationService.getAllApplications();
-        } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
-        }
+    public Mono<List<Application>> getAllApplications(@RequestHeader() HttpHeaders authHeader) {
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+            .addValidators(
+                new AsyncAuthValidator(jwtUtils),
+                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)))
+            .build();
+
+        return head.validate(authHeader, "").flatMap(value ->
+            Mono.just(applicationService.getAllApplications()));
     }
 
     /**
@@ -175,37 +148,25 @@ public class ApplicationController {
      */
     @PostMapping("/hire-TA")
     @ResponseBody
-    public void hireTa(@RequestParam() long userId, @RequestParam() long courseId,
+    public Mono<Void> hireTa(@RequestParam() long userId, @RequestParam() long courseId,
                        @RequestHeader() HttpHeaders authHeader) {
-        boolean isLecturer;
-        try {
-            isLecturer = checkLecturer(authHeader);
-            if (!isLecturer) {
-                throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                        "User is not a lecturer");
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+            .addValidators(
+                new AsyncAuthValidator(jwtUtils),
+                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)),
+                new AsyncCourseExistsValidator(gatewayConfig, courseId),
+                new AsyncUserExistsValidator(gatewayConfig, userId))
+            .build();
+
+        return head.validate(authHeader, "").flatMap(value -> {
+            if (!applicationService.checkCandidate(userId, courseId)) {
+                return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "User is not a viable candidate"));
             }
-        } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
-        }
-
-        try {
-            getCourseStartDate(courseId).block();
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, COURSE_NOT_FOUND);
-        }
-
-        try {
-            checkUserExists(userId).block();
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
-        }
-
-        if (!applicationService.checkCandidate(userId, courseId)) {
-            throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                    "User is not a viable candidate");
-        }
-        // Register hiring
-        applicationService.hire(userId, courseId);
+            // Register hiring
+            applicationService.hire(userId, courseId);
+            return Mono.empty();
+        });
     }
 
     /**
@@ -295,98 +256,13 @@ public class ApplicationController {
      * @return The userId
      * @throws InstanceNotFoundException when the JWT is invalid
      */
-    private long checkJwt(HttpHeaders authJwt) throws InstanceNotFoundException {
-        String resolvedToken = jwtUtils.resolveToken(authJwt.get("Authorization").get(0));
+    private long getUserIdFromToken(HttpHeaders authJwt) throws InstanceNotFoundException {
+        String resolvedToken = jwtUtils.resolveToken(authJwt.getFirst("Authorization"));
         Jws<Claims> userClaims = jwtUtils.validateAndParseClaims(resolvedToken);
         if (userClaims != null) {
             return jwtUtils.getUserId(userClaims);
         }
         throw new InstanceNotFoundException(INVALID_TOKEN);
-    }
-
-    /**
-     * Sends a request to Courses. Gets the response and returns a Mono start date of the course
-     * if successful. Otherwise, an InstanceNotFoundException is thrown.
-     *
-     * @param courseId The course ID received from the client
-     * @return Mono of the course start date
-     * @throws InstanceNotFoundException when Courses returns an error
-     */
-    private Mono<String> getCourseStartDate(long courseId) {
-        System.out.println(gatewayConfig.getHost() + ":" + gatewayConfig.getPort());
-        String uri = UriComponentsBuilder.newInstance().scheme("http")
-                .host(gatewayConfig.getHost())
-                .port(gatewayConfig.getPort())
-                .pathSegment("api", "courses", "get-start-date")
-                .queryParam("courseId", courseId)
-                .toUriString();
-        Mono<ClientResponse> response = webClient.get().uri(uri)
-                .exchange();
-        return response
-                .flatMap(clientResponse -> {
-                    if (clientResponse.statusCode().isError()) {
-                        return Mono.error(new InstanceNotFoundException(COURSE_NOT_FOUND));
-                    }
-                    return clientResponse.bodyToMono(String.class);
-                });
-    }
-
-    /**
-     * Function for checking if the  user has student permission. It does so by resolving the JWT.
-     *
-     * @param authJwt The authentication header received from the client
-     * @return True if the user is a student, false otherwise
-     * @throws InstanceNotFoundException when the JWT is invalid
-     */
-    private Boolean checkStudent(HttpHeaders authJwt) throws InstanceNotFoundException {
-        String resolvedToken = jwtUtils.resolveToken(authJwt.get("Authorization").get(0));
-        Jws<Claims> userClaims = jwtUtils.validateAndParseClaims(resolvedToken);
-        if (userClaims != null) {
-            return jwtUtils.getRole(userClaims).equals("student");
-        }
-        throw new InstanceNotFoundException(INVALID_TOKEN);
-    }
-
-    /**
-     * Function for checking if the  user has lecturer permission. It does so by resolving the JWT.
-     *
-     * @param authJwt The authentication header received from the client
-     * @return True if the user is a lecturer, false otherwise
-     * @throws InstanceNotFoundException when the JWT is invalid
-     */
-    private Boolean checkLecturer(HttpHeaders authJwt) throws InstanceNotFoundException {
-        String resolvedToken = jwtUtils.resolveToken(authJwt.get("Authorization").get(0));
-        Jws<Claims> userClaims = jwtUtils.validateAndParseClaims(resolvedToken);
-        if (userClaims != null) {
-            return jwtUtils.getRole(userClaims).equals("lecturer");
-        }
-        throw new InstanceNotFoundException(INVALID_TOKEN);
-    }
-
-    /**
-     * Sends a request to Users. Gets the response and returns a Mono regarding whether the user
-     * exists or not. If  not successful, an InstanceNotFoundException is thrown.
-     *
-     * @param userId The user ID received from the Authentication microservice
-     * @return true
-     * @throws InstanceNotFoundException when Users returns an error
-     */
-    private Mono<Boolean> checkUserExists(long userId) throws InstanceNotFoundException {
-        String uri = UriComponentsBuilder.newInstance().scheme("http")
-                .host(gatewayConfig.getHost())
-                .port(gatewayConfig.getPort())
-                .pathSegment("api", "users", "by-userid")
-                .queryParam("userId", userId)
-                .toUriString();
-        Mono<ClientResponse> response = webClient.get().uri(uri)
-                .exchange();
-        return response
-                .flatMap(clientResponse -> {
-                    if (clientResponse.statusCode().isError()) {
-                        return Mono.error(new InstanceNotFoundException(USER_NOT_FOUND));
-                    }
-                    return Mono.just(true);
-                });
     }
 
 }

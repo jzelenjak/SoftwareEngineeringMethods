@@ -14,9 +14,7 @@ import com.google.gson.JsonObject;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
@@ -64,18 +62,14 @@ public class ApplicationControllerTest {
 
     private static final long courseId = 2450;
     private static final long userId = 521234;
-    private static final LocalDateTime courseStartNextYear = LocalDateTime.now().plusYears(1);
+    private static final ZonedDateTime courseStartNextYear = ZonedDateTime.now().plusYears(1);
+    private static final String START_TIME = "startTime";
+    private static final String BASE_URL = "/";
     private static final String RESOLVED_TOKEN = "yo";
-    private static final String STUDENT_ROLE = "student";
-    private static final String LECTURER_ROLE = "lecturer";
-    private static final String COURSES_TARGET = "get-start-date";
-    private static final String COURSES_API = "/api/courses/";
     private static final String COURSE_ID_PARAM = "courseId=";
     private static final String USER_ID_PARAM = "userId=";
     private static final String PARAM_STARTER = "?";
     private static final String PARAM_CONTINUER = "&";
-    private static final String BODY_START = "{\n  \"courseStartDate\": \"";
-    private static final String BODY_END = "\"\n}";
     private static final String APPLY_API = "/api/hiring-procedure/apply";
     private static final String HIRE_API = "/api/hiring-procedure/hire-TA";
     private static final String GET_APPLICATIONS_API = "/api/hiring-procedure/get-applications";
@@ -107,25 +101,28 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(STUDENT_ROLE);
         when(jwtUtils.getUserId(claims)).thenReturn(userId);
-        when(applicationService.checkDeadline(courseStartNextYear)).thenReturn(true);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
         when(applicationService.checkSameApplication(userId, courseId)).thenReturn(false);
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
+        JsonObject json = new JsonObject();
+        json.addProperty(START_TIME, courseStartNextYear.toString());
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(BODY_START + courseStartNextYear + BODY_END));
+                .setBody(json.toString()));
 
         // Perform the call
-        mockMvc.perform(post(APPLY_API + PARAM_STARTER + COURSE_ID_PARAM + courseId)
+        MvcResult result = mockMvc.perform(post(APPLY_API
+                + PARAM_STARTER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
-                .andExpect(status().isOk())
                 .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isOk());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -138,13 +135,15 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(LECTURER_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
         // Perform the call
-        mockMvc.perform(post(APPLY_API + PARAM_STARTER + COURSE_ID_PARAM + courseId)
+        MvcResult result = mockMvc.perform(post(APPLY_API
+                + PARAM_STARTER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
-                .andExpect(status().isMethodNotAllowed())
                 .andReturn();
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
     }
 
     @Test
@@ -152,23 +151,26 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(STUDENT_ROLE);
-        when(applicationService.checkDeadline(courseStartNextYear)).thenReturn(false);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
+        JsonObject json = new JsonObject();
+        json.addProperty(START_TIME, ZonedDateTime.now().plusWeeks(1).toString());
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(BODY_START + courseStartNextYear + BODY_END));
+                .setBody(json.toString()));
 
         // Perform the call
-        mockMvc.perform(post(APPLY_API + PARAM_STARTER + COURSE_ID_PARAM + courseId)
+        MvcResult result = mockMvc.perform(post(APPLY_API
+                + PARAM_STARTER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
-                .andExpect(status().isMethodNotAllowed())
-                .andReturn();
+                        .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -181,25 +183,28 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(STUDENT_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
         when(jwtUtils.getUserId(claims)).thenReturn(userId);
-        when(applicationService.checkDeadline(courseStartNextYear)).thenReturn(true);
         when(applicationService.checkSameApplication(userId, courseId)).thenReturn(true);
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
+        JsonObject json = new JsonObject();
+        json.addProperty(START_TIME, courseStartNextYear.toString());
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(BODY_START + courseStartNextYear + BODY_END));
+                .setBody(json.toString()));
 
         // Perform the call
-        mockMvc.perform(post(APPLY_API + PARAM_STARTER + COURSE_ID_PARAM + courseId)
+        MvcResult result = mockMvc.perform(post(APPLY_API
+                + PARAM_STARTER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
-                .andExpect(status().isMethodNotAllowed())
-                .andReturn();
+                        .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -212,22 +217,23 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(STUDENT_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(404)
-                .setBody("Not found"));
+                .setResponseCode(404));
 
         // Perform the call
-        mockMvc.perform(post(APPLY_API + PARAM_STARTER + COURSE_ID_PARAM + courseId)
+        MvcResult result = mockMvc.perform(post(APPLY_API
+                + PARAM_STARTER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
-                .andExpect(status().isNotFound())
-                .andReturn();
+                        .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isNotFound());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -242,10 +248,13 @@ public class ApplicationControllerTest {
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
 
         // Perform the call
-        mockMvc.perform(post(APPLY_API + PARAM_STARTER + COURSE_ID_PARAM + courseId)
+        MvcResult result = mockMvc.perform(post(APPLY_API
+                + PARAM_STARTER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
-                .andExpect(status().isNotFound())
-                .andReturn();
+                        .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
     }
 
     @Test
@@ -253,13 +262,15 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(LECTURER_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
         // Perform the call
-        mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
+        MvcResult result = mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
                         .header(AUTH_BODY, JWT))
-                .andExpect(status().isOk())
                 .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isOk());
     }
 
     @Test
@@ -267,13 +278,15 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(STUDENT_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         // Perform the call
-        mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isMethodNotAllowed())
-                .andReturn();
+        MvcResult result = mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
+                .header(AUTH_BODY, JWT))
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
     }
 
     @Test
@@ -281,11 +294,14 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
+
         // Perform the call
-        mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isNotFound())
-                .andReturn();
+        MvcResult result = mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
+                .header(AUTH_BODY, JWT))
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
     }
 
     @Test
@@ -293,23 +309,16 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(LECTURER_ROLE);
-
-        // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
-        when(gatewayConfig.getPort()).thenReturn(url.port());
-        when(gatewayConfig.getHost()).thenReturn(url.host());
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setBody(BODY_START + courseStartNextYear + BODY_END));
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
         // Perform the call
-        mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
+        MvcResult result = mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
                         + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
-                .andExpect(status().isOk())
                 .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isOk());
     }
 
     @Test
@@ -317,14 +326,16 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(STUDENT_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         // Perform the call
-        mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
-                        + COURSE_ID_PARAM + courseId)
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isMethodNotAllowed())
-                .andReturn();
+        MvcResult result = mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
+                + COURSE_ID_PARAM + courseId)
+                .header(AUTH_BODY, JWT))
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
     }
 
     @Test
@@ -334,35 +345,13 @@ public class ApplicationControllerTest {
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
 
         // Perform the call
-        mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
-                        + COURSE_ID_PARAM + courseId)
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isNotFound())
-                .andReturn();
-    }
+        MvcResult result = mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
+                + COURSE_ID_PARAM + courseId)
+                .header(AUTH_BODY, JWT))
+            .andReturn();
 
-    @Test
-    public void getApplicationsNoCourse() throws Exception {
-        // Set mocks
-        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
-        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(LECTURER_ROLE);
-
-        // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
-        when(gatewayConfig.getPort()).thenReturn(url.port());
-        when(gatewayConfig.getHost()).thenReturn(url.host());
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(404)
-                .setBody("Course not found"));
-
-        // Perform the call
-        mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
-                        + COURSE_ID_PARAM + courseId)
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isNotFound())
-                .andReturn();
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
     }
 
     @Test
@@ -370,26 +359,30 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(LECTURER_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(applicationService.checkCandidate(userId, courseId)).thenReturn(true);
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
+        JsonObject json = new JsonObject();
+        json.addProperty(START_TIME, courseStartNextYear.toString());
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(BODY_START + courseStartNextYear + BODY_END));
+                .setBody(json.toString()));
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200));
 
         // Perform the call
-        mockMvc.perform(post(HIRE_API + PARAM_STARTER + USER_ID_PARAM + userId
-                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+        MvcResult result = mockMvc.perform(post(HIRE_API
+                + PARAM_STARTER + USER_ID_PARAM + userId
+                + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
-                .andExpect(status().isOk())
                 .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isOk());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -407,11 +400,14 @@ public class ApplicationControllerTest {
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
 
         // Perform the call
-        mockMvc.perform(post(HIRE_API + PARAM_STARTER + USER_ID_PARAM + userId
-                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isNotFound())
-                .andReturn();
+        MvcResult result = mockMvc.perform(post(HIRE_API
+                + PARAM_STARTER + USER_ID_PARAM + userId
+                + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+                .header(AUTH_BODY, JWT))
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
     }
 
     @Test
@@ -419,14 +415,17 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(STUDENT_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         // Perform the call
-        mockMvc.perform(post(HIRE_API + PARAM_STARTER + USER_ID_PARAM + userId
-                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isMethodNotAllowed())
-                .andReturn();
+        MvcResult result = mockMvc.perform(post(HIRE_API
+                + PARAM_STARTER + USER_ID_PARAM + userId
+                + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+                .header(AUTH_BODY, JWT))
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
     }
 
     @Test
@@ -434,11 +433,10 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(LECTURER_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
         mockWebServer.enqueue(new MockResponse()
@@ -446,11 +444,14 @@ public class ApplicationControllerTest {
                 .setBody("Course not found."));
 
         // Perform the call
-        mockMvc.perform(post(HIRE_API + PARAM_STARTER + USER_ID_PARAM + userId
-                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isNotFound())
-                .andReturn();
+        MvcResult result = mockMvc.perform(post(HIRE_API
+                + PARAM_STARTER + USER_ID_PARAM + userId
+                + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+                .header(AUTH_BODY, JWT))
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isNotFound());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -463,25 +464,29 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(LECTURER_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
+        JsonObject json = new JsonObject();
+        json.addProperty(START_TIME, courseStartNextYear.toString());
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(BODY_START + courseStartNextYear + BODY_END));
+                .setBody(json.toString()));
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(404));
 
         // Perform the call
-        mockMvc.perform(post(HIRE_API + PARAM_STARTER + USER_ID_PARAM + userId
-                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isNotFound())
-                .andReturn();
+        MvcResult result = mockMvc.perform(post(HIRE_API
+                + PARAM_STARTER + USER_ID_PARAM + userId
+                + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+                .header(AUTH_BODY, JWT))
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isNotFound());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -497,26 +502,30 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(LECTURER_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(applicationService.checkCandidate(userId, courseId)).thenReturn(false);
 
         // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
+        JsonObject json = new JsonObject();
+        json.addProperty(START_TIME, courseStartNextYear.toString());
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(BODY_START + courseStartNextYear + BODY_END));
+                .setBody(json.toString()));
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200));
 
         // Perform the call
-        mockMvc.perform(post(HIRE_API + PARAM_STARTER + USER_ID_PARAM + userId
-                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isMethodNotAllowed())
-                .andReturn();
+        MvcResult result = mockMvc.perform(post(HIRE_API
+                + PARAM_STARTER + USER_ID_PARAM + userId
+                + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+                .header(AUTH_BODY, JWT))
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -530,7 +539,7 @@ public class ApplicationControllerTest {
     @Test
     void testWithdraw() throws Exception {
         // Configure the mocks
-        HttpUrl url = mockWebServer.url("/");
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
 
@@ -548,7 +557,7 @@ public class ApplicationControllerTest {
 
         // Enqueue course validator response
         JsonObject json = new JsonObject();
-        json.addProperty("startTime", start.minus(4, ChronoUnit.WEEKS).toString());
+        json.addProperty(START_TIME, courseStartNextYear.toString());
         mockWebServer.enqueue(new MockResponse().setBody(json.toString()));
 
         // Create request body and perform the call
@@ -568,7 +577,7 @@ public class ApplicationControllerTest {
     @Test
     void testWithdrawNonExisting() throws Exception {
         // Configure the mocks
-        HttpUrl url = mockWebServer.url("/");
+        HttpUrl url = mockWebServer.url(BASE_URL);
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
 
@@ -583,8 +592,7 @@ public class ApplicationControllerTest {
 
         // Enqueue course validator response
         JsonObject json = new JsonObject();
-        ZonedDateTime start = ZonedDateTime.now();
-        json.addProperty("startTime", start.minus(4, ChronoUnit.WEEKS).toString());
+        json.addProperty(START_TIME, courseStartNextYear.toString());
         mockWebServer.enqueue(new MockResponse().setBody(json.toString()));
 
         // Create request body and perform the call
@@ -623,7 +631,7 @@ public class ApplicationControllerTest {
 
         // Enqueue course validator response
         JsonObject json = new JsonObject();
-        json.addProperty("startTime", start.minus(4, ChronoUnit.WEEKS).toString());
+        json.addProperty(START_TIME, courseStartNextYear.toString());
         mockWebServer.enqueue(new MockResponse().setBody(json.toString()));
 
         // Create request body and perform the call
