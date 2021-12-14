@@ -316,23 +316,16 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(LECTURER_ROLE);
-
-        // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
-        when(gatewayConfig.getPort()).thenReturn(url.port());
-        when(gatewayConfig.getHost()).thenReturn(url.host());
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(200)
-                .setBody(BODY_START + courseStartNextYear + BODY_END));
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
         // Perform the call
-        mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
+        MvcResult result = mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
                         + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
-                .andExpect(status().isOk())
                 .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isOk());
     }
 
     @Test
@@ -340,14 +333,16 @@ public class ApplicationControllerTest {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(STUDENT_ROLE);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         // Perform the call
-        mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
-                        + COURSE_ID_PARAM + courseId)
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isMethodNotAllowed())
-                .andReturn();
+        MvcResult result = mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
+                + COURSE_ID_PARAM + courseId)
+                .header(AUTH_BODY, JWT))
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
     }
 
     @Test
@@ -357,35 +352,13 @@ public class ApplicationControllerTest {
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
 
         // Perform the call
-        mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
-                        + COURSE_ID_PARAM + courseId)
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isNotFound())
-                .andReturn();
-    }
+        MvcResult result = mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
+                + COURSE_ID_PARAM + courseId)
+                .header(AUTH_BODY, JWT))
+            .andReturn();
 
-    @Test
-    public void getApplicationsNoCourse() throws Exception {
-        // Set mocks
-        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
-        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(LECTURER_ROLE);
-
-        // Register listener and setup url
-        HttpUrl url = mockWebServer.url(COURSES_API + COURSES_TARGET + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId);
-        when(gatewayConfig.getPort()).thenReturn(url.port());
-        when(gatewayConfig.getHost()).thenReturn(url.host());
-        mockWebServer.enqueue(new MockResponse()
-                .setResponseCode(404)
-                .setBody("Course not found"));
-
-        // Perform the call
-        mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
-                        + COURSE_ID_PARAM + courseId)
-                        .header(AUTH_BODY, JWT))
-                .andExpect(status().isNotFound())
-                .andReturn();
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isForbidden());
     }
 
     @Test

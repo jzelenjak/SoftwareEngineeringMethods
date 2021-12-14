@@ -93,51 +93,6 @@ public class ApplicationController {
             applicationService.createApplication(userId, courseId, LocalDateTime.now());
             return Mono.empty();
         });
-
-
-        /*long userId;
-        String jsonParse;
-        Boolean isStudent;
-        try {
-            isStudent = checkStudent(authHeader);
-            if (!isStudent) {
-                throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                        "User is not a student");
-            }
-        } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
-        }
-
-        LocalDateTime courseStart;
-        Mono<String> courseStartMono;
-        try {
-            courseStartMono = getCourseStartDate(courseId);
-            jsonParse = courseStartMono.block();
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, COURSE_NOT_FOUND);
-        }
-
-        jsonParse = jsonParse.split("\"")[3];
-        courseStart = LocalDateTime.parse(jsonParse);
-        // Check if student is within deadline
-        if (!applicationService.checkDeadline(courseStart)) {
-            throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                    "Deadline has passed");
-        }
-        try {
-            userId = checkJwt(authHeader);
-        } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
-        }
-        // Check if application with same credentials exists
-        if (applicationService.checkSameApplication(userId, courseId)) {
-            throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                    "User has already applied");
-        }
-
-        // Register application
-        LocalDateTime now = LocalDateTime.now();
-        applicationService.createApplication(userId, courseId, now);*/
     }
 
     /**
@@ -149,23 +104,19 @@ public class ApplicationController {
      */
     @GetMapping("/get-applications")
     @ResponseBody
-    public List<Application> getApplications(@RequestParam() long courseId,
+    public Mono<List<Application>> getApplications(@RequestParam() long courseId,
                                              @RequestHeader() HttpHeaders authHeader) {
-        try {
-            if (!checkLecturer(authHeader)) {
-                throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                        "User is not a lecturer");
-            }
-        } catch (InstanceNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN);
-        }
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+            .addValidators(
+                new AsyncAuthValidator(jwtUtils),
+                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER)))
+            .build();
 
-        try {
-            getCourseStartDate(courseId).block();
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, COURSE_NOT_FOUND);
-        }
-        return applicationService.getApplicationsForCourse(courseId);
+        return head.validate(authHeader, "").flatMap(value -> {
+            return Mono.just(applicationService.getApplicationsForCourse(courseId));
+        });
+
+
     }
 
     /**
