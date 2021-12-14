@@ -1,11 +1,14 @@
 package nl.tudelft.sem.authentication.service;
 
+import java.util.Optional;
 import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.repositories.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,6 +19,15 @@ class AuthServiceTest {
 
     @Autowired
     private transient AuthService authService;
+
+    @Value("${root.username}")
+    private transient String rootUsername;
+
+    @Value("${root.password}")
+    private transient String rootPassword;
+
+    @Value("${root.userid}")
+    private transient long rootUserId;
 
     @Autowired
     private transient UserDataRepository userDataRepository;
@@ -28,6 +40,46 @@ class AuthServiceTest {
         return this.passwordEncoder.encode(password);
     }
 
+    @Test
+    void registerRootUserNotRegistered() {
+        UserDataRepository repo = Mockito.mock(UserDataRepository.class);
+        UserData root = new UserData(rootUsername, passwordEncoder.encode(rootPassword),
+                            UserRole.ADMIN, rootUserId);
+        Mockito
+            .when(repo.findByUsername(rootUsername))
+            .thenReturn(Optional.empty());
+        Mockito
+            .when(repo.save(root))
+            .thenReturn(root);
+
+        new AuthService(repo, passwordEncoder, rootUsername, rootPassword, rootUserId);
+
+        Mockito
+            .verify(repo, Mockito.times(1))
+            .findByUsername(rootUsername);
+        Mockito
+            .verify(repo, Mockito.times(1))
+            .save(root);
+    }
+
+    @Test
+    void registerRootUserAlreadyRegistered() {
+        UserDataRepository repo = Mockito.mock(UserDataRepository.class);
+        UserData root = new UserData(rootUsername, passwordEncoder.encode(rootPassword),
+                UserRole.ADMIN, rootUserId);
+        Mockito
+                .when(repo.findByUsername(rootUsername))
+                .thenReturn(Optional.of(root));
+
+        new AuthService(repo, passwordEncoder, rootUsername, rootPassword, rootUserId);
+
+        Mockito
+                .verify(repo, Mockito.times(1))
+                .findByUsername(rootUsername);
+        Mockito
+                .verify(repo, Mockito.times(0))
+                .save(root);
+    }
 
     @Test
     void registerUserAlreadyExistsTest() {
