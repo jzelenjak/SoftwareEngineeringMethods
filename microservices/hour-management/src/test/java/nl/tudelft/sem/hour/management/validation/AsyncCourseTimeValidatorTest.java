@@ -144,8 +144,8 @@ public class AsyncCourseTimeValidatorTest {
         headers.add(HttpHeaders.AUTHORIZATION, TOKEN);
 
         JsonObject responseBody = configureCourseResponseBody(
-                ZonedDateTime.now().minusWeeks(10L),
-                ZonedDateTime.now().minusWeeks(3L).minusDays(1L));
+                ZonedDateTime.now().minusMonths(10L),
+                ZonedDateTime.now().minusMonths(3L).minusDays(1L));
 
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
