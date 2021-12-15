@@ -404,6 +404,43 @@ class AuthControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "IAmAlsoLecturer", password = "IHateFraud")
+    void changeRoleToStudentSuccessfullyAsLecturerTest() throws Exception {
+        String username = "IAmAlsoLecturer";
+        String password = "IHateFraud";
+
+        this.userDataRepository
+                .save(new UserData(username, encode(password), UserRole.LECTURER, 99482394L));
+        String jwt = jwtTokenProvider.createToken(99482394L, UserRole.LECTURER, new Date());
+        String jwtPrefixed = PREFIX + jwt;
+
+        String ta = "IAmFraudingTa";
+        String taPassword = "CryingCodeOfConduct";
+
+        this.userDataRepository
+                .save(new UserData(ta, encode(taPassword), UserRole.TA, 9454321L));
+
+        this.mockMvc
+                .perform(put(CHANGE_ROLE_URL)
+                        .contentType(APPLICATION_JSON)
+                        .content(createJson(USERNAME, ta, ROLE, "student"))
+                        .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
+                        .characterEncoding(UTF8))
+                .andExpect(status().isOk());
+
+        Optional<UserData> lecturer = this.userDataRepository.findByUsername(username);
+        assert lecturer.isPresent();
+        Assertions.assertEquals(lecturer.get().getRole(), UserRole.LECTURER);
+
+        Optional<UserData> foundTa = this.userDataRepository.findByUsername(ta);
+        assert foundTa.isPresent();
+        Assertions.assertEquals(foundTa.get().getRole(), UserRole.STUDENT);
+
+        this.userDataRepository.deleteById(username);
+        this.userDataRepository.deleteById(ta);
+    }
+
+    @Test
     @WithMockUser(username = "IAmEvilLecturer", password = "Fraud")
     void changeIllegalRoleAsLecturerTest() throws Exception {
         String evilUsername = "IAmEvilLecturer";
