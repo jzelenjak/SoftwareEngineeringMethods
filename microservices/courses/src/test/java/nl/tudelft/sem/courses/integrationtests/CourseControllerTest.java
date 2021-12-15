@@ -377,8 +377,8 @@ public class CourseControllerTest {
         headers.add(authorizationHeader, "Bearer test");
         when(jwtUtils.resolveToken(Mockito.any())).thenReturn(null);
 
-        boolean result = courseController.isAuthorized(headers);
-        Assert.assertEquals(false, result);
+        Jws<Claims> result = courseController.isAuthorized(headers);
+        Assert.assertNull(result);
     }
 
     //testing the isAuthroizedMethod
@@ -389,8 +389,9 @@ public class CourseControllerTest {
         headers.add(authorizationHeader, "Bearer test");
         when(jwtUtils.resolveToken(Mockito.any())).thenReturn("Valid");
         when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(null);
-        boolean result = courseController.isAuthorized(headers);
-        Assert.assertEquals(false, result);
+
+        Jws<Claims> result = courseController.isAuthorized(headers);
+        Assert.assertNull(result);
     }
 
     //testing the isAuthroizedMethod
@@ -402,7 +403,12 @@ public class CourseControllerTest {
         when(jwtUtils.resolveToken(Mockito.any())).thenReturn("Valid");
         when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(claimsJwsMock);
         when(jwtUtils.getRole(Mockito.any())).thenReturn("STUDENT");
-        boolean result = courseController.isAuthorized(headers);
-        Assert.assertEquals(false, result);
+
+        Jws<Claims> result = courseController.isAuthorized(headers);
+        Assert.assertEquals("STUDENT", jwtUtils.getRole(result));
+        Assert.assertEquals(true, courseController.checkIfStudent(result));
+        Assert.assertNotEquals("LECTURER", jwtUtils.getRole(result));
+        Assert.assertEquals(false, courseController.checkIfLecturer(result));
+
     }
 }
