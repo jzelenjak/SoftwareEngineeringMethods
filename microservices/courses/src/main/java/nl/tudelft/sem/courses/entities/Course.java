@@ -91,7 +91,7 @@ public class Course {
             return false;
         }
         Course course = (Course) o;
-        return courseCode.equals(course.courseCode) && id == course.id
+        return id == course.id || courseCode.equals(course.courseCode)
                 && startDate.equals(course.startDate)
                 && finishDate.equals(course.finishDate);
     }
@@ -105,7 +105,7 @@ public class Course {
     @Override
     public String toString() {
         return "Course{"
-                + "courseID='" + courseCode + '\''
+                + "course code='" + courseCode + '\''
                 + ", users=" + grades.toString()
                 + '}';
     }

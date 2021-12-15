@@ -70,12 +70,14 @@ public class CourseController {
      */
     @PostMapping("/create/course")
     public String createNewCourse(@RequestBody CourseRequest request, @RequestHeader HttpHeaders httpHeaders) throws Exception {
-        //TODO
-        //Add authorization
 
         Boolean authorized = isAuthorized(httpHeaders);
         if (authorized) {
-            return courseService.addNewCourses(request);
+            String result = courseService.addNewCourses(request);
+            if (result.contains("Failed")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+            }
+            return result;
         }
        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
     }
@@ -88,13 +90,14 @@ public class CourseController {
      */
     @PostMapping("/delete/{id}")
     public String deleteCourse(@PathVariable long courseID, @RequestHeader HttpHeaders httpHeaders) throws Exception {
-        //TODO
-        //Add authorization
 
         Boolean authorized = isAuthorized(httpHeaders);
         if (authorized) {
-            return courseService.deleteCourse(courseID);
-
+            String result = courseService.deleteCourse(courseID);
+            if (result.contains("Failed")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+            }
+            return result;
         }
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
     }
@@ -107,8 +110,7 @@ public class CourseController {
      */
     @PostMapping("/get/courses/{code}")
     public List<CourseResponse> getCoursesByCode(@PathVariable String code, @RequestHeader HttpHeaders httpHeaders) throws Exception {
-        //TODO
-        //Add authorization
+
         Boolean authorized = isAuthorized(httpHeaders);
 
         if (authorized) {
@@ -140,8 +142,7 @@ public class CourseController {
      */
     @PostMapping("/get/grade/{userid}/{courseid}")
     public float getGradeOfUser(@PathVariable("userid") long userid, @PathVariable("courseid") long courseId, @RequestHeader HttpHeaders httpHeaders) throws Exception {
-        //TODO
-        //Add authorization
+
         Boolean authorized = isAuthorized(httpHeaders);
 
         if (authorized) {
@@ -171,8 +172,7 @@ public class CourseController {
      */
     @PostMapping("/get/course/{id}")
     public CourseResponse getCourseById(@PathVariable long id, @RequestHeader HttpHeaders httpHeaders) throws Exception {
-        //TODO
-        //Add authorization
+
         Boolean authorized = isAuthorized(httpHeaders);
 
         if (authorized) {
@@ -205,8 +205,7 @@ public class CourseController {
      */
     @PostMapping("/create/grade")
     public String addGrade(@RequestBody GradeRequest request, @RequestHeader HttpHeaders httpHeaders) throws Exception {
-        //TODO
-        //Add authorization
+
         Boolean authorized = isAuthorized(httpHeaders);
 
         if (authorized) {
@@ -225,7 +224,13 @@ public class CourseController {
 
     }
 
-
+    /**
+     *
+     *
+     * @param httpHeaders
+     * @return
+     * @throws Exception
+     */
     public boolean isAuthorized(HttpHeaders httpHeaders) throws Exception {
         //first we try to get the authorization header information.
         String authHeader = httpHeaders.getFirst("Authorization");

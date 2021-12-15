@@ -38,7 +38,7 @@ public class CourseTest {
         String courseCode = "CSE2215";
         Course course = new Course(1, courseCode, LocalDateTime.now(), LocalDateTime.now());
         String testString = "Course{"
-                + "course code ='" + courseCode + '\''
+                + "course code='" + courseCode + '\''
                 + ", users=" + "[]"
                 + '}';
         assertEquals(testString, course.toString());

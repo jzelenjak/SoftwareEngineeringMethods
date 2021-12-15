@@ -17,11 +17,21 @@ import org.springframework.web.server.ResponseStatusException;
 public class CourseService {
 
 
-    @Autowired
+
     private transient CourseRepository courseRepository;
 
-    @Autowired
     private transient GradeRepository gradeRepository;
+
+    /**
+     * Constructor for Dependency Injection.
+     *
+     * @param courseRepository - A repository object for courses
+     * @param gradeRepository -  A repository object for grades
+     */
+    public CourseService(CourseRepository courseRepository, GradeRepository gradeRepository) {
+        this.courseRepository = courseRepository;
+        this.gradeRepository = gradeRepository;
+    }
 
     /**
      * This method adds new courses to the repo.
@@ -29,9 +39,8 @@ public class CourseService {
      *
      * @param request - The request
      * @return String - returns successful string.
-     * @throws Exception - This exception is a http exception
      */
-    public String addNewCourses(CourseRequest request) throws Exception {
+    public String addNewCourses(CourseRequest request)  {
         List<Course> courses = courseRepository.findAllByCourseCode(request.getCourseCode());
 
 
@@ -50,7 +59,7 @@ public class CourseService {
             newCourse.setFinishDate(request.getFinishDate());
 
             if (courses.contains(newCourse)) {
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+                return "Failed";
             } else {
                 courseRepository.save(newCourse);
                 return "Success. Added course";
@@ -63,20 +72,19 @@ public class CourseService {
      *
      * @param courseId - id of the course we want to delete
      * @return - returns whether delete was successful
-     * @throws Exception - http exceptions for users
      */
-    public String deleteCourse(long courseId) throws Exception {
+    public String deleteCourse(long courseId) {
         Optional<Course> course = courseRepository.findById(courseId);
 
         if (!course.isEmpty()) {
             try{
                 courseRepository.delete(course.get());
-                return "Success. Added course";
+                return "Success. Deleted course";
             } catch (Exception e){
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+                return "Failed";
             }
         }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        return "Failed";
     }
 
     /**
