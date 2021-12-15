@@ -20,17 +20,18 @@
 **Successful:** 200 OK
 
 ```json
-[
-  {
-    "message" : "Hey there, you are hired!",
-    "notificationDate" : "18:55 10-12-2021 Europe/Berlin"
-  },
-
-  {
-    "message" : "...",
-    "notificationDate" : "..."
-  }
-]
+{
+  "notifications": [
+    {
+      "message": "Hey there, you are hired!",
+      "notificationDate" : "17:54 10-12-2021 Europe/Berlin"
+    }
+    {
+      "message": "Hey there, you are fired!",
+      "notificationDate": "16:20 25-12-2021 Europe/Berlin"
+    }
+  ]
+}
 ```
 
 **Important notes:** Only admin can do this. Add admin JWT token to AUTHORIZATION header.
