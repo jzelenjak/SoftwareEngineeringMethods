@@ -1,19 +1,24 @@
 package nl.tudelft.sem.hiring.procedure.entities;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Getter
 @Setter
+@EqualsAndHashCode
+@ToString
+@NoArgsConstructor
 public class Application {
 
     @Id
@@ -74,35 +79,5 @@ public class Application {
         this.courseId = courseId;
         this.status = ApplicationStatus.IN_PROGRESS;
         this.submissionDate = submissionDate;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Application that = (Application) o;
-        return applicationId == that.applicationId && userId == that.userId
-            && courseId == that.courseId && status == that.status;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(applicationId, userId, courseId, status, submissionDate, lastUpdate);
-    }
-
-    @Override
-    public String toString() {
-        return "Application{"
-            + "applicationId=" + applicationId
-            + ", userId=" + userId
-            + ", courseId=" + courseId
-            + ", status=" + status
-            + ", submissionDate=" + submissionDate
-            + ", lastUpdate=" + lastUpdate
-            + '}';
     }
 }

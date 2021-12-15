@@ -112,6 +112,7 @@ class JwtTokenProviderTest {
                 "Decoded subject does not match the original one");
         Assertions.assertEquals(UserRole.STUDENT.name(), jwtTokenProvider.getRole(claimsJws),
                 "Decoded role does not match the original one");
+        Assertions.assertEquals(1738290L, jwtTokenProvider.getUserId(claimsJws));
 
         this.userDataRepository.deleteById(username);
     }
@@ -162,6 +163,8 @@ class JwtTokenProviderTest {
 
         this.userDataRepository.save(new UserData(username, password, UserRole.ADMIN, 9048182L));
 
+        // Wait just 10 ms to avoid flaky tests
+        Thread.sleep(10);
         HttpServletRequest request =
                 this.mockMvc
                         .perform(get(LOGIN_API_PATH)

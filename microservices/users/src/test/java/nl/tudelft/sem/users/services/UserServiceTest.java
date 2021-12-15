@@ -108,13 +108,13 @@ class UserServiceTest {
      * A helper method to verify that a mock has been called for findByUserId method.
      *
      * @param userId the user ID with which the mock is expected to have been called
+     * @param times the number of times the mock is expected to have been called
      */
-    private void verifyFindByUserId(long userId) {
+    private void verifyFindByUserId(long userId, int times) {
         Mockito
-            .verify(userRepository, Mockito.times(1))
+            .verify(userRepository, Mockito.times(times))
             .findByUserId(userId);
     }
-
 
     /**
      * Tests for registerUser method.
@@ -135,16 +135,6 @@ class UserServiceTest {
         Assertions
             .assertThatThrownBy(() ->
                 userService.registerUser("    ", "Amogus", "Amogussen"))
-            .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifySave(userMock, 0);
-    }
-
-    @Test
-    void registerUserNetIdEmptyTest() {
-        Assertions
-            .assertThatThrownBy(() ->
-                userService.registerUser("", "Amogus", "Amogussan"))
             .isInstanceOf(DataIntegrityViolationException.class);
 
         verifySave(userMock, 0);
@@ -177,25 +167,12 @@ class UserServiceTest {
     }
 
     @Test
-    void registerUserFirstNameEmptyTest() {
-        mockFindByUsername(netId, null);
-
-        Assertions
-            .assertThatThrownBy(() ->
-                this.userService.registerUser(netId, "", "ogus"))
-            .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifyFindByUsername(netId);
-        verifySave(userMock, 0);
-    }
-
-    @Test
     void registerUserFirstNameBlankTest() {
         mockFindByUsername(netId, null);
 
         Assertions
             .assertThatThrownBy(() ->
-                this.userService.registerUser(netId, "      ", "ogus"))
+                this.userService.registerUser(netId, "", "ogus"))
             .isInstanceOf(DataIntegrityViolationException.class);
 
         verifyFindByUsername(netId);
@@ -216,25 +193,12 @@ class UserServiceTest {
     }
 
     @Test
-    void registerUserLastNameEmptyTest() {
-        mockFindByUsername(netId, null);
-
-        Assertions
-                .assertThatThrownBy(() ->
-                        this.userService.registerUser(netId, "amog", ""))
-                .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifyFindByUsername(netId);
-        verifySave(userMock, 0);
-    }
-
-    @Test
     void registerUserLastNameBlankTest() {
         mockFindByUsername(netId, null);
 
         Assertions
                 .assertThatThrownBy(() ->
-                        this.userService.registerUser(netId, "amog", "    "))
+                        this.userService.registerUser(netId, "amog", " "))
                 .isInstanceOf(DataIntegrityViolationException.class);
 
         verifyFindByUsername(netId);
@@ -325,7 +289,7 @@ class UserServiceTest {
             .get()
             .isEqualTo(userFromRepo);
 
-        verifyFindByUserId(userId);
+        verifyFindByUserId(userId, 1);
     }
 
     @Test
@@ -340,7 +304,7 @@ class UserServiceTest {
             .assertThat(userOptional)
             .isEmpty();
 
-        verifyFindByUserId(userId);
+        verifyFindByUserId(userId, 1);
     }
 
 
@@ -431,7 +395,7 @@ class UserServiceTest {
             .assertThat(userService.changeRole(userId, UserRole.ADMIN, UserRole.ADMIN))
             .isTrue();
 
-        verifyFindByUserId(userId);
+        verifyFindByUserId(userId, 2);  // Once in isAllowedToChangeRole, once in changeRole
         verifySave(userSaved, 1);
     }
 
@@ -461,7 +425,7 @@ class UserServiceTest {
             .isTrue();
 
         verifySave(userSaved, 1);
-        verifyFindByUserId(userId);
+        verifyFindByUserId(userId, 2); // Once in isAllowedToChangeRole, once in changeRole
     }
 
     @Test
@@ -477,7 +441,7 @@ class UserServiceTest {
             .assertThat(userService.changeRole(userId, UserRole.STUDENT, requesterRole))
             .isFalse();
 
-        verifyFindByUserId(userId);
+        verifyFindByUserId(userId, 1); // Only in isAllowedToChangeRole
         verifySave(userMock, 0);
     }
 
@@ -497,8 +461,22 @@ class UserServiceTest {
             .assertThat(userService.changeRole(userId, UserRole.STUDENT, UserRole.ADMIN))
             .isTrue();
 
-        verifyFindByUserId(userId);
+        verifyFindByUserId(userId, 2);  // Once in isAllowedToChangeRole, once in changeRole
         verifySave(userSaved, 1);
+    }
+
+    @Test
+    void changeRoleUserNotFoundTest() {
+        mockFindByUserId(userId, null);
+
+        Assertions
+            .assertThat(userService.changeRole(userId, UserRole.CANDIDATE_TA, UserRole.ADMIN))
+            .isFalse();
+
+        verifyFindByUserId(userId, 1);
+        Mockito
+            .verify(userRepository, Mockito.times(0))
+            .save(Mockito.any());
     }
 
     @Test
@@ -516,7 +494,7 @@ class UserServiceTest {
             .assertThat(userService.changeRole(userId, UserRole.CANDIDATE_TA, UserRole.ADMIN))
             .isTrue();
 
-        verifyFindByUserId(userId);
+        verifyFindByUserId(userId, 2);  // Once in isAllowedToChangeRole, once in changeRole
         verifySave(userSaved, 1);
     }
 
@@ -527,6 +505,7 @@ class UserServiceTest {
 
     @Test
     void deleteUserByUserIdNotAdminTest() {
+
         Assertions
             .assertThat(userService.deleteUserByUserId(userId, UserRole.LECTURER))
             .isFalse();

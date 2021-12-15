@@ -1,6 +1,5 @@
 package nl.tudelft.sem.users.entities;
 
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -9,8 +8,9 @@ import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import org.hibernate.annotations.DynamicUpdate;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 
 /**
@@ -20,6 +20,8 @@ import javax.validation.constraints.NotNull;
 @Entity
 @SequenceGenerator(name = "uid_gen", sequenceName = "uid_seq",
         initialValue = 3001001)
+@DynamicUpdate
+@EnableTransactionManagement
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "uid_gen")
@@ -27,16 +29,16 @@ public class User {
     private long userId;
 
     @Column(name = "username", unique = true)
-    @NotNull @NotBlank @NotEmpty
+    @NotNull @NotBlank
     // NetID of the user
     private String username;
 
     @Column(name = "first_name")
-    @NotNull @NotBlank @NotEmpty
+    @NotNull @NotBlank
     private String firstName;
 
     @Column(name = "last_name")
-    @NotNull @NotBlank @NotEmpty
+    @NotNull @NotBlank
     private String lastName;
 
     @Column(name = "role")

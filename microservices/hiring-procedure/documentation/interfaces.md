@@ -19,10 +19,19 @@ Endpoint for withdrawing applications. The body of the request should contain th
 Only users with `student` permissions have access.
 The `courseID` parameter specifies the course for which the user wishes to apply.
 
-If the user that has made this request is not a `student`, the response will be a `403 Forbidden` response. <br>
-If the `courseID` is not valid, the response will be a `404 Not Found` response.<br>
-If the user that has made this request has not applied for that course,
-the response will be a `405 Method Not Allowed` response.
+If the user that has made this request is not a `student`, `admin`, or `TA`, the response will be a `403 Forbidden` response. <br>
+If the user that has made this request has not applied for that course, the response will be a `405 Method Not Allowed` response.
+If the application has already been processed, the response will be a `405 Method Not Allowed` response.
+
+## `/api/hiring-procedure/reject?applicationId=applicationId`
+
+Endpoint for rejecting applications. The body of the request should contain the JWT of the user's session.
+Only users with `lecturer` permissions have access.
+The `applicationId` parameter specifies the application that must be rejected.
+
+If the user that has made this request is not a `lecturer`, or `admin`, the response will be a `403 Forbidden` response. <br>
+If application does not exist, the response will be a `404 Not Found`. <br>
+If the application has already been processed, the response will be a `405 Method Not Allowed` response.
 
 ## `/api/hiring-procedure/hire-TA?userID=userID&courseID=courseID`
 

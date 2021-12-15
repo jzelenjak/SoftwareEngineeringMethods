@@ -1,16 +1,18 @@
 package nl.tudelft.sem.hour.management.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.LinkedList;
+import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Data;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
-import nl.tudelft.sem.hour.management.dto.DeclarationCourseFilter;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
+import nl.tudelft.sem.hour.management.dto.StatisticsRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
+import nl.tudelft.sem.hour.management.services.NotificationService;
+import nl.tudelft.sem.hour.management.services.StatisticsService;
 import nl.tudelft.sem.hour.management.validation.AsyncAuthValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator.Roles;
@@ -37,10 +39,12 @@ import reactor.core.publisher.Mono;
 @Data
 public class HourDeclarationController {
 
+    private final NotificationService notificationService;
     private final HourDeclarationRepository hourDeclarationRepository;
     private final transient GatewayConfig gatewayConfig;
     private final transient JwtUtils jwtUtils;
     private final transient ObjectMapper objectMapper;
+    private final transient StatisticsService statisticsService;
 
     /**
      * Entry point of the repo, also acts as a sanity check.
@@ -48,23 +52,21 @@ public class HourDeclarationController {
      * @return a simple greeting
      */
     @GetMapping
-    public @ResponseBody String hello() {
+    public @ResponseBody
+    String hello() {
         return "Hello from Hour Management";
     }
 
     /**
      * Gets all the stored declarations in the system.
      *
-     * @param headers the headers of the request.
-     * @param courseFilter the course filter to apply to the declarations (optional).
-     * @return all stored declaration in the system.
-     * @implNote If the course filter is null, all declarations are returned.
+     * @return all stored declaration in the system
      */
     @GetMapping("/declaration")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody Mono<List<HourDeclaration>> getAllDeclarations(
-            @RequestHeader HttpHeaders headers,
-            @RequestBody(required = false) DeclarationCourseFilter courseFilter) {
+    public @ResponseBody
+    Mono<List<HourDeclaration>> getAllDeclarations(
+            @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
@@ -74,19 +76,7 @@ public class HourDeclarationController {
 
         // Validate the request, if it succeeds, attempt to return the declarations
         return head.validate(headers, "").flatMap((valid) -> {
-            List<HourDeclaration> result;
-
-            // If the course filter is null, fetch all declarations
-            // If not, fetch all declarations for the given courses
-            if (courseFilter == null) {
-                result = hourDeclarationRepository.findAll();
-            } else {
-                result = new LinkedList<>();
-
-                for (Long course : courseFilter.getCourseList()) {
-                    result.addAll(hourDeclarationRepository.findByCourseId(course));
-                }
-            }
+            List<HourDeclaration> result = hourDeclarationRepository.findAll();
 
             if (result.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -100,7 +90,6 @@ public class HourDeclarationController {
     /**
      * Allows a user to post a new hour-declaration.
      *
-     * @param headers the headers of the request.
      * @param hourDeclarationRequest hour declaration that will be saved
      * @return an informative message about status of request
      */
@@ -129,7 +118,6 @@ public class HourDeclarationController {
      * Get a declaration associated with declarationId.
      *
      * @param declarationId id of the desired student
-     * @param headers the headers of the request.
      * @return all declared hours associated with a student
      */
     @GetMapping("/declaration/{id}")
@@ -163,14 +151,13 @@ public class HourDeclarationController {
      * Allows a lecturer to reject/delete an unapproved hour-declaration.
      *
      * @param declarationId id of declaration to be deleted
-     * @param headers the headers of the request.
      * @return an informative message about status of request
      */
     @DeleteMapping("/declaration/{id}/reject")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    Mono<String> deleteDeclaredHour(@PathVariable("id") long declarationId,
-                                    @RequestHeader HttpHeaders headers) {
+    Mono<Void> deleteDeclaredHour(@PathVariable("id") long declarationId,
+                                  @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
@@ -179,21 +166,26 @@ public class HourDeclarationController {
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
+            // Fetch the declaration from the database
             Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository
                     .findById(declarationId);
 
+            // Verify that the declaration exists and has not been approved yet
             if (hourDeclaration.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Given declaration does not exists."));
             } else if (hourDeclaration.get().isApproved()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Given declaration has been approved."));
+                        "Given declaration has been approved already."));
             }
 
+            // Remove the declaration from the database
             hourDeclarationRepository.delete(hourDeclaration.get());
 
-            return Mono.just(String.format("Declaration with id %s has been successfully deleted.",
-                    declarationId));
+            // Add a notification to the student's notification pool
+            return notificationService.notify(hourDeclaration.get().getDeclarationId(),
+                    String.format("Your declaration with id %s has been rejected.", declarationId),
+                    headers.getFirst(HttpHeaders.AUTHORIZATION));
         });
     }
 
@@ -201,14 +193,13 @@ public class HourDeclarationController {
      * Allows a lecturer to approve an unapproved hour-declaration.
      *
      * @param declarationId id of declaration to be deleted
-     * @param headers the headers of the request.
      * @return an informative message about status of request
      */
     @PutMapping("/declaration/{id}/approve")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
-    Mono<String> approveDeclaredHour(@PathVariable("id") long declarationId,
-                                     @RequestHeader HttpHeaders headers) {
+    Mono<Void> approveDeclaredHour(@PathVariable("id") long declarationId,
+                                   @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
@@ -232,8 +223,10 @@ public class HourDeclarationController {
             hourDeclaration.get().setApproved(true);
             hourDeclarationRepository.save(hourDeclaration.get());
 
-            return Mono.just(String.format("Declaration with id %s has been successfully approved.",
-                    declarationId));
+            // Add a notification to the student's notification pool
+            return notificationService.notify(hourDeclaration.get().getDeclarationId(),
+                    String.format("Your declaration with id %s has been approved.", declarationId),
+                    headers.getFirst(HttpHeaders.AUTHORIZATION));
         });
 
     }
@@ -241,17 +234,12 @@ public class HourDeclarationController {
     /**
      * Gets all unapproved declarations in the system.
      *
-     * @param headers headers of the request.
-     * @param courseFilter the course filter to apply to the declarations (optional).
-     * @return all stored unapproved declarations.
-     * @implNote If the course filter is null, all declarations are returned.
+     * @return all stored unapproved declarations
      */
     @GetMapping("/declaration/unapproved")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody Mono<List<HourDeclaration>>
-    getAllUnapprovedDeclarations(@RequestHeader HttpHeaders headers,
-                                 @RequestBody(required = false)
-                                         DeclarationCourseFilter courseFilter) {
+    public @ResponseBody
+    Mono<List<HourDeclaration>> getAllUnapprovedDeclarations(@RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
@@ -260,20 +248,7 @@ public class HourDeclarationController {
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
-            List<HourDeclaration> result;
-
-            // If the course filter is null, fetch all declarations
-            // If not, fetch all declarations for the given courses
-            if (courseFilter == null) {
-                result = hourDeclarationRepository.findByApproved(false);
-            } else {
-                result = new LinkedList<>();
-
-                for (Long course : courseFilter.getCourseList()) {
-                    result.addAll(hourDeclarationRepository
-                            .findByCourseIdAndApproved(course, false));
-                }
-            }
+            List<HourDeclaration> result = hourDeclarationRepository.findByApproved(false);
 
             if (result.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -288,7 +263,6 @@ public class HourDeclarationController {
      * Gets all declarations associated with a student.
      *
      * @param studentId id of the desired student
-     * @param headers the headers of the request.
      * @return all declared hours associated with a student
      */
     @GetMapping("/declaration/student/{id}")
@@ -313,6 +287,42 @@ public class HourDeclarationController {
             }
 
             return Mono.just(result);
+        });
+    }
+
+    /**
+     * Retrieves the total amount of hours declared by a student for a particular course.
+     *
+     * @param headers           headers of the request.
+     * @param statisticsRequest request containing the student id and course id.
+     * @return total amount of hours declared by a student for a particular course.
+     */
+    @GetMapping("/declaration/statistics/total-hours")
+    @ResponseStatus(HttpStatus.OK)
+    public @ResponseBody
+    Mono<String> getTotalHours(@RequestHeader HttpHeaders headers,
+                               @RequestBody StatisticsRequest statisticsRequest) {
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+                .addValidators(
+                        new AsyncAuthValidator(gatewayConfig, jwtUtils),
+                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
+                                Set.of(Roles.ADMIN, Roles.LECTURER, Roles.TA))
+                ).build();
+
+        return head.validate(headers, "").flatMap(valid -> {
+            Optional<Double> totalHours = statisticsService.getTotalHoursPerStudentPerCourse(
+                    statisticsRequest.getStudentId(), statisticsRequest.getCourseId());
+
+            // Check if the student has declared hours for the course
+            if (totalHours.isEmpty()) {
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "No statistics found for the specified student and course."));
+            }
+
+            // Return the response as json
+            JsonObject result = new JsonObject();
+            result.addProperty("totalHours", totalHours.get());
+            return Mono.just(result.toString());
         });
     }
 }
