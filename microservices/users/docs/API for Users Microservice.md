@@ -29,7 +29,7 @@ _200 OK_
 
 ```json
 {
-	"userId" : "5002222"
+	"userId" : 5002222
 }
 ```
 
@@ -64,11 +64,11 @@ _Some error code_ if there has been a failure in registering the user with Authe
 ```json
 {
 
-	"userId" : "5002222",
-	"username":"amogus@student.tudelft.nl",
-	"firstName":"Amogus",
+	"userId" : 5002222,
+	"username" :"amogus@student.tudelft.nl",
+	"firstName" :"Amogus",
 	"lastName" : "Impostor",
-	"role":"STUDENT"
+	"role" : "STUDENT"
 
 }
 ```
@@ -93,7 +93,7 @@ _400 BAD REQUEST_ if the request is not according to the format
 
 ```json
 {
-	"userId" : "5002222"
+	"userId" : 5002222
 }
 ```
 
@@ -101,11 +101,11 @@ _400 BAD REQUEST_ if the request is not according to the format
 
 ```json
 {
-	"userId" : "5002222",
-	"username":"amogus@student.tudelft.nl",
-	"firstName":"Amogus",
+	"userId" : 5002222,
+	"username" :"amogus@student.tudelft.nl",
+	"firstName" :"Amogus",
 	"lastName" : "Impostor",
-	"role":"STUDENT"
+	"role" : "STUDENT"
 }
 ```
 **Failure**:
@@ -140,11 +140,11 @@ _400 BAD REQUEST_ if the provided user ID is not a number or if the request is n
 ```json
 [
 	{
-		"userId" : "5002123",
-		"username":"useruseruser",
-		"firstName":"Jegor",
-		"lastName":"Zelenjak",
-		"role":"STUDENT"
+		"userId" : 5002123,
+		"username" : "useruseruser",
+		"firstName" : "Jegor",
+		"lastName" : "Zelenjak",
+		"role" : "STUDENT"
 	},
 	{
 		"..." : "..."
@@ -171,7 +171,7 @@ _400 BAD REQUEST_ if the provided role is not STUDENT, CANDIDATE_TA, TA, LECTURE
 
 ```json
 {
-	"userId" : "5002222",
+	"userId" : 5002222,
 
 	"role" : "TA"
 }
@@ -213,7 +213,7 @@ _Some error code_ if there has been a failure in changing the role in authentica
 
 ```json
 {
-	"userId" : "5002222"
+	"userId" : 5002222
 }
 ```
 

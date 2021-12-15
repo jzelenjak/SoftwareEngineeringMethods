@@ -2,7 +2,7 @@
 
 ## Register
 
-**Description**: Endpoint for registering a user. No privileges are needed. For security reasons, everyone is registered as a student initially, but can be promoted by a lecturer or an admin later.
+**Description:** Endpoint for registering a user. No privileges are needed. For security reasons, everyone is registered as a student initially, but can be promoted by a lecturer or an admin later.
 
 **Request path:** */api/auth/register*
 
@@ -16,7 +16,7 @@
 
     "password" : "amogus",
 
-    "userId" : "5221334"
+    "userId" : 5221334
 }
 ```
 
@@ -37,7 +37,7 @@ _409 CONFLICT_ if the user with the given username (netid) already exists.
 
 ## Change password
 
-**Description**: Endpoint for changing the password. Can be done by everyone for their own account. Requires a valid JWT token.
+**Description:** Endpoint for changing the password. Can be done by everyone for their own account. Requires a valid JWT token.
 
 **Request path:** */api/auth/change_password*
 
@@ -74,7 +74,7 @@ _403 FORBIDDEN_ if the username does not correspond to the the id in the token.
 
 ## Login
 
-**Description**: Endpoint for logging in. Requires valid credentials. In case of success, sends back the JWT token.
+**Description:** Endpoint for logging in. Requires valid credentials. In case of success, sends back the JWT token.
 
 **Request path:** */api/auth/login*
 
@@ -94,6 +94,22 @@ _403 FORBIDDEN_ if the username does not correspond to the the id in the token.
 
 _200 OK_
 
+If there are notifications for the user that has logged in, then notifications will be sent as well:
+
+```json
+[
+  {
+    "message" : "Hey there, you are hired!",
+    "notificationDate" : "17:54 10-12-2021 Europe/Berlin"
+  },
+
+  {
+    "message" : "...",
+    "notificationDate" : "..."
+  }
+]
+```
+
 &#39;Authorization&#39; : &#39;Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqZWdvcj8iLCJyb2xlIjoiU1RVREVOVCIsImlhdCI6MTYzODM2NzE5NCwiZXhwIjoxNjM4MzY3MTk0fQ.a0WJ2NbP4ytAtGpd5PlVU\_mvrEGLpcCxcCNYy8AgNom3IplBTViNZuP0WTgymhXJZU8k-YYRQYR8DxZrgT7w6A&#39;
 
 (Header)
@@ -111,7 +127,7 @@ _403 FORBIDDEN_ if invalid credentials have been provided.
 
 ## Change Role
 
-**Description**: Endpoint for changing the role of a user. Can only be done by admins or lecturers (a lecturer can only change a user to be a TA, candidate TA or a student), whereas an admin can do everything.
+**Description:** Endpoint for changing the role of a user. Can only be done by admins or lecturers (a lecturer can only change a user to be a TA, candidate TA or a student), whereas an admin can do everything.
 
 **Request path:** */api/auth/change_role*
 
@@ -148,7 +164,7 @@ _403 FORBIDDEN_ if a lecturer attempts to do what they are not allowed to do.
 
 ## Delete
 
-**Description**: Endpoint for deleting a user. Can only be done by admins.
+**Description:** Endpoint for deleting a user. Can only be done by admins.
 
 **Request path:** */api/auth/delete*
 
