@@ -50,7 +50,7 @@ public class CourseController {
      */
     @PostMapping("/create")
     public boolean createNewCourse(@RequestBody CourseRequest request,
-                                   @RequestHeader HttpHeaders httpHeaders) throws Exception {
+                                   @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
         if (checkIfLecturer(webtoken)) {
             String result = courseService.addNewCourses(request);
@@ -71,7 +71,7 @@ public class CourseController {
      */
     @GetMapping("/get/courses/{code}")
     public List<CourseResponse> getCoursesByCode(
-            @PathVariable String code, @RequestHeader HttpHeaders httpHeaders) throws Exception {
+            @PathVariable String code, @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
 
         if (checkIfStudent(webtoken) || checkIfLecturer(webtoken)) {
@@ -108,7 +108,7 @@ public class CourseController {
      */
     @GetMapping("/get/{id}")
     public CourseResponse getCourseById(@PathVariable long id,
-                                        @RequestHeader HttpHeaders httpHeaders) throws Exception {
+                                        @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
         if (checkIfLecturer(webtoken) || checkIfStudent(webtoken)) {
             Course course = courseService.getCourse(id);
@@ -135,7 +135,7 @@ public class CourseController {
      */
     @PostMapping("/delete/{id}")
     public boolean deleteCourse(@PathVariable long id,
-                                @RequestHeader HttpHeaders httpHeaders) throws Exception {
+                                @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
         if (checkIfLecturer(webtoken)) {
             String result = courseService.deleteCourse(id);
@@ -157,7 +157,7 @@ public class CourseController {
      */
     @PostMapping("/create/grade")
     public boolean addGrade(@RequestBody GradeRequest request,
-                            @RequestHeader HttpHeaders httpHeaders) throws Exception {
+                            @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
         if (checkIfLecturer(webtoken)) {
             if (request == null) {
@@ -185,7 +185,7 @@ public class CourseController {
     @GetMapping("/get/grade/{userid}/{courseid}")
     public float getGradeOfUser(@PathVariable("userid") long userid,
                                 @PathVariable("courseid") long courseId,
-                                @RequestHeader HttpHeaders httpHeaders) throws Exception {
+                                @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
         if (checkIfLecturer(webtoken) || checkIfStudent(webtoken)) {
             Grade grade = courseService.getGrade(userid, courseId);
