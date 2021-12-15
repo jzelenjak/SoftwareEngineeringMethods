@@ -1,6 +1,13 @@
 package nl.tudelft.sem.courses.integrationtests;
 
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.entities.Course;
@@ -16,27 +23,20 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 public class CourseServiceTest {
 
 
-    private CourseRepository courseRepository;
-    private GradeRepository gradeRepository;
-    private CourseService courseService;
+    private transient CourseRepository courseRepository;
+    private transient GradeRepository gradeRepository;
+    private transient CourseService courseService;
 
     private final transient LocalDate date = LocalDate.now();
     private final transient CourseRequest courseRequest = new CourseRequest("CSE2215", date, date);
+    private static final String courseCode = "CSE2215";
+    private static final String addedCourse = "Success. Added course";
 
 
     @BeforeEach
@@ -54,13 +54,10 @@ public class CourseServiceTest {
     @Test
     void addingNewCourseTest() {
 
-        //returns nuthing
-//        when(courseRepository.save(Mockito.any())).thenReturn(null);
-
         String result = courseService.addNewCourses(courseRequest);
 
         verify(courseRepository, Mockito.times(1)).save(Mockito.any());
-        Assert.assertEquals(result, "Success. Added course");
+        Assert.assertEquals(result, addedCourse);
 
     }
 
@@ -68,56 +65,56 @@ public class CourseServiceTest {
     @Test
     void addingNewDuplicateCourseTest() {
 
-        String result = courseService.addNewCourses(courseRequest);
 
-        List<Course> courseList = new ArrayList<>();
+
 
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
         course.setFinishDate(date);
-        course.setCourseCode("CSE2215");
+        course.setCourseCode(courseCode);
 
+        List<Course> courseList = new ArrayList<>();
         courseList.add(course);
 
+        String result = courseService.addNewCourses(courseRequest);
         when(courseRepository.findAllByCourseCode(Mockito.any())).thenReturn(courseList);
-
-        //second iteration of adding the course list.
         String result2 = courseService.addNewCourses(courseRequest);
-
         verify(courseRepository, Mockito.times(1)).save(Mockito.any());
-        Assert.assertEquals(result, "Success. Added course");
+        Assert.assertEquals(result, addedCourse);
         Assert.assertEquals(result2, "Failed");
 
     }
+
     @Test
     void addingTwoCoursesWithSameCourseCode() {
 
-        CourseRequest courseRequest2 = new CourseRequest("CSE2215",
-                date, LocalDate.MAX);
 
 
-        String result = courseService.addNewCourses(courseRequest);
 
-        List<Course> courseList = new ArrayList<>();
+
+
+
 
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
         course.setFinishDate(date);
-        course.setCourseCode("CSE2215");
-
+        course.setCourseCode(courseCode);
+        List<Course> courseList = new ArrayList<>();
         courseList.add(course);
-//        verify(courseRepository, Mockito.times(1)).save(Mockito.any());
 
+        String result = courseService.addNewCourses(courseRequest);
         when(courseRepository.findAllByCourseCode(Mockito.any())).thenReturn(courseList);
 
         //second iteration of adding the course list.
+        CourseRequest courseRequest2 = new CourseRequest(courseCode,
+                date, LocalDate.MAX);
         String result2 = courseService.addNewCourses(courseRequest2);
 
         verify(courseRepository, Mockito.times(2)).save(Mockito.any());
-        Assert.assertEquals( "Success. Added course", result);
-        Assert.assertEquals("Success. Added course", result2);
+        Assert.assertEquals(addedCourse, result);
+        Assert.assertEquals(addedCourse, result2);
 
     }
 
@@ -133,7 +130,7 @@ public class CourseServiceTest {
         course.setId(1);
         course.setStartDate(date);
         course.setFinishDate(date);
-        course.setCourseCode("CSE2215");
+        course.setCourseCode(courseCode);
 
         Optional<Course> optionalCourse = Optional.of(course);
 
@@ -148,7 +145,7 @@ public class CourseServiceTest {
 
 
     @Test
-    void deletingANonExistingCourse() {
+    void deletingAnonExistingCourse() {
 
 
         Optional<Course> optionalCourse = Optional.ofNullable(null);
@@ -163,9 +160,6 @@ public class CourseServiceTest {
     void deleteOfCourseFails() {
 
 
-//        Optional<Course> optionalCourse = Optional.ofNullable(null);
-//        when(courseRepository.findById(Mockito.any())).thenThrow(IllegalArgumentException.class);
-
         doThrow(IllegalArgumentException.class).when(courseRepository).delete(Mockito.any());
 
         String result = courseService.deleteCourse(1);
@@ -177,22 +171,20 @@ public class CourseServiceTest {
     @Test
     void gettingCourses() {
 
-        List<Course> courseList = new ArrayList<>();
 
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
         course.setFinishDate(date);
-        course.setCourseCode("CSE2215");
-
+        course.setCourseCode(courseCode);
+        List<Course> courseList = new ArrayList<>();
         courseList.add(course);
-//        verify(courseRepository, Mockito.times(1)).save(Mockito.any());
 
         when(courseRepository.findAllByCourseCode(Mockito.any())).thenReturn(courseList);
 
         //second iteration of adding the course list.
 
-        List<Course> courses = courseService.getCourses("CSE2215");
+        List<Course> courses = courseService.getCourses(courseCode);
         verify(courseRepository, Mockito.times(1)).findAllByCourseCode(Mockito.any());
         Assert.assertEquals(courseList, courses);
 
@@ -207,7 +199,7 @@ public class CourseServiceTest {
         course.setId(1);
         course.setStartDate(date);
         course.setFinishDate(date);
-        course.setCourseCode("CSE2215");
+        course.setCourseCode(courseCode);
 
         Optional<Course> optionalCourse = Optional.of(course);
 
@@ -222,7 +214,7 @@ public class CourseServiceTest {
 
         Optional<Grade> optionalGrade = Optional.of(grade);
 
-        when(gradeRepository.findByUserIdAndCourse(1,course)).thenReturn(optionalGrade);
+        when(gradeRepository.findByUserIdAndCourse(1, course)).thenReturn(optionalGrade);
 
         Grade result = courseService.getGrade(1, 1);
         verify(courseRepository, Mockito.times(1)).findById(Mockito.any());
@@ -233,13 +225,13 @@ public class CourseServiceTest {
     }
 
     @Test
-    void OptionalGradeIsNull() {
+    void optionalGradeIsNull() {
 
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
         course.setFinishDate(date);
-        course.setCourseCode("CSE2215");
+        course.setCourseCode(courseCode);
 
         Optional<Course> optionalCourse = Optional.of(course);
 
@@ -254,7 +246,7 @@ public class CourseServiceTest {
 
         Optional<Grade> optionalGrade = Optional.ofNullable(null);
 
-        when(gradeRepository.findByUserIdAndCourse(1,course)).thenReturn(optionalGrade);
+        when(gradeRepository.findByUserIdAndCourse(1, course)).thenReturn(optionalGrade);
 
         Grade result = courseService.getGrade(1, 1);
         verify(courseRepository, Mockito.times(1)).findById(Mockito.any());
@@ -265,13 +257,13 @@ public class CourseServiceTest {
     }
 
     @Test
-    void OptionalCourseIsEmpty() {
+    void optionalCourseIsEmpty() {
 
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
         course.setFinishDate(date);
-        course.setCourseCode("CSE2215");
+        course.setCourseCode(courseCode);
 
         Optional<Course> optionalCourse = Optional.ofNullable(null);
 
@@ -286,7 +278,7 @@ public class CourseServiceTest {
 
         Optional<Grade> optionalGrade = Optional.of(grade);
 
-        when(gradeRepository.findByUserIdAndCourse(1,course)).thenReturn(optionalGrade);
+        when(gradeRepository.findByUserIdAndCourse(1, course)).thenReturn(optionalGrade);
 
         Grade result = courseService.getGrade(1, 1);
         verify(courseRepository, Mockito.times(1)).findById(Mockito.any());
@@ -303,9 +295,8 @@ public class CourseServiceTest {
         course.setId(1);
         course.setStartDate(date);
         course.setFinishDate(date);
-        course.setCourseCode("CSE2215");
+        course.setCourseCode(courseCode);
 
-        Optional<Course> optionalCourse = Optional.of(course);
 
         doThrow(IllegalArgumentException.class).when(courseRepository).findById(Mockito.any());
 
@@ -318,7 +309,7 @@ public class CourseServiceTest {
 
         Optional<Grade> optionalGrade = Optional.of(grade);
 
-        when(gradeRepository.findByUserIdAndCourse(1,course)).thenReturn(optionalGrade);
+        when(gradeRepository.findByUserIdAndCourse(1, course)).thenReturn(optionalGrade);
 
         Grade result = courseService.getGrade(1, 1);
         verify(courseRepository, Mockito.times(1)).findById(Mockito.any());
@@ -331,14 +322,14 @@ public class CourseServiceTest {
     //we do it now for the getCoures method.
 
     @Test
-    void gettingAValidCourse() {
+    void gettingAvalidCourse() {
 
 
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
         course.setFinishDate(date);
-        course.setCourseCode("CSE2215");
+        course.setCourseCode(courseCode);
 
         Optional<Course> optionalCourse = Optional.of(course);
 
@@ -359,7 +350,7 @@ public class CourseServiceTest {
         course.setId(1);
         course.setStartDate(date);
         course.setFinishDate(date);
-        course.setCourseCode("CSE2215");
+        course.setCourseCode(courseCode);
 
         Optional<Course> optionalCourse = Optional.ofNullable(null);
 
@@ -374,15 +365,14 @@ public class CourseServiceTest {
 
 
     @Test
-    void addingAValidGradeForUser() {
-        GradeRequest gradeRequest = new GradeRequest(1, 2.0f, 1);
+    void addingAvalidGradeForUser() {
 
 
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
         course.setFinishDate(date);
-        course.setCourseCode("CSE2215");
+        course.setCourseCode(courseCode);
 
         Grade grade = new Grade();
         grade.setUserId(1);
@@ -397,23 +387,22 @@ public class CourseServiceTest {
 
 
         when(courseRepository.findById(Mockito.any())).thenReturn(optionalCourse);
-        when(gradeRepository.findByUserIdAndCourse(1,course)).thenReturn(optionalGrade);
-
+        when(gradeRepository.findByUserIdAndCourse(1, course)).thenReturn(optionalGrade);
+        GradeRequest gradeRequest = new GradeRequest(1, 2.0f, 1);
         boolean result = courseService.addGrade(gradeRequest);
         verify(gradeRepository, Mockito.times(1)).save(Mockito.any());
         Assert.assertTrue(result);
     }
 
     @Test
-    void addingAExistingGradeForUser() {
-        GradeRequest gradeRequest = new GradeRequest(1, 2.0f, 1);
+    void addingAexistingGradeForUser() {
 
 
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
         course.setFinishDate(date);
-        course.setCourseCode("CSE2215");
+        course.setCourseCode(courseCode);
 
         Grade grade = new Grade();
         grade.setUserId(1);
@@ -428,8 +417,8 @@ public class CourseServiceTest {
 
 
         when(courseRepository.findById(Mockito.any())).thenReturn(optionalCourse);
-        when(gradeRepository.findByUserIdAndCourse(1,course)).thenReturn(optionalGrade);
-
+        when(gradeRepository.findByUserIdAndCourse(1, course)).thenReturn(optionalGrade);
+        GradeRequest gradeRequest = new GradeRequest(1, 2.0f, 1);
         boolean result = courseService.addGrade(gradeRequest);
         verify(gradeRepository, Mockito.times(0)).save(Mockito.any());
         Assert.assertFalse(result);
@@ -437,14 +426,13 @@ public class CourseServiceTest {
 
     @Test
     void addingGradeThrewException() {
-        GradeRequest gradeRequest = new GradeRequest(1, 2.0f, 1);
 
 
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
         course.setFinishDate(date);
-        course.setCourseCode("CSE2215");
+        course.setCourseCode(courseCode);
 
         Grade grade = new Grade();
         grade.setUserId(1);
@@ -459,9 +447,9 @@ public class CourseServiceTest {
 
 
         when(courseRepository.findById(Mockito.any())).thenReturn(optionalCourse);
-        when(gradeRepository.findByUserIdAndCourse(1,course)).thenReturn(optionalGrade);
+        when(gradeRepository.findByUserIdAndCourse(1, course)).thenReturn(optionalGrade);
         doThrow(IllegalArgumentException.class).when(gradeRepository).save(grade);
-
+        GradeRequest gradeRequest = new GradeRequest(1, 2.0f, 1);
         boolean result = courseService.addGrade(gradeRequest);
         verify(gradeRepository, Mockito.times(0)).save(Mockito.any());
         Assert.assertFalse(result);

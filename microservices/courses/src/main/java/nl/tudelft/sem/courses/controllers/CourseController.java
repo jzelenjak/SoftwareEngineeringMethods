@@ -36,13 +36,13 @@ public class CourseController {
 
 
     @Autowired
-    private GradeRepository gradeRepository;
+    private transient GradeRepository gradeRepository;
 
     @Autowired
-    transient CourseService courseService;
+    private transient CourseService courseService;
 
     @Autowired
-    private JwtUtils jwtUtils;
+    private transient JwtUtils jwtUtils;
 
     /**
      * Constructor for course controller.

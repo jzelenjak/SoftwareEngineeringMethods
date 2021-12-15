@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,16 +13,17 @@ import org.junit.jupiter.api.Test;
 
 
 public class CourseTest {
+    private static final String courseCode = "CSE2215";
+
 
     @Test
     public void testingConstructorBig() {
-        String courseCode = "CSE2215";
         Course course = new Course(1, courseCode, LocalDate.now(), LocalDate.now());
         assertNotNull(course);
         //testing the getters and setters
 
         assertEquals(1, course.getId());
-        assertEquals("CSE2215", course.getCourseCode());
+        assertEquals(courseCode, course.getCourseCode());
         assertEquals(LocalDate.now(), course.getStartDate());
         assertEquals(LocalDate.now(), course.getFinishDate());
 
@@ -31,12 +33,12 @@ public class CourseTest {
 
     @Test
     public void testingConstructorSmall() {
-        String courseCode = "CSE2215";
-        Course course = new Course( courseCode, LocalDate.now(), LocalDate.now());
+        Course course = new Course(courseCode, LocalDate.now(), LocalDate.now());
         assertNotNull(course);
         //testing the getters and setters
         int hashcode = course.hashCode();
-        assertEquals("CSE2215", course.getCourseCode());
+        assertTrue(hashcode >= 0);
+        assertEquals(courseCode, course.getCourseCode());
         assertEquals(LocalDate.now(), course.getStartDate());
         assertEquals(LocalDate.now(), course.getFinishDate());
 
@@ -45,7 +47,7 @@ public class CourseTest {
 
     @Test
     public void testingEquals() {
-        String courseCode = "CSE2215";
+
         String course2Code = "CSE2225";
         LocalDate time = LocalDate.now();
 
@@ -59,7 +61,6 @@ public class CourseTest {
 
     @Test
     public void testingToString() {
-        String courseCode = "CSE2215";
         Course course = new Course(1, courseCode, LocalDate.now(), LocalDate.now());
         String testString = "Course{"
                 + "course code='" + courseCode + '\''
@@ -71,7 +72,6 @@ public class CourseTest {
 
     @Test
     public void testingEqualsNotSameClass() {
-        String courseCode = "CSE2215";
         Course course = new Course(1, courseCode, LocalDate.now(), LocalDate.now());
 
         boolean result = course.equals(LocalDate.now());
@@ -81,7 +81,6 @@ public class CourseTest {
 
     @Test
     public void startDatesAreDifferent() {
-        String courseCode = "CSE2215";
         String course2Code = "CSE2225";
         LocalDate time = LocalDate.now();
 
