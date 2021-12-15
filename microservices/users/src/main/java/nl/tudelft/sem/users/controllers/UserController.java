@@ -2,7 +2,6 @@ package nl.tudelft.sem.users.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
@@ -100,8 +99,8 @@ public class UserController {
                         "api", "auth", "register"))
                 .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
                 .body(Mono
-                    .just(createJson(USERNAME, username, USERID, String.valueOf(userId),
-                            "password", password)), String.class)
+                    .just(mapper.createObjectNode().put(USERNAME, username).put(USERID, userId)
+                            .put("password", password).toString()), String.class)
                 .exchange()
                 .flatMap(response -> {
                     if (response.statusCode().isError()) {
@@ -117,7 +116,7 @@ public class UserController {
                         .just(ResponseEntity
                                 .status(HttpStatus.OK)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .body(createJson(USERID, String.valueOf(userId)))
+                                .body(mapper.createObjectNode().put(USERID, userId).toString())
                         );
                 });
     }
@@ -216,8 +215,8 @@ public class UserController {
                 .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
                 .header(HttpHeaders.AUTHORIZATION, prefixedToken)
                 .body(Mono
-                        .just(createJson(USERNAME, username,
-                                    ROLE, newRole.name())), String.class)
+                        .just(mapper.createObjectNode().put(USERNAME, username)
+                                .put(ROLE, newRole.name()).toString()), String.class)
                 .exchange()
                 .flatMap(response -> {
                     if (response.statusCode().isError()) {
@@ -233,8 +232,8 @@ public class UserController {
                             .just(ResponseEntity
                                 .status(HttpStatus.OK)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .body(createJson("message",
-                                        "Changed the role successfully!")));
+                                .body(mapper.createObjectNode().put("message",
+                                        "Changed the role successfully!").toString()));
                 });
     }
 
@@ -271,7 +270,8 @@ public class UserController {
                 .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
                 .header(HttpHeaders.AUTHORIZATION, prefixedToken)
                 .body(
-                        Mono.just(createJson(USERNAME, username)), String.class)
+                        Mono.just(mapper.createObjectNode()
+                                .put(USERNAME, username).toString()), String.class)
                 .exchange()
                 .flatMap(response -> {
                     if (response.statusCode().isError()) {
@@ -287,8 +287,8 @@ public class UserController {
                             .just(ResponseEntity
                                 .status(HttpStatus.OK)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .body(createJson("message",
-                                        "User deleted successfully!")));
+                                .body(mapper.createObjectNode().put("message",
+                                        "User deleted successfully!").toString()));
                 });
     }
 
@@ -312,21 +312,6 @@ public class UserController {
                 .port(port)
                 .pathSegment(path)
                 .toUriString();
-    }
-
-    /**
-     * A helper method to create json string out of key-value pairs.
-     *
-     * @param kvPairs       list of key-values, must be an even number
-     * @return the json string that can be used in the response body
-     */
-    private String createJson(String... kvPairs) {
-        ObjectNode node = mapper.createObjectNode();
-
-        for (int i = 0; i < kvPairs.length; i += 2) {
-            node.put(kvPairs[i], kvPairs[i + 1]);
-        }
-        return node.toString();
     }
 
     /**
