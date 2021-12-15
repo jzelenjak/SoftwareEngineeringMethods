@@ -4,6 +4,7 @@ package nl.tudelft.sem.courses.entities;
 
 
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Objects;
@@ -39,14 +40,14 @@ public class Course {
 
 
     @Column(name = "start_date")
-    private LocalDateTime startDate;
+    private LocalDate startDate;
 
     @Column(name = "grades")
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     public Set<Grade> grades;
 
     @Column(name = "finish_date")
-    public LocalDateTime finishDate;
+    public LocalDate finishDate;
 
 
 
@@ -57,7 +58,7 @@ public class Course {
      *
      * @param courseCode - Course ID in a string format
      */
-    public Course(String courseCode, LocalDateTime startDate, LocalDateTime finishDate) {
+    public Course(String courseCode, LocalDate startDate, LocalDate finishDate) {
         this.courseCode = courseCode;
         this.startDate = startDate;
         this.finishDate = finishDate;
@@ -73,7 +74,7 @@ public class Course {
      *
      * @param courseCode - Course ID in a string format
      */
-    public Course(long id, String courseCode, LocalDateTime startDate, LocalDateTime finishDate) {
+    public Course(long id, String courseCode, LocalDate startDate, LocalDate finishDate) {
         this.id = id;
         this.courseCode = courseCode;
         this.startDate = startDate;
@@ -98,7 +99,7 @@ public class Course {
 
     @Override
     public int hashCode() {
-        return Objects.hash(courseCode, grades, id);
+        return Objects.hash(id);
     }
 
 

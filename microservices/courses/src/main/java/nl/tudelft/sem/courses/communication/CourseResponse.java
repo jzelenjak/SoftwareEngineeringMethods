@@ -3,6 +3,7 @@ package nl.tudelft.sem.courses.communication;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -11,8 +12,8 @@ public class CourseResponse {
 
     private long courseId;
     private String courseCode;
-    private LocalDateTime startDate;
-    private LocalDateTime endDate;
+    private LocalDate startDate;
+    private LocalDate endDate;
     private long numberOfStudents;
 
     /**
@@ -27,7 +28,7 @@ public class CourseResponse {
      * @param endDate - The end date of the course
      * @param numberOfStudents - The number of students in the course.
      */
-    public CourseResponse(long courseId, String courseCode, LocalDateTime startDate, LocalDateTime endDate, long numberOfStudents) {
+    public CourseResponse(long courseId, String courseCode, LocalDate startDate, LocalDate endDate, long numberOfStudents) {
         this.courseId = courseId;
         this.courseCode = courseCode;
         this.startDate = startDate;

@@ -79,27 +79,7 @@ public class CourseController {
             }
             return result;
         }
-       throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-    }
-
-    /**
-     * Removes a course in the courses repo if it exists.
-     *
-     * @param courseID -  Id of the course we want to delete
-     * @return returns a http success or bad request
-     */
-    @PostMapping("/delete/{id}")
-    public String deleteCourse(@PathVariable long courseID, @RequestHeader HttpHeaders httpHeaders) throws Exception {
-
-        Boolean authorized = isAuthorized(httpHeaders);
-        if (authorized) {
-            String result = courseService.deleteCourse(courseID);
-            if (result.contains("Failed")) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-            }
-            return result;
-        }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+       throw new ResponseStatusException(HttpStatus.FORBIDDEN);
     }
 
     /**
@@ -130,33 +110,7 @@ public class CourseController {
             }
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-    }
-
-    /**
-     *  Returns the grade of a user for a specific course.
-     *
-     * @param userid - the users id
-     * @param courseId - the courses id
-     * @return - a floating point value representing the grade.
-     */
-    @PostMapping("/get/grade/{userid}/{courseid}")
-    public float getGradeOfUser(@PathVariable("userid") long userid, @PathVariable("courseid") long courseId, @RequestHeader HttpHeaders httpHeaders) throws Exception {
-
-        Boolean authorized = isAuthorized(httpHeaders);
-
-        if (authorized) {
-
-            Grade grade = courseService.getGrade(userid, courseId);
-
-            if (grade == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-            } else {
-                return grade.getGradeValue();
-            }
-        }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN);
     }
 
     /**
@@ -193,8 +147,29 @@ public class CourseController {
             return courseResponse;
         }
 
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN);
     }
+
+    /**
+     * Removes a course in the courses repo if it exists.
+     *
+     * @param id -  Id of the course we want to delete
+     * @return returns a http success or bad request
+     */
+    @PostMapping("/delete/{id}")
+    public String deleteCourse(@PathVariable long id, @RequestHeader HttpHeaders httpHeaders) throws Exception {
+
+        Boolean authorized = isAuthorized(httpHeaders);
+        if (authorized) {
+            String result = courseService.deleteCourse(id);
+            if (result.contains("Failed")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+            }
+            return result;
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+    }
+
 
     /**
      * Accepts a request to add a grade to the repository.
@@ -216,41 +191,72 @@ public class CourseController {
             if (courseService.addGrade(request)) {
                 return "Sucess! Grade has been added";
             } else {
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
             }
         }
 
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 
     }
 
+
     /**
+     *  Returns the grade of a user for a specific course.
      *
-     *
-     * @param httpHeaders
-     * @return
-     * @throws Exception
+     * @param userid - the users id
+     * @param courseId - the courses id
+     * @return - a floating point value representing the grade.
      */
-    public boolean isAuthorized(HttpHeaders httpHeaders) throws Exception {
+    @PostMapping("/get/grade/{userid}/{courseid}")
+    public float getGradeOfUser(@PathVariable("userid") long userid, @PathVariable("courseid") long courseId, @RequestHeader HttpHeaders httpHeaders) throws Exception {
+
+        Boolean authorized = isAuthorized(httpHeaders);
+
+        if (authorized) {
+
+            Grade grade = courseService.getGrade(userid, courseId);
+
+            if (grade == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            } else {
+                return grade.getGradeValue();
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+
+    }
+
+
+
+
+
+    /**
+     * Method for taking in a jwt token and authorizing it for the user.
+     *
+     * @param httpHeaders - the header of a http request
+     * @return - returns true if authenticated otherwise returns false
+     *
+     */
+    public boolean isAuthorized(HttpHeaders httpHeaders)  {
         //first we try to get the authorization header information.
         String authHeader = httpHeaders.getFirst("Authorization");
 
         //if there is no such header return null
         if (authHeader == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No authorization detected");
+            return false;
         }
         //we create a new token
         String token = jwtUtils.resolveToken(authHeader);
 
         if (token == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "JWT in the request");
+            return false;
         }
 
         //a Json webtoken containing the parsed JWS claims
         Jws<Claims> claimsJws = jwtUtils.validateAndParseClaims(token);
 
         if (claimsJws == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid web token.");
+            return false;
         }
 
         //now we check if there are any permissions for this method.
@@ -261,7 +267,7 @@ public class CourseController {
 
         }
 
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authrized to add course");
+        return false;
 
 
 

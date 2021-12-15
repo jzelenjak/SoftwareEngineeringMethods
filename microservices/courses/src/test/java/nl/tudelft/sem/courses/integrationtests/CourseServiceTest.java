@@ -8,20 +8,16 @@ import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
 import nl.tudelft.sem.courses.services.CourseService;
-import org.apache.tomcat.jni.Local;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import javax.swing.text.html.Option;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,8 +35,8 @@ public class CourseServiceTest {
     private GradeRepository gradeRepository;
     private CourseService courseService;
 
-    private final transient LocalDateTime dateAndTime = LocalDateTime.now();
-    private final transient CourseRequest courseRequest = new CourseRequest("CSE2215", dateAndTime, dateAndTime);
+    private final transient LocalDate date = LocalDate.now();
+    private final transient CourseRequest courseRequest = new CourseRequest("CSE2215", date, date);
 
 
     @BeforeEach
@@ -78,8 +74,8 @@ public class CourseServiceTest {
 
         Course course = new Course();
         course.setId(1);
-        course.setStartDate(dateAndTime);
-        course.setFinishDate(dateAndTime);
+        course.setStartDate(date);
+        course.setFinishDate(date);
         course.setCourseCode("CSE2215");
 
         courseList.add(course);
@@ -98,7 +94,7 @@ public class CourseServiceTest {
     void addingTwoCoursesWithSameCourseCode() {
 
         CourseRequest courseRequest2 = new CourseRequest("CSE2215",
-                dateAndTime, LocalDateTime.MAX);
+                date, LocalDate.MAX);
 
 
         String result = courseService.addNewCourses(courseRequest);
@@ -107,8 +103,8 @@ public class CourseServiceTest {
 
         Course course = new Course();
         course.setId(1);
-        course.setStartDate(dateAndTime);
-        course.setFinishDate(dateAndTime);
+        course.setStartDate(date);
+        course.setFinishDate(date);
         course.setCourseCode("CSE2215");
 
         courseList.add(course);
@@ -135,8 +131,8 @@ public class CourseServiceTest {
 
         Course course = new Course();
         course.setId(1);
-        course.setStartDate(dateAndTime);
-        course.setFinishDate(dateAndTime);
+        course.setStartDate(date);
+        course.setFinishDate(date);
         course.setCourseCode("CSE2215");
 
         Optional<Course> optionalCourse = Optional.of(course);
@@ -185,8 +181,8 @@ public class CourseServiceTest {
 
         Course course = new Course();
         course.setId(1);
-        course.setStartDate(dateAndTime);
-        course.setFinishDate(dateAndTime);
+        course.setStartDate(date);
+        course.setFinishDate(date);
         course.setCourseCode("CSE2215");
 
         courseList.add(course);
@@ -209,8 +205,8 @@ public class CourseServiceTest {
 
         Course course = new Course();
         course.setId(1);
-        course.setStartDate(dateAndTime);
-        course.setFinishDate(dateAndTime);
+        course.setStartDate(date);
+        course.setFinishDate(date);
         course.setCourseCode("CSE2215");
 
         Optional<Course> optionalCourse = Optional.of(course);
@@ -241,8 +237,8 @@ public class CourseServiceTest {
 
         Course course = new Course();
         course.setId(1);
-        course.setStartDate(dateAndTime);
-        course.setFinishDate(dateAndTime);
+        course.setStartDate(date);
+        course.setFinishDate(date);
         course.setCourseCode("CSE2215");
 
         Optional<Course> optionalCourse = Optional.of(course);
@@ -273,8 +269,8 @@ public class CourseServiceTest {
 
         Course course = new Course();
         course.setId(1);
-        course.setStartDate(dateAndTime);
-        course.setFinishDate(dateAndTime);
+        course.setStartDate(date);
+        course.setFinishDate(date);
         course.setCourseCode("CSE2215");
 
         Optional<Course> optionalCourse = Optional.ofNullable(null);
@@ -305,8 +301,8 @@ public class CourseServiceTest {
 
         Course course = new Course();
         course.setId(1);
-        course.setStartDate(dateAndTime);
-        course.setFinishDate(dateAndTime);
+        course.setStartDate(date);
+        course.setFinishDate(date);
         course.setCourseCode("CSE2215");
 
         Optional<Course> optionalCourse = Optional.of(course);
@@ -340,8 +336,8 @@ public class CourseServiceTest {
 
         Course course = new Course();
         course.setId(1);
-        course.setStartDate(dateAndTime);
-        course.setFinishDate(dateAndTime);
+        course.setStartDate(date);
+        course.setFinishDate(date);
         course.setCourseCode("CSE2215");
 
         Optional<Course> optionalCourse = Optional.of(course);
@@ -361,8 +357,8 @@ public class CourseServiceTest {
 
         Course course = new Course();
         course.setId(1);
-        course.setStartDate(dateAndTime);
-        course.setFinishDate(dateAndTime);
+        course.setStartDate(date);
+        course.setFinishDate(date);
         course.setCourseCode("CSE2215");
 
         Optional<Course> optionalCourse = Optional.ofNullable(null);
@@ -384,8 +380,8 @@ public class CourseServiceTest {
 
         Course course = new Course();
         course.setId(1);
-        course.setStartDate(dateAndTime);
-        course.setFinishDate(dateAndTime);
+        course.setStartDate(date);
+        course.setFinishDate(date);
         course.setCourseCode("CSE2215");
 
         Grade grade = new Grade();
@@ -415,8 +411,8 @@ public class CourseServiceTest {
 
         Course course = new Course();
         course.setId(1);
-        course.setStartDate(dateAndTime);
-        course.setFinishDate(dateAndTime);
+        course.setStartDate(date);
+        course.setFinishDate(date);
         course.setCourseCode("CSE2215");
 
         Grade grade = new Grade();
@@ -446,8 +442,8 @@ public class CourseServiceTest {
 
         Course course = new Course();
         course.setId(1);
-        course.setStartDate(dateAndTime);
-        course.setFinishDate(dateAndTime);
+        course.setStartDate(date);
+        course.setFinishDate(date);
         course.setCourseCode("CSE2215");
 
         Grade grade = new Grade();

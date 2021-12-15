@@ -67,13 +67,14 @@ public class Grade {
         }
         Grade grade1 = (Grade) o;
         return Float.compare(grade1.gradeValue, gradeValue) == 0
-                && course.equals(grade1.course) && userId == grade1.userId
+                && course.equals(grade1.course)
+                && userId == grade1.userId
                 || id == grade1.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, course, gradeValue, userId);
+        return Objects.hash(id);
     }
 
     @Override
