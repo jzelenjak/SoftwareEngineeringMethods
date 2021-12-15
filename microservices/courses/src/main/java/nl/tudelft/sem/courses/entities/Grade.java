@@ -57,6 +57,19 @@ public class Grade {
     }
 
 
+    /**
+     * When using this constructor you must provide a course and a user.
+     *
+     * @param course Acceps a course object
+     * @param userId accepts a user id
+     */
+    public Grade(Course course, long userId, float gradeValue) {
+        this.course = course;
+        this.userId = userId;
+        this.gradeValue = gradeValue;
+    }
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

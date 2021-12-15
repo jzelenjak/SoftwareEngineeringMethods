@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import org.junit.jupiter.api.Test;
@@ -17,10 +18,12 @@ import org.junit.jupiter.api.Test;
 
 public class GradeTest {
     private static final String courseCode = "CSE2215";
+    private static final ZonedDateTime date = ZonedDateTime.now();
+    private static final Course course = new Course(1, courseCode, date, date, 1);
+
 
     @Test
     public void constructorTest() {
-        Course course = new Course(1, courseCode, LocalDate.now(), LocalDate.now());
         long id = 1;
         long userId = 5;
         Grade grade = new Grade(id, course, userId, 2.0f);
@@ -30,8 +33,6 @@ public class GradeTest {
 
     @Test
     public void testingEqualsMethod() {
-        Course course = new Course(1, courseCode, LocalDate.now(), LocalDate.now());
-
         long id = 1;
         long id2 = 2;
 
@@ -46,7 +47,6 @@ public class GradeTest {
 
     @Test
     public void testingToString() {
-        Course course = new Course(1, courseCode, LocalDate.now(), LocalDate.now());
         long id = 1;
         long userId = 5;
         Grade grade = new Grade(id, course, userId, 2.0f);
@@ -64,7 +64,6 @@ public class GradeTest {
 
     @Test
     public void notTheSameClass() {
-        Course course = new Course(1, courseCode, LocalDate.now(), LocalDate.now());
         long id = 1;
         long userId = 5;
         Grade grade = new Grade(id, course, userId, 2.0f);
@@ -75,7 +74,6 @@ public class GradeTest {
 
     @Test
     public void gradeValueIsDifferent() {
-        Course course = new Course(1, courseCode, LocalDate.now(), LocalDate.now());
         long id = 1;
         long userId = 5;
         Grade grade = new Grade(id, course, userId, 2.0f);
@@ -86,8 +84,8 @@ public class GradeTest {
 
     @Test
     public void coursesAreDifferent() {
-        Course course = new Course(1, courseCode, LocalDate.now(), LocalDate.now());
-        Course course2 = new Course(2, "CSE2216", LocalDate.MAX, LocalDate.now());
+        Course course2 = new Course(2, "CSE2216",
+                ZonedDateTime.parse("2007-12-03T10:15:30+01:00[Europe/Paris]"), date, 1);
 
         long id = 1;
         long userId = 5;

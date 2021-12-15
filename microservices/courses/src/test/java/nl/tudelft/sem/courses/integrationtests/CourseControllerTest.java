@@ -1,6 +1,7 @@
 package nl.tudelft.sem.courses.integrationtests;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -9,11 +10,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.List;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.controllers.CourseController;
+import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
 import nl.tudelft.sem.jwt.JwtUtils;
@@ -43,12 +46,13 @@ public class CourseControllerTest {
     private static final String contentType = "Content-Type";
     private static final String jsonContentHeader = "application/json";
     private static final String authorizationHeader = "Authorization";
-    private static final String createCoursePath = "/api/courses/create/course";
+    private static final String createCoursePath = "/api/courses/create";
     private static final String getCoursePath = "/api/courses/get/courses/";
     private static final String courseCode = "CSE2216";
     private static final String createGradePath = "/api/courses/create/grade";
-    private final transient LocalDate date = LocalDate.now();
-
+    private static final ZonedDateTime date = ZonedDateTime.now();
+    private static final CourseRequest courseRequest = new CourseRequest(courseCode,
+            date, date, 1);
 
     @Autowired
     private transient CourseRepository courseRepository;
@@ -68,8 +72,6 @@ public class CourseControllerTest {
     @Autowired
     private transient CourseController courseController;
 
-
-
     @BeforeEach
     void setup() {
         courseRepository.deleteAll();
@@ -83,25 +85,18 @@ public class CourseControllerTest {
 
     }
 
-    //Testing Course Creation Only
-
     @Test
     void testCourseCreationWithNoConflictingCourses() throws Exception {
-        CourseRequest courseRequest = new CourseRequest(courseCode,
-                date, date);
 
         mockMvc.perform(post(createCoursePath)
                 .header(authorizationHeader, "")
                 .contentType(jsonContentHeader)
                 .content(objectMapper.writeValueAsString(courseRequest)))
                 .andExpect(status().isOk());
-
     }
 
     @Test
     void testCourseCreationWithConflictingCourses() throws Exception {
-        CourseRequest courseRequest = new CourseRequest(courseCode,
-                date, date);
 
         mockMvc.perform(post(createCoursePath)
                         .header(authorizationHeader, "")
@@ -114,14 +109,11 @@ public class CourseControllerTest {
                         .contentType(jsonContentHeader)
                         .content(objectMapper.writeValueAsString(courseRequest)))
                         .andExpect(status().isBadRequest());
-
-
     }
 
     @Test
     void testCourseCreationWithNoAuthorization() throws Exception {
-        CourseRequest courseRequest = new CourseRequest(courseCode,
-                date, date);
+
 
         mockMvc.perform(post(createCoursePath)
                 .contentType(jsonContentHeader)
@@ -130,12 +122,9 @@ public class CourseControllerTest {
 
     }
 
-    //testing we want to check if getting the courses by code is first possible.
     @Test
     void testGettingCoursesByCode() throws Exception {
         //First we add the course
-        CourseRequest courseRequest = new CourseRequest(courseCode,
-                date, date);
 
         mockMvc.perform(post(createCoursePath)
                 .header(authorizationHeader, "")
@@ -144,7 +133,7 @@ public class CourseControllerTest {
                 .andExpect(status().isOk());
 
         //now we check if we can get the list of courses by course code.
-        MvcResult mvcResult = mockMvc.perform(post(getCoursePath + courseCode)
+        MvcResult mvcResult = mockMvc.perform(get(getCoursePath + courseCode)
                 .header(authorizationHeader, ""))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -152,40 +141,32 @@ public class CourseControllerTest {
         String content = mvcResult.getResponse().getContentAsString();
         List<CourseResponse> courses = objectMapper.readValue(content,
                 new TypeReference<List<CourseResponse>>(){});
-
-
         //Expected Course Response
         Assert.assertNotNull(courses);
         Assert.assertNotNull(courses.get(0));
         Assert.assertEquals(1, courses.size());
         Assert.assertEquals(courseCode, ((CourseResponse) courses.get(0)).getCourseCode());
-
     }
 
     //testing for null or empty courses.
-
     @Test
     void testEmptyCoursesListReturned() throws Exception {
 
-        mockMvc.perform(post(getCoursePath + courseCode)
+        mockMvc.perform(get(getCoursePath + courseCode)
                 .header(authorizationHeader, ""))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void testUnauthroizedGettingOfCoursesList() throws Exception {
-        mockMvc.perform(post(getCoursePath + courseCode))
+        mockMvc.perform(get(getCoursePath + courseCode))
                 .andExpect(status().isForbidden());
-
     }
-
-    //getting a course by its identification
 
     @Test
     void gettingCourseByItsId() throws Exception {
         //First we add the course
-        CourseRequest courseRequest = new CourseRequest(courseCode,
-                date, date);
+
 
         mockMvc.perform(post(createCoursePath)
                 .header(authorizationHeader, "")
@@ -193,7 +174,7 @@ public class CourseControllerTest {
                 .content(objectMapper.writeValueAsString(courseRequest)))
                 .andExpect(status().isOk());
         //now we check if it has the correct course id.
-        MvcResult mvcResult = mockMvc.perform(post("/api/courses/get/course/1")
+        MvcResult mvcResult = mockMvc.perform(get("/api/courses/get/1")
                 .header(authorizationHeader, ""))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -203,29 +184,24 @@ public class CourseControllerTest {
 
         Assert.assertNotNull(response);
         Assert.assertEquals(courseRequest.getCourseCode(), response.getCourseCode());
-
     }
 
     @Test
     void gettingAcourseWhichDoesNotExist() throws Exception {
-        mockMvc.perform(post("/api/courses/get/course/1")
+        mockMvc.perform(get("/api/courses/get/1")
                 .header(authorizationHeader, ""))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void testUnauthroziedAccessForGettingCourse() throws Exception {
-        mockMvc.perform(post("/api/courses/get/course/1"))
+        mockMvc.perform(get("/api/courses/get/1"))
                 .andExpect(status().isForbidden());
     }
 
-
-    //now we are testing the delete course method.
     @Test
     void deletingAnExistingCourse() throws Exception {
         //First we add the course
-        CourseRequest courseRequest = new CourseRequest(courseCode,
-                date, date);
 
         mockMvc.perform(post(createCoursePath)
                 .header(authorizationHeader, "")
@@ -234,16 +210,13 @@ public class CourseControllerTest {
                 .andExpect(status().isOk());
 
         //get the course
-        MvcResult mvcResult = mockMvc.perform(post(getCoursePath + courseCode)
+        MvcResult mvcResult = mockMvc.perform(get(getCoursePath + courseCode)
                 .header(authorizationHeader, ""))
                 .andExpect(status().isOk())
                 .andReturn();
-
         String content = mvcResult.getResponse().getContentAsString();
         List<CourseResponse> courses = objectMapper.readValue(content,
                 new TypeReference<List<CourseResponse>>(){});
-
-
         //now we delete the course
         mockMvc.perform(post("/api/courses/delete/" + courses.get(0).getCourseId())
                 .header(authorizationHeader, ""))
@@ -266,9 +239,6 @@ public class CourseControllerTest {
 
     @Test
     void addingAgradeObject() throws Exception {
-        CourseRequest courseRequest = new CourseRequest(courseCode,
-                date, date);
-
         mockMvc.perform(post(createCoursePath)
                 .header(authorizationHeader, "")
                 .contentType(jsonContentHeader)
@@ -276,7 +246,8 @@ public class CourseControllerTest {
                 .andExpect(status().isOk());
 
         //get the course
-        MvcResult mvcResult = mockMvc.perform(post(getCoursePath + courseCode)
+        MvcResult mvcResult = mockMvc.perform(
+                get(getCoursePath + courseCode)
                 .header(authorizationHeader, ""))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -299,9 +270,6 @@ public class CourseControllerTest {
 
     @Test
     void addingGradeWhenGradeAlreadyExists() throws Exception {
-        CourseRequest courseRequest = new CourseRequest(courseCode,
-                date, date);
-
         mockMvc.perform(post(createCoursePath)
                 .header(authorizationHeader, "")
                 .contentType(jsonContentHeader)
@@ -309,7 +277,7 @@ public class CourseControllerTest {
                 .andExpect(status().isOk());
 
         //get the course
-        MvcResult mvcResult = mockMvc.perform(post(getCoursePath + courseCode)
+        MvcResult mvcResult = mockMvc.perform(get(getCoursePath + courseCode)
                 .header(authorizationHeader, ""))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -333,8 +301,6 @@ public class CourseControllerTest {
                 .contentType(jsonContentHeader)
                 .content(objectMapper.writeValueAsString(gradeRequest)))
                 .andExpect(status().isBadRequest());
-
-
     }
 
     @Test
@@ -349,8 +315,6 @@ public class CourseControllerTest {
 
     @Test
     void getGradeOfAuser() throws Exception {
-        CourseRequest courseRequest = new CourseRequest(courseCode,
-                date, date);
 
         mockMvc.perform(post(createCoursePath)
                 .header(authorizationHeader, "")
@@ -359,7 +323,7 @@ public class CourseControllerTest {
                 .andExpect(status().isOk());
 
         //get the course
-        MvcResult mvcResult = mockMvc.perform(post(getCoursePath + courseCode)
+        MvcResult mvcResult = mockMvc.perform(get(getCoursePath + courseCode)
                 .header(authorizationHeader, ""))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -369,7 +333,6 @@ public class CourseControllerTest {
                 new TypeReference<List<CourseResponse>>(){});
         long courseid = courses.get(0).getCourseId();
         //now we begin the grade id's test
-
         GradeRequest gradeRequest = new GradeRequest(courseid, 5.75f, 1);
 
         mockMvc.perform(post(createGradePath)
@@ -379,9 +342,7 @@ public class CourseControllerTest {
                 .andExpect(status().isOk());
 
         //adds the grade. Now we get the grade.
-
-
-        MvcResult mvcResult1 = mockMvc.perform(post("/api/courses/get/grade/1/" + courseid)
+        MvcResult mvcResult1 = mockMvc.perform(get("/api/courses/get/grade/1/" + courseid)
                 .header(authorizationHeader, ""))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -392,11 +353,10 @@ public class CourseControllerTest {
 
     }
 
-
     @Test
     void testNoGradeFound() throws Exception {
 
-        mockMvc.perform(post("/api/courses/get/grade/1/1")
+        mockMvc.perform(get("/api/courses/get/grade/1/1")
                 .header(authorizationHeader, ""))
                 .andExpect(status().isNotFound());
 
@@ -404,7 +364,7 @@ public class CourseControllerTest {
 
     @Test
     void testNoAuthroizationToRetrieveGrades() throws Exception {
-        mockMvc.perform(post("/api/courses/get/grade/1/1"))
+        mockMvc.perform(get("/api/courses/get/grade/1/1"))
                 .andExpect(status().isForbidden());
     }
 
@@ -445,7 +405,4 @@ public class CourseControllerTest {
         boolean result = courseController.isAuthorized(headers);
         Assert.assertEquals(false, result);
     }
-
-
-
 }

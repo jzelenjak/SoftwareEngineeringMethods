@@ -14,7 +14,7 @@ public interface CourseRepository extends CrudRepository<Course, Long> {
 
 
     @Override
-    Optional<Course> findById(Long aLong);
+    Optional<Course> findById(Long along);
 
     List<Course> findAllByCourseCode(String courseCode);
 

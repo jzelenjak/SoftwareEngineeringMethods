@@ -1,11 +1,10 @@
 package nl.tudelft.sem.courses.controllers;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
@@ -29,36 +28,17 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 
-
 @RestController
 @RequestMapping("/api/courses")
 public class CourseController {
 
-
-    @Autowired
-    private transient GradeRepository gradeRepository;
-
+    private static final String notAuthorized = "Not authorized";
+    
     @Autowired
     private transient CourseService courseService;
 
     @Autowired
     private transient JwtUtils jwtUtils;
-
-    /**
-     * Constructor for course controller.
-     *
-     * @param jwtUtils - A generable library to parse jwt tokens
-     * @param courseService - courses service.
-     */
-    public CourseController(JwtUtils jwtUtils, CourseService courseService){
-        this.jwtUtils = jwtUtils;
-    }
-
-
-    @GetMapping
-    public @ResponseBody String getHelloWorld() {
-        return "Hello world";
-    }
 
 
     /**
@@ -68,36 +48,39 @@ public class CourseController {
      * @param request request object that must be supplied by the front end.
      * @return returns a http success or bad request
      */
-    @PostMapping("/create/course")
-    public String createNewCourse(@RequestBody CourseRequest request, @RequestHeader HttpHeaders httpHeaders) throws Exception {
+    @PostMapping("/create")
+    public boolean createNewCourse(@RequestBody CourseRequest request,
+                                   @RequestHeader HttpHeaders httpHeaders) throws Exception {
 
         Boolean authorized = isAuthorized(httpHeaders);
         if (authorized) {
             String result = courseService.addNewCourses(request);
             if (result.contains("Failed")) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Failed to create new course");
             }
-            return result;
+            return true;
         }
-       throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
 
     /**
-     * Get a list of courses which made the course code
+     * Get a list of courses which made the course code.
      *
      * @param code - the course code
      * @return - can return multiple courses with the same code
      */
-    @PostMapping("/get/courses/{code}")
-    public List<CourseResponse> getCoursesByCode(@PathVariable String code, @RequestHeader HttpHeaders httpHeaders) throws Exception {
+    @GetMapping("/get/courses/{code}")
+    public List<CourseResponse> getCoursesByCode(
+            @PathVariable String code, @RequestHeader HttpHeaders httpHeaders) throws Exception {
 
         Boolean authorized = isAuthorized(httpHeaders);
 
         if (authorized) {
             List<Course> courses = courseService.getCourses(code);
-            if (courses != null &&  !courses.isEmpty()) {
+            if (courses != null && !courses.isEmpty()) {
                 List<CourseResponse> courseResponses = new ArrayList<>();
-                for(Course course: courses){
+                for (Course course : courses) {
                     CourseResponse courseResponse = new CourseResponse(
                             course.getId(),
                             course.getCourseCode(),
@@ -108,13 +91,14 @@ public class CourseController {
                 }
                 return courseResponses;
             }
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Could not find courses for that code");
         }
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
 
     /**
-     * Gives back course information including:
+     * Gives back course information including.
      * - Course id
      * - Course code
      * - Start date of the course
@@ -124,8 +108,9 @@ public class CourseController {
      * @param id - id of the course
      * @return - A courseResponse object (simplified course object)
      */
-    @PostMapping("/get/course/{id}")
-    public CourseResponse getCourseById(@PathVariable long id, @RequestHeader HttpHeaders httpHeaders) throws Exception {
+    @GetMapping("/get/{id}")
+    public CourseResponse getCourseById(@PathVariable long id,
+                                        @RequestHeader HttpHeaders httpHeaders) throws Exception {
 
         Boolean authorized = isAuthorized(httpHeaders);
 
@@ -134,7 +119,8 @@ public class CourseController {
             Course course = courseService.getCourse(id);
 
             if (course == null) {
-                throw new ResponseStatusException((HttpStatus.NOT_FOUND));
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Could not find course with that ID");
             }
 
             CourseResponse courseResponse = new CourseResponse(
@@ -142,12 +128,13 @@ public class CourseController {
                     course.getCourseCode(),
                     course.getStartDate(),
                     course.getFinishDate(),
-                    course.getGrades().size());
+                    course.getNumStudents());
+
 
             return courseResponse;
         }
 
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
 
     /**
@@ -157,7 +144,8 @@ public class CourseController {
      * @return returns a http success or bad request
      */
     @PostMapping("/delete/{id}")
-    public String deleteCourse(@PathVariable long id, @RequestHeader HttpHeaders httpHeaders) throws Exception {
+    public boolean deleteCourse(@PathVariable long id,
+                                @RequestHeader HttpHeaders httpHeaders) throws Exception {
 
         Boolean authorized = isAuthorized(httpHeaders);
         if (authorized) {
@@ -165,9 +153,9 @@ public class CourseController {
             if (result.contains("Failed")) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
             }
-            return result;
+            return true;
         }
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
 
 
@@ -179,55 +167,54 @@ public class CourseController {
      * @return - a string confirming whether or not the method is successful.
      */
     @PostMapping("/create/grade")
-    public String addGrade(@RequestBody GradeRequest request, @RequestHeader HttpHeaders httpHeaders) throws Exception {
+    public boolean addGrade(@RequestBody GradeRequest request,
+                            @RequestHeader HttpHeaders httpHeaders) throws Exception {
 
         Boolean authorized = isAuthorized(httpHeaders);
 
         if (authorized) {
             if (request == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "No Request was provided");
             }
 
             if (courseService.addGrade(request)) {
-                return "Sucess! Grade has been added";
+                return true;
             } else {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Could not add grade to the repo");
             }
         }
-
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
 
 
     /**
-     *  Returns the grade of a user for a specific course.
+     * Returns the grade of a user for a specific course.
      *
-     * @param userid - the users id
+     * @param userid   - the users id
      * @param courseId - the courses id
      * @return - a floating point value representing the grade.
      */
-    @PostMapping("/get/grade/{userid}/{courseid}")
-    public float getGradeOfUser(@PathVariable("userid") long userid, @PathVariable("courseid") long courseId, @RequestHeader HttpHeaders httpHeaders) throws Exception {
+    @GetMapping("/get/grade/{userid}/{courseid}")
+    public float getGradeOfUser(@PathVariable("userid") long userid,
+                                @PathVariable("courseid") long courseId,
+                                @RequestHeader HttpHeaders httpHeaders) throws Exception {
 
         Boolean authorized = isAuthorized(httpHeaders);
-
         if (authorized) {
 
             Grade grade = courseService.getGrade(userid, courseId);
 
             if (grade == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Could not find the grade for user and course");
             } else {
                 return grade.getGradeValue();
             }
         }
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
-
-
-
 
 
     /**
@@ -235,42 +222,29 @@ public class CourseController {
      *
      * @param httpHeaders - the header of a http request
      * @return - returns true if authenticated otherwise returns false
-     *
      */
-    public boolean isAuthorized(HttpHeaders httpHeaders)  {
+    public boolean isAuthorized(HttpHeaders httpHeaders) {
         //first we try to get the authorization header information.
         String authHeader = httpHeaders.getFirst("Authorization");
-
         //if there is no such header return null
         if (authHeader == null) {
             return false;
         }
         //we create a new token
         String token = jwtUtils.resolveToken(authHeader);
-
         if (token == null) {
             return false;
         }
-
         //a Json webtoken containing the parsed JWS claims
         Jws<Claims> claimsJws = jwtUtils.validateAndParseClaims(token);
-
         if (claimsJws == null) {
             return false;
         }
-
         //now we check if there are any permissions for this method.
         String role = jwtUtils.getRole(claimsJws);
-
-        if (role.equals("LECTURER")||role.equals("ADMIN")) {
+        if (role.equals("LECTURER") || role.equals("ADMIN")) {
             return true;
-
         }
-
         return false;
-
-
-
     }
-
 }

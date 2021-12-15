@@ -45,19 +45,14 @@ public class CourseService {
 
 
         if (courses.isEmpty()) {
-            Course newCourse = new Course();
-            newCourse.setCourseCode(request.getCourseCode());
-            newCourse.setStartDate(request.getStartDate());
-            newCourse.setFinishDate(request.getFinishDate());
+            Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
+                    request.getFinishDate(), request.getNumStudents());
             courseRepository.save(newCourse);
 
             return "Success. Added course";
         } else {
-            Course newCourse = new Course();
-            newCourse.setCourseCode(request.getCourseCode());
-            newCourse.setStartDate(request.getStartDate());
-            newCourse.setFinishDate(request.getFinishDate());
-
+            Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
+                    request.getFinishDate(), request.getNumStudents());
             if (courses.contains(newCourse)) {
                 return "Failed";
             } else {
@@ -77,10 +72,10 @@ public class CourseService {
         Optional<Course> course = courseRepository.findById(courseId);
 
         if (!course.isEmpty()) {
-            try{
+            try {
                 courseRepository.delete(course.get());
                 return "Success. Deleted course";
-            } catch (Exception e){
+            } catch (Exception e) {
                 return "Failed";
             }
         }
@@ -88,7 +83,7 @@ public class CourseService {
     }
 
     /**
-     * Returns a list of all course with the matching course code
+     * Returns a list of all course with the matching course code.
      *
      * @param courseCode - Course code of the courses
      * @return - List of all courses with matching course code
@@ -98,7 +93,7 @@ public class CourseService {
     }
 
     /**
-     * Gives back the grade of a user for a specific course
+     * Gives back the grade of a user for a specific course.
      *
      * @param userId - the id of the user.
      * @param courseId - the id of the course.
@@ -107,7 +102,7 @@ public class CourseService {
      */
     public Grade getGrade(long userId, long courseId) {
         //First we get the course and see if it exists.
-        try{
+        try {
             Optional<Course> course = courseRepository.findById(courseId);
 
             if (course.isEmpty()) {
@@ -129,7 +124,7 @@ public class CourseService {
     }
 
     /**
-     * Gives the course corresponding to a specific course id
+     * Gives the course corresponding to a specific course id.
      *
      * @param courseId - the id of the course (not the course code)
      * @return - A course object
@@ -146,7 +141,7 @@ public class CourseService {
     }
 
     /**
-     * Adds a grade to the repository
+     * Adds a grade to the repository.
      *
      * @param request -  a grade request object containing all
      *                the necessary objects for repository
@@ -156,21 +151,20 @@ public class CourseService {
         //checking if a grade already exists for this user
         Grade existingGrade = getGrade(request.getUserId(), request.getCourseId());
 
-        if (existingGrade != null) {
+        if (existingGrade != null && existingGrade.getGradeValue() >= request.getGrade()) {
             return false;
         }
 
         try {
-            Course course = getCourse(request.getCourseId());
-
-            Grade grade = new Grade();
-            grade.setCourse(course);
-            grade.setGradeValue(request.getGrade());
-            grade.setUserId(request.getUserId());
-
-            gradeRepository.save(grade);
+            if (existingGrade == null) {
+                Course course = getCourse(request.getCourseId());
+                Grade grade = new Grade(course, request.getUserId(), request.getGrade());
+                gradeRepository.save(grade);
+            } else {
+                existingGrade.setGradeValue(request.getGrade());
+                gradeRepository.save(existingGrade);
+            }
             return true;
-
         } catch (Exception e) {
             return false;
         }

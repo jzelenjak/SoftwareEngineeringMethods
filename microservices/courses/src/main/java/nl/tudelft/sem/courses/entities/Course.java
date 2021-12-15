@@ -6,6 +6,7 @@ package nl.tudelft.sem.courses.entities;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -40,14 +41,17 @@ public class Course {
 
 
     @Column(name = "start_date")
-    private LocalDate startDate;
+    private ZonedDateTime startDate;
 
     @Column(name = "grades")
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     public Set<Grade> grades;
 
     @Column(name = "finish_date")
-    public LocalDate finishDate;
+    public ZonedDateTime finishDate;
+
+    @Column(name = "number_of_students")
+    public int numStudents;
 
 
 
@@ -58,10 +62,12 @@ public class Course {
      *
      * @param courseCode - Course ID in a string format
      */
-    public Course(String courseCode, LocalDate startDate, LocalDate finishDate) {
+    public Course(String courseCode, ZonedDateTime startDate,
+                  ZonedDateTime finishDate, int numStudents) {
         this.courseCode = courseCode;
         this.startDate = startDate;
         this.finishDate = finishDate;
+        this.numStudents = numStudents;
         grades = new HashSet<>();
     }
 
@@ -74,11 +80,13 @@ public class Course {
      *
      * @param courseCode - Course ID in a string format
      */
-    public Course(long id, String courseCode, LocalDate startDate, LocalDate finishDate) {
+    public Course(long id, String courseCode, ZonedDateTime startDate,
+                  ZonedDateTime finishDate, int numStudents) {
         this.id = id;
         this.courseCode = courseCode;
         this.startDate = startDate;
         this.finishDate = finishDate;
+        this.numStudents = numStudents;
         grades = new HashSet<>();
     }
 
@@ -93,8 +101,23 @@ public class Course {
         }
         Course course = (Course) o;
         return id == course.id || courseCode.equals(course.courseCode)
-                && startDate.equals(course.startDate)
-                && finishDate.equals(course.finishDate);
+                && datesEqual(startDate, course.startDate)
+                && datesEqual(finishDate, course.finishDate)
+                && numStudents == course.numStudents;
+    }
+
+    /**
+     * Custom equals method for two ZonedDateTime.
+     * Only compares year, month and day.
+     *
+     * @param date1 - The first date
+     * @param date2 - The secon date
+     * @return - true if equals else false.
+     */
+    public boolean datesEqual(ZonedDateTime date1, ZonedDateTime date2) {
+        return date1.getYear() == date2.getYear()
+                && date1.getMonth() == date2.getMonth()
+                && date1.getDayOfMonth() == date2.getDayOfMonth();
     }
 
     @Override
