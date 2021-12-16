@@ -29,6 +29,6 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     @Query("SELECT userId, COUNT(userId) AS times FROM Application"
             + " WHERE userId IN (SELECT userId FROM Application WHERE courseId = :cid)"
-            + " AND status = 'ACCEPTED' GROUP BY userId ORDER BY times DESC")
+            + " AND status = 2 GROUP BY userId ORDER BY times DESC")
     List<Object[]> findTopByTotalTimesSelected(@Param("cid") long courseId);
 }

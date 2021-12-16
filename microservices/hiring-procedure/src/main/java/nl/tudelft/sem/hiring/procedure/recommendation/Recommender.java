@@ -20,9 +20,10 @@ public class Recommender {
     /**
      * Recommend at most the specified number of candidate TAs for the given course.
      *
-     * @param courseId  the id of the course
-     * @param number    the maximum number of recommendations
-     * @return a list of recommendations for the specified course. The list is at most size 'number'
+     * @param courseId  the id of the course (not the course code)
+     * @param number    the maximum number of recommendations to return
+     * @return a list of recommendations for the specified course.
+     *          The list is at most size 'number'
      */
     public List<Recommendation> recommend(long courseId, int number) {
         return this.strategy.recommend(courseId, number);

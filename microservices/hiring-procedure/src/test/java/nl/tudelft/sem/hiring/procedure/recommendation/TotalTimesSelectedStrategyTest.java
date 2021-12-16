@@ -1,63 +1,179 @@
 package nl.tudelft.sem.hiring.procedure.recommendation;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Scanner;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
+import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
 import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 
 
 @SpringBootTest
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class TotalTimesSelectedStrategyTest {
     @Autowired
     private transient ApplicationRepository repo;
 
     private transient RecommendationStrategy strategy;
 
+    private final transient LocalDateTime time = LocalDateTime.now();
+
     @BeforeEach
     public void setup() {
         this.strategy = new TotalTimesSelectedStrategy(repo);
     }
 
-    @Test
-    void test() {
-        // LocalDateTime time = LocalDateTime.now();
-        //
-        // Application appl1 = repo.save(new Application(42L, 69L, time));
-        // Application appl2 = repo.save(new Application(42L, 66L, time));
-        // Application appl3 = repo.save(new Application(42L, 68L, time));
-        // Application appl4 = repo.save(new Application(42L, 61L, time));
-        //
-        // Application appl5 = repo.save(new Application(43L, 56L, time));
-        // Application appl6 = repo.save(new Application(43L, 69L, time));
-        //
-        // Application appl7 = repo.save(new Application(44L, 39L, time));
-        // Application appl8 = repo.save(new Application(44L, 49L, time));
-        // Application appl9 = repo.save(new Application(44L, 69L, time));
-        //
-        // Application appl10 = repo.save(new Application(45L, 21L, time));
-        // Application appl11 = repo.save(new Application(45L, 76L, time));
-        // Application appl12 = repo.save(new Application(45L, 23L, time));
-        // Application appl13 = repo.save(new Application(45L, 43L, time));
-        //
-        // Application appl14 = repo.save(new Application(46L, 69L, time));
-        //
-        // Assertions
-        //     .assertThat(this.strategy.recommend(69L, 1))
-        //     .isEqualTo(List.of(new Recommendation(42L, 3)));
-        //
+    /** A helper method to add applications to the repository.
+     *
+     * @param input the input string in the following format:
+     *              N            (total number of users)
+     *              n            (number of applications for the following user)
+     *              userId courseId1 STATUS1 userId courseId2 STATUS2 ...
+     *              ...
+     *
+     *      I needed to duplicate userId for each application, because PMD was complaining
+     *          about DU anomalies since I was accessing the userId variable outside the for-loop.
+     */
+    private void addApplications(String input) {
+        Scanner sc = new Scanner(input);
+        try (sc) {
+            int numberOfApplications = sc.nextInt();
+            sc.nextLine();
+            for (int i = 0; i < numberOfApplications; ++i) {
+                int applications = sc.nextInt();
+                sc.nextLine();
+                for (int j = 0; j < applications; ++j) {
+                    Application appl = new Application(sc.nextLong(), sc.nextLong(), time);
+                    appl.setStatus(ApplicationStatus.valueOf(sc.next()));
+                    this.repo.save(appl);
+                }
+                sc.nextLine();
+            }
+        }
     }
 
     @Test
-    void helloWorldTest() {
-        System.out.println("Hello world");
+    public void testRecommendUserWhoHasNotAppliedMustBeIgnored() {
+        final StringBuilder sb = new StringBuilder();
+        // Number of applicants
+        sb.append("2\n");
+        // Applicant No43; selected in the past: 1 time
+        sb.append("2\n43 56 ACCEPTED 43 69 IN_PROGRESS\n");
+        // Not an Applicant No45; selected in the past: 4 times
+        sb.append("4\n45 21 ACCEPTED 45 76 ACCEPTED 45 23 ACCEPTED 45 43 ACCEPTED\n");
+        addApplications(sb.toString());
+
+        Assertions
+            .assertThat(this.strategy.recommend(69L, 2))
+            .isEqualTo(List.of(new Recommendation(43L, 1)));
     }
 
+    @Test
+    public void testRecommendUserWithZeroTimesSelectedMustNotBeRecommended() {
+        final StringBuilder sb = new StringBuilder();
+        // Number of applicants
+        sb.append("1\n");
+        // Applicant No422; selected in the past: 0 times
+        sb.append("1\n422 33 IN_PROGRESS\n");
+        addApplications(sb.toString());
 
+        Assertions
+            .assertThat(this.strategy.recommend(33L, 1))
+            .isEqualTo(new ArrayList<Recommendation>());
+    }
 
+    @Test
+    public void testRecommendRejectedApplicationMustBeIgnored() {
+        final StringBuilder sb = new StringBuilder();
+        // Number of applicants
+        sb.append("1\n");
+        // Applicant No777; selected in the past: 1 time
+        sb.append("4\n777 54 IN_PROGRESS 777 64 ACCEPTED 777 62 REJECTED 777 61 REJECTED\n");
+        addApplications(sb.toString());
+
+        Assertions
+            .assertThat(this.strategy.recommend(54L, 4))
+            .isEqualTo(List.of(new Recommendation(777L, 1)));
+    }
+
+    @Test
+    public void testRecommendWithdrawnApplicationMustBeIgnored() {
+        final StringBuilder sb = new StringBuilder();
+        // Number of applicants
+        sb.append("1\n");
+        // Applicant No777; selected in the past: 2 times
+        sb.append("4\n777 22 IN_PROGRESS 777 64 ACCEPTED 777 62 WITHDRAWN 777 61 ACCEPTED\n");
+        addApplications(sb.toString());
+
+        Assertions
+            .assertThat(this.strategy.recommend(22L, 3))
+            .isEqualTo(List.of(new Recommendation(777L, 2)));
+    }
+
+    @Test
+    public void testRecommendApplicantsForOtherCoursesMustBeIgnored() {
+        final StringBuilder sb = new StringBuilder();
+        // Number of applicants
+        sb.append("2\n");
+        // Applicant No27; selected in the past: 1 time
+        sb.append("2\n27 90 IN_PROGRESS 27 64 ACCEPTED\n");
+        // Not an Applicant No11; selected in the past: 3 times
+        sb.append("4\n11 24 IN_PROGRESS 11 84 ACCEPTED 11 92 ACCEPTED 11 68 ACCEPTED\n");
+        addApplications(sb.toString());
+
+        Assertions
+                .assertThat(this.strategy.recommend(90L, 5))
+                .isEqualTo(List.of(new Recommendation(27L, 1)));
+    }
+
+    @Test
+    public void testRecommendCanOnlySelectLimitedNumber() {
+        final StringBuilder sb = new StringBuilder();
+        // Number of applicants
+        sb.append("3\n");
+        // Applicant No33; selected in the past: 1 time
+        sb.append("2\n33 555 IN_PROGRESS 33 663 ACCEPTED\n");
+        // Applicant No89; selected in the past: 2 times
+        sb.append("3\n89 555 IN_PROGRESS 89 654 ACCEPTED 89 977 ACCEPTED\n");
+        // Applicant No111; selected in the past: 2 times
+        sb.append("4\n111 555 IN_PROGRESS 111 656 ACCEPTED 111 923 REJECTED 111 121 ACCEPTED\n");
+        addApplications(sb.toString());
+
+        Assertions
+            .assertThat(this.strategy.recommend(555L, 1))
+            .containsAnyOf(new Recommendation(111, 2),
+                           new Recommendation(89, 2))
+            .hasSize(1);
+    }
+
+    @Test
+    public void testRecommendOneTestToRuleThemAll() {
+        StringBuilder sb = new StringBuilder();
+        // Number of applicants
+        sb.append("5\n");
+        // Applicant No42; selected in the past: 3 times
+        sb.append("4\n42 69 IN_PROGRESS 42 66 ACCEPTED 42 68 ACCEPTED 42 61 ACCEPTED\n");
+        // Applicant No43; selected in the past: 1 time
+        sb.append("3\n43 56 ACCEPTED 43 69 IN_PROGRESS 43 666 REJECTED\n");
+        // Applicant No44; selected in the past 2 times
+        sb.append("4\n44 39 ACCEPTED 44 49 ACCEPTED 44 69 IN_PROGRESS 44 62 WITHDRAWN\n");
+        // Not an Applicant No45; selected in the past: 4 times
+        sb.append("4\n45 21 ACCEPTED 45 76 ACCEPTED 45 23 ACCEPTED 45 43 ACCEPTED\n");
+        // Applicant No46; selected in the past: 0 times
+        sb.append("1\n46 69 IN_PROGRESS\n");
+        addApplications(sb.toString());
+
+        Assertions
+                .assertThat(this.strategy.recommend(69L, 10))
+                .isEqualTo(List.of(new Recommendation(42L, 3),
+                        new Recommendation(44L, 2),
+                        new Recommendation(43L, 1)));
+    }
 }
