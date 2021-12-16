@@ -1,4 +1,5 @@
-#GROUP 13a - Sprint Retrospective #2
+#GROUP 13a - Sprint Retrospective #2 (02-12-2021 - 08-12-2021)
+
 | User Story #                                              | Task #                                                       | Task assigned to  | Estimated Effort per task (in hours) | Actual Effort (in hours) | Done (yes/no) | Notes                                                                                                           |
 |-----------------------------------------------------------|--------------------------------------------------------------|-------------------|--------------------------------------|--------------------------|---------------|-----------------------------------------------------------------------------------------------------------------|
 | TA can declare the worked hours per course                | Limit on hour declaration for TAs                            | Mehmet & Jeroen   | 5                                    | 6                        | Yes           |                                                                                                                 |

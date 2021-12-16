@@ -1,4 +1,5 @@
-#GROUP 13a - Sprint Retrospective 1 # ...
+#GROUP 13a - Sprint Retrospective #1 (25-11-2021 - 01-12-2021)
+
 | User Story #                                                         | Task #                                   | Task assigned to | Estimated Effort per task (in hours) | Actual Effort (in hours) | Done (yes/no) | Notes                    |
 |----------------------------------------------------------------------|------------------------------------------|------------------|--------------------------------------|--------------------------|---------------|--------------------------|
 | Students can candidate for a TA Position                             | Endpoint for applying                    | Mihnea           | 4                                    | 5                        | Yes           | Not tested               |
