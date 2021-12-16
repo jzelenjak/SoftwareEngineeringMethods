@@ -17,8 +17,8 @@ public class RecommendationTest {
         String jsonActual = recommendation.toJson();
         String jsonExpected = String.format("{\r\n  \"userId\" : %d,\r\n  \"metric\" : %.1f\r\n}",
                 recommendation.getUserId(), recommendation.getMetric());
-        System.out.println(jsonExpected);
-        System.out.println(jsonActual);
-//        Assertions.assertEquals(jsonExpected, jsonActual);
+        System.out.println(jsonExpected.replaceAll("\\r|\\n|\\s", ""));
+        Assertions.assertEquals(jsonExpected.replaceAll("\\r|\\n|\\s", ""),
+                jsonActual.replaceAll("\\r|\\n|\\s", ""));
     }
 }

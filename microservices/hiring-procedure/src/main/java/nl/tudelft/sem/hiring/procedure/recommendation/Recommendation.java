@@ -4,6 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * A class that represents a recommendation:
+ *   it has the userId and the metric that is used for recommendation
+ *   (e.g total times selected, grade, hours worked etc.)
+ */
 @Getter
 @AllArgsConstructor
 public class Recommendation {
@@ -18,7 +23,7 @@ public class Recommendation {
     public String toJson() {
         return new ObjectMapper().createObjectNode()
                 .put("userId", this.userId)
-                .put("metric",this.metric)
+                .put("metric", this.metric)
                 .toPrettyString();
     }
 }
