@@ -150,7 +150,7 @@ class NotificationControllerTest {
 
     @Test
     @WithMockUser(username = STUDENTUSERNAME, password = SHAREDPASSWORD)
-    void getNotificationsFromExistingUserStudentFailedTest() throws Exception {
+    void getNotificationsFromExistingUserAsStudentFailedTest() throws Exception {
         Notification notification = new Notification(5695444L, "Hi Admin!");
         this.notificationDataRepository.save(notification);
 

@@ -17,7 +17,7 @@ import javax.persistence.Id;
  * UserId is mostly used by other microservices to identify the users,
  * also it is used as "Subject" in JWT token.
  */
-@Entity(name = "notification")
+@Entity(name = "notifications")
 public class Notification {
     @Id
     @Column(name = "notificationId", unique = true, nullable = false, updatable = false)

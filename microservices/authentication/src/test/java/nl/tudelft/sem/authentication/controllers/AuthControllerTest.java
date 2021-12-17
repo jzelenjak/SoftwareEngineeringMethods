@@ -442,7 +442,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmEvilLecturer", password = "Fraud")
-    void changeIllegalRoleAsLecturerTest() throws Exception {
+    void changeRoleIllegalAsLecturerTest() throws Exception {
         String evilUsername = "IAmEvilLecturer";
         String evilPassword = "Fraud";
 
@@ -479,7 +479,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmNewLecturer", password = "NoFraudHere")
-    void changeRoleIllegalTargetAsLecturerTest() throws Exception {
+    void changeRoleIllegalTargetRoleAsLecturerTest() throws Exception {
         String evilUsername = "IAmNewLecturer";
         String evilPassword = "NoFraudHere";
 
@@ -566,7 +566,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmNew", password = "42")
-    void changeNonExistingRole() throws Exception {
+    void changeRoleNonExistingTest() throws Exception {
         String adminName = "IAmNew";
         String adminPassword = "42";
 
@@ -680,7 +680,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void getAllNotificationsFromUserTest() {
+    void getAllNotificationsFromUserSuccessTest() {
         final long myUserId = 2121212L;
         Notification first = new Notification(myUserId, "I am the first.");
         this.notificationDataRepository.save(first);

@@ -88,7 +88,8 @@ public class AuthController {
         // Try to register a new user, if failed an exception will be thrown.
         if (!this.authService.registerUser(username, userId, password)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    String.format("User with NetID %s already exists!", USERNAME));
+                    String.format("User with username %s or NetID %s already exists!",
+                            username, userId));
         }
     }
 

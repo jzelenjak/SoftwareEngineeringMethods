@@ -41,7 +41,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerRootUserNotRegistered() {
+    void registerRootUserNotRegisteredTest() {
         UserDataRepository repo = Mockito.mock(UserDataRepository.class);
         UserData root = new UserData(rootUsername, passwordEncoder.encode(rootPassword),
                             UserRole.ADMIN, rootUserId);
@@ -63,7 +63,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerRootUserAlreadyRegistered() {
+    void registerRootUserAlreadyRegisteredTest() {
         UserDataRepository repo = Mockito.mock(UserDataRepository.class);
         UserData root = new UserData(rootUsername, passwordEncoder.encode(rootPassword),
                 UserRole.ADMIN, rootUserId);
@@ -82,7 +82,18 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerUserAlreadyExistsTest() {
+    void registerUserAlreadyExistsByUsernameTest() {
+        this.userDataRepository
+                .save(new UserData("Andy", encode("amogus"), UserRole.TA, 3957639L));
+
+        Assertions.assertFalse(this.authService.registerUser("Andy", 3957639L, "password2"),
+                "The user must not have been registered");
+
+        this.userDataRepository.deleteById("Andy");
+    }
+
+    @Test
+    void registerUserAlreadyExistsByUserIdTest() {
         this.userDataRepository
                 .save(new UserData("jegor", encode("amogus"), UserRole.TA, 3957639L));
 
@@ -93,7 +104,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerUserNotYesExistsTest() {
+    void registerNewUserTest() {
         String username = "impostor";
 
         Assertions.assertTrue(this.authService.registerUser(username, 7803850L, "password2"),
@@ -144,7 +155,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void changePasswordTest() {
+    void changePasswordSuccessTest() {
         String username = "red_kinda_sus_ngl";
         this.userDataRepository
                 .save(new UserData(username, encode("sus"), UserRole.TA, 3425101L));
