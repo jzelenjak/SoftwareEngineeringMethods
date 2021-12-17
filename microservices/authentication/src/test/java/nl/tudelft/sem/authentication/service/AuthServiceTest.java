@@ -95,12 +95,12 @@ class AuthServiceTest {
     @Test
     void registerUserAlreadyExistsByUserIdTest() {
         this.userDataRepository
-                .save(new UserData("jegor", encode("amogus"), UserRole.TA, 3957639L));
+                .save(new UserData("Jegor", encode("amogus"), UserRole.TA, 8105739L));
 
-        Assertions.assertFalse(this.authService.registerUser("jegor", 3957639L, "password2"),
+        Assertions.assertFalse(this.authService.registerUser("Andy", 8105739L, "password2"),
                 "The user must not have been registered");
 
-        this.userDataRepository.deleteById("jegor");
+        this.userDataRepository.deleteById("Jegor");
     }
 
     @Test
