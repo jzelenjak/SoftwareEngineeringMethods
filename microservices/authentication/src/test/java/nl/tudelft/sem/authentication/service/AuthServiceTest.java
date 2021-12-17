@@ -86,7 +86,7 @@ class AuthServiceTest {
         this.userDataRepository
                 .save(new UserData("Andy", encode("amogus"), UserRole.TA, 3957639L));
 
-        Assertions.assertFalse(this.authService.registerUser("Andy", 3957639L, "password2"),
+        Assertions.assertFalse(this.authService.registerUser("Andy", 4957639L, "password2"),
                 "The user must not have been registered");
 
         this.userDataRepository.deleteById("Andy");
@@ -97,7 +97,7 @@ class AuthServiceTest {
         this.userDataRepository
                 .save(new UserData("Jegor", encode("amogus"), UserRole.TA, 8105739L));
 
-        Assertions.assertFalse(this.authService.registerUser("Andy", 8105739L, "password2"),
+        Assertions.assertFalse(this.authService.registerUser("andy", 8105739L, "password2"),
                 "The user must not have been registered");
 
         this.userDataRepository.deleteById("Jegor");

@@ -254,6 +254,22 @@ public class AuthController {
      *
      * @param list the list of notifications.
      *
+     * <i>Example:</i>
+     * <pre>
+     *  {
+     *      "notifications": [
+     *          {
+     *             "message" : "Hey there, you are hired!",
+     *             "notificationDate" : "17:54 10-12-2021 Europe/Berlin"
+     *          }
+     *          {
+     *              "message": "Hey there, you are fired!",
+     *              "notificationDate": "16:20 25-12-2021 Europe/Berlin"
+     *          }
+     *      ]
+     *  }
+     * </pre>
+     *
      * @return string representation of list of notifications.
      */
     public String turnListInJsonResponse(List<Notification> list) {
