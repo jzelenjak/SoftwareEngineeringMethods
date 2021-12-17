@@ -2,8 +2,11 @@ package nl.tudelft.sem.hiring.procedure.recommendation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 /**
@@ -11,10 +14,9 @@ import lombok.ToString;
  *   it has the userId and the metric that is used for recommendation
  *   (e.g. total times selected, times selected, grade, hours worked etc.)
  */
-@Getter
+@Data
 @AllArgsConstructor
-@EqualsAndHashCode
-@ToString
+@NoArgsConstructor
 public class Recommendation {
     private long userId;
     private double metric;

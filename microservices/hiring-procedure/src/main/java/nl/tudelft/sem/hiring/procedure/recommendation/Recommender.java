@@ -1,12 +1,14 @@
 package nl.tudelft.sem.hiring.procedure.recommendation;
 
 import java.util.List;
+import javax.validation.constraints.NotNull;
 import reactor.core.publisher.Mono;
 
 /**
  * A class is responsible for recommending candidate TAs for a course based on different strategies.
  */
 public class Recommender {
+    @NotNull
     private final transient RecommendationStrategy strategy;
 
     /**

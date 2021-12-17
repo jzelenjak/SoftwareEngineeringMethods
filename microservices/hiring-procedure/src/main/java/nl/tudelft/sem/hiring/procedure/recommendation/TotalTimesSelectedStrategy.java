@@ -30,7 +30,8 @@ public class TotalTimesSelectedStrategy implements RecommendationStrategy {
      * @param number        the maximum number of recommendations to return
      * @param minValue      the minimum value for the metric (used for filtering)
      * @return the list of recommendations for candidate TAs based on the number of
-     *         times selected for a TA position. The size of the list is at most 'number'.
+     *         times selected for a TA position (wrapped in the mono).
+     *         The size of the list is at most 'number'.
      */
     @Override
     public Mono<List<Recommendation>> recommend(long courseId, int number, double minValue) {

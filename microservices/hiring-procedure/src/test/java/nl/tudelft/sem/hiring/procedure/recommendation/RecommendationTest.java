@@ -1,24 +1,19 @@
 package nl.tudelft.sem.hiring.procedure.recommendation;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class RecommendationTest {
-    private transient Recommendation recommendation;
-
-    @BeforeEach
-    void setup() {
-        recommendation = new Recommendation(5205205L, 9.9);
-    }
 
     @Test
-    void toJsonTest() {
-        String jsonActual = recommendation.toJson();
-        String jsonExpected = String.format("{\r\n  \"userId\" : %d,\r\n  \"metric\" : %.1f\r\n}",
-                recommendation.getUserId(), recommendation.getMetric());
-        System.out.println(jsonExpected.replaceAll("\\r|\\n|\\s", ""));
-        Assertions.assertEquals(jsonExpected.replaceAll("\\r|\\n|\\s", ""),
-                jsonActual.replaceAll("\\r|\\n|\\s", ""));
+    void testToJson() throws JsonProcessingException {
+        Recommendation testObj = new Recommendation(5205205L, 9.9);
+        String jsonString = testObj.toJson();
+
+        Assertions
+            .assertThat(new ObjectMapper().readValue(jsonString, Recommendation.class))
+            .isEqualTo(testObj);
     }
 }

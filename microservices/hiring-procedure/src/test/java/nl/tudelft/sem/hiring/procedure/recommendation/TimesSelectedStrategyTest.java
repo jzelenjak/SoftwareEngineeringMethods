@@ -39,7 +39,7 @@ public class TimesSelectedStrategyTest {
 
     private transient GatewayConfig gatewayConfig;
 
-    private final transient ObjectMapper mapper = new ObjectMapper();
+    private transient ObjectMapper mapper;
 
     private static final transient String GET_ALL_EDITIONS = "/api/courses/get-all-editions";
 
@@ -56,9 +56,10 @@ public class TimesSelectedStrategyTest {
     }
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         this.gatewayConfig = Mockito.mock(GatewayConfig.class);
         this.strategy = new TimesSelectedStrategy(repo, gatewayConfig);
+        this.mapper = new ObjectMapper();
     }
 
     @Test
