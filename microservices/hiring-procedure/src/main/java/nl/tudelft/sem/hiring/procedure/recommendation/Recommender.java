@@ -22,10 +22,11 @@ public class Recommender {
      *
      * @param courseId  the id of the course (not the course code)
      * @param number    the maximum number of recommendations to return
+     * @param minValue  the minimum value for the metric (used for filtering)
      * @return a list of recommendations for the specified course.
      *          The list is at most size 'number'
      */
-    public List<Recommendation> recommend(long courseId, int number) {
-        return this.strategy.recommend(courseId, number);
+    public List<Recommendation> recommend(long courseId, int number, double minValue) {
+        return this.strategy.recommend(courseId, number, minValue);
     }
 }

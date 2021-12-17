@@ -27,11 +27,12 @@ public class TotalTimesSelectedStrategy implements RecommendationStrategy {
      *
      * @param courseId      the id of the course
      * @param number        the maximum number of recommendations to return
+     * @param minValue      the minimum value for the metric (used for filtering)
      * @return the list of recommendations for candidate TAs based on the number of
      *         times selected for a TA position. The size of the list is at most 'number'.
      */
-    public List<Recommendation> recommend(long courseId, int number) {
-        return this.repo.findTopByTotalTimesSelected(courseId)
+    public List<Recommendation> recommend(long courseId, int number, double minValue) {
+        return this.repo.findTopByTotalTimesSelected(courseId, (long) minValue)
                 .stream()
                 .limit(number)
                 .map(a -> new Recommendation((Long) a[0], ((Long) a[1]).doubleValue()))
