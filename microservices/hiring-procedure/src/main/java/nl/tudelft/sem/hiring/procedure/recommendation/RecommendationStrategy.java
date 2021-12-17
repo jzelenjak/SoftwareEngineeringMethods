@@ -1,6 +1,7 @@
 package nl.tudelft.sem.hiring.procedure.recommendation;
 
 import java.util.List;
+import reactor.core.publisher.Mono;
 
 /**
  * The interface that represents a strategy for recommending a user.
@@ -17,5 +18,5 @@ public interface RecommendationStrategy {
      * @return the list of recommendations for candidate TAs.
      *         The size of the list is at most 'number'
      */
-    List<Recommendation> recommend(long courseId, int number, double minValue);
+    Mono<List<Recommendation>> recommend(long courseId, int number, double minValue);
 }

@@ -32,4 +32,12 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             + " AND status = 2 GROUP BY userId HAVING COUNT(userId) >= :minValue"
             + " ORDER BY times DESC")
     List<Object[]> findTopByTotalTimesSelected(@Param("cid") long courseId, long minValue);
+
+    @Query("SELECT userId, COUNT(userId) AS times FROM Application"
+            + " WHERE courseId IN :cids AND userId IN"
+            + " (SELECT userId FROM Application WHERE courseId = :cid)"
+            + " AND status = 2 GROUP BY userId HAVING COUNT(userId) >= :minValue"
+            + " ORDER BY times DESC")
+    List<Object[]> findTopByTimesSelected(@Param("cid") long courseId,
+                                          @Param("cids") List<Long> courseIds, long minValue);
 }

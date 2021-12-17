@@ -1,6 +1,7 @@
 package nl.tudelft.sem.hiring.procedure.recommendation;
 
 import java.util.List;
+import reactor.core.publisher.Mono;
 
 /**
  * A class is responsible for recommending candidate TAs for a course based on different strategies.
@@ -26,7 +27,7 @@ public class Recommender {
      * @return a list of recommendations for the specified course.
      *          The list is at most size 'number'
      */
-    public List<Recommendation> recommend(long courseId, int number, double minValue) {
+    public Mono<List<Recommendation>> recommend(long courseId, int number, double minValue) {
         return this.strategy.recommend(courseId, number, minValue);
     }
 }

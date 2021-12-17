@@ -3,6 +3,7 @@ package nl.tudelft.sem.hiring.procedure.recommendation;
 import java.util.List;
 import java.util.stream.Collectors;
 import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
+import reactor.core.publisher.Mono;
 
 /**
  * The class that implements RecommendationStrategy interface by recommending candidate TAs
@@ -31,11 +32,12 @@ public class TotalTimesSelectedStrategy implements RecommendationStrategy {
      * @return the list of recommendations for candidate TAs based on the number of
      *         times selected for a TA position. The size of the list is at most 'number'.
      */
-    public List<Recommendation> recommend(long courseId, int number, double minValue) {
-        return this.repo.findTopByTotalTimesSelected(courseId, (long) minValue)
+    @Override
+    public Mono<List<Recommendation>> recommend(long courseId, int number, double minValue) {
+        return Mono.just(this.repo.findTopByTotalTimesSelected(courseId, (long) minValue)
                 .stream()
                 .limit(number)
                 .map(a -> new Recommendation((Long) a[0], ((Long) a[1]).doubleValue()))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
 }

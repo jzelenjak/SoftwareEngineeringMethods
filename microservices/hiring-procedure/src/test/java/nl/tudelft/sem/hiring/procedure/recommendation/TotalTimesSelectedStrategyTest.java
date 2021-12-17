@@ -75,7 +75,7 @@ public class TotalTimesSelectedStrategyTest {
         addApplications(input);
 
         Assertions
-            .assertThat(this.strategy.recommend(69L, 2, 0.0))
+            .assertThat(this.strategy.recommend(69L, 2, 0.0).block())
             .isEqualTo(List.of(new Recommendation(43L, 1)));
     }
 
@@ -88,33 +88,33 @@ public class TotalTimesSelectedStrategyTest {
         addApplications(input);
 
         Assertions
-            .assertThat(this.strategy.recommend(33L, 1, 0.0))
+            .assertThat(this.strategy.recommend(33L, 1, 0.0).block())
             .isEqualTo(new ArrayList<Recommendation>());
     }
 
     @Test
     public void testRecommendRejectedApplicationMustBeIgnored() {
         // Number of applicants
-        String input = "1"+ "\n"
+        String input = "1" + "\n"
                 // Applicant No777; selected in the past: 1 time
                 + "4\n777 54 IN_PROGRESS 777 64 ACCEPTED 777 62 REJECTED 777 61 REJECTED\n";
         addApplications(input);
 
         Assertions
-            .assertThat(this.strategy.recommend(54L, 4, 0.0))
+            .assertThat(this.strategy.recommend(54L, 4, 0.0).block())
             .isEqualTo(List.of(new Recommendation(777L, 1)));
     }
 
     @Test
     public void testRecommendWithdrawnApplicationMustBeIgnored() {
         // Number of applicants
-        String input = "1"+ "\n"
+        String input = "1" + "\n"
                 // Applicant No777; selected in the past: 2 times
                 + "4\n777 22 IN_PROGRESS 777 64 ACCEPTED 777 62 WITHDRAWN 777 61 ACCEPTED\n";
         addApplications(input);
 
         Assertions
-            .assertThat(this.strategy.recommend(22L, 3, 0.0))
+            .assertThat(this.strategy.recommend(22L, 3, 0.0).block())
             .isEqualTo(List.of(new Recommendation(777L, 2)));
     }
 
@@ -129,7 +129,7 @@ public class TotalTimesSelectedStrategyTest {
         addApplications(input);
 
         Assertions
-                .assertThat(this.strategy.recommend(90L, 5, 0.0))
+                .assertThat(this.strategy.recommend(90L, 5, 0.0).block())
                 .isEqualTo(List.of(new Recommendation(27L, 1)));
     }
 
@@ -146,7 +146,7 @@ public class TotalTimesSelectedStrategyTest {
         addApplications(input);
 
         Assertions
-            .assertThat(this.strategy.recommend(555L, 1, 0.0))
+            .assertThat(this.strategy.recommend(555L, 1, 0.0).block())
             .containsAnyOf(new Recommendation(111, 2),
                            new Recommendation(89, 2))
             .hasSize(1);
@@ -169,7 +169,7 @@ public class TotalTimesSelectedStrategyTest {
         addApplications(input);
 
         Assertions
-                .assertThat(this.strategy.recommend(69L, 10, 0.0))
+                .assertThat(this.strategy.recommend(69L, 10, 0.0).block())
                 .isEqualTo(List.of(new Recommendation(42L, 3),
                         new Recommendation(44L, 2),
                         new Recommendation(43L, 1)));
@@ -182,13 +182,13 @@ public class TotalTimesSelectedStrategyTest {
     @Test
     public void testRecommendMetricOnPoint() {
         // Number of applicants
-        String input = "1"+ "\n"
+        String input = "1" + "\n"
                 // Applicant No333; selected in the past: 2 times
                 + "4\n333 22 IN_PROGRESS 333 64 ACCEPTED 333 62 WITHDRAWN 333 61 ACCEPTED\n";
         addApplications(input);
 
         Assertions
-                .assertThat(this.strategy.recommend(22L, 3, 2.0))
+                .assertThat(this.strategy.recommend(22L, 3, 2.0).block())
                 .isEqualTo(List.of(new Recommendation(333L, 2)));
     }
 
@@ -201,7 +201,7 @@ public class TotalTimesSelectedStrategyTest {
         addApplications(input);
 
         Assertions
-                .assertThat(this.strategy.recommend(22L, 3, 3.0))
+                .assertThat(this.strategy.recommend(22L, 3, 3.0).block())
                 .isEqualTo(new ArrayList<Recommendation>());
     }
 
@@ -214,7 +214,7 @@ public class TotalTimesSelectedStrategyTest {
         addApplications(input);
 
         Assertions
-                .assertThat(this.strategy.recommend(22L, 3, 1.0))
+                .assertThat(this.strategy.recommend(22L, 3, 1.0).block())
                 .isEqualTo(List.of(new Recommendation(666L, 2)));
     }
 
@@ -227,7 +227,7 @@ public class TotalTimesSelectedStrategyTest {
         addApplications(input);
 
         Assertions
-                .assertThat(this.strategy.recommend(22L, 3, 5.0))
+                .assertThat(this.strategy.recommend(22L, 3, 5.0).block())
                 .isEqualTo(List.of());
     }
 }
