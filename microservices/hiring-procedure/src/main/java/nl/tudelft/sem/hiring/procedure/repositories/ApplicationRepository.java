@@ -40,4 +40,7 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             + " ORDER BY times DESC")
     List<Object[]> findTopByTimesSelected(@Param("cid") long courseId,
                                           @Param("cids") List<Long> courseIds, long minValue);
+
+    @Query("SELECT userId FROM Application WHERE courseId = :cid")
+    List<Long> findAllApplicants(@Param("cid") long courseId);
 }

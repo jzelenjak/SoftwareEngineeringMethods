@@ -1,7 +1,8 @@
-package nl.tudelft.sem.hiring.procedure.recommendation;
+package nl.tudelft.sem.hiring.procedure.recommendation.strategies;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
 import reactor.core.publisher.Mono;
 
@@ -27,17 +28,17 @@ public class TotalTimesSelectedStrategy implements RecommendationStrategy {
      *   It uses the strategy of the max total times selected for any course.
      *
      * @param courseId      the id of the course
-     * @param number        the maximum number of recommendations to return
+     * @param amount        the maximum number of recommendations to return
      * @param minValue      the minimum value for the metric (used for filtering)
      * @return the list of recommendations for candidate TAs based on the number of
      *         times selected for a TA position (wrapped in the mono).
-     *         The size of the list is at most 'number'.
+     *         The size of the list is at most 'amount'.
      */
     @Override
-    public Mono<List<Recommendation>> recommend(long courseId, int number, double minValue) {
+    public Mono<List<Recommendation>> recommend(long courseId, int amount, double minValue) {
         return Mono.just(this.repo.findTopByTotalTimesSelected(courseId, (long) minValue)
                 .stream()
-                .limit(number)
+                .limit(amount)
                 .map(a -> new Recommendation((Long) a[0], ((Long) a[1]).doubleValue()))
                 .collect(Collectors.toList()));
     }

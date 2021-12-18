@@ -1,4 +1,4 @@
-package nl.tudelft.sem.hiring.procedure.recommendation;
+package nl.tudelft.sem.hiring.procedure.recommendation.entities;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;

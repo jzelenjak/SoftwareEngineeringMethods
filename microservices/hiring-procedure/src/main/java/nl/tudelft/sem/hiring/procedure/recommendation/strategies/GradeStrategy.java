@@ -1,0 +1,113 @@
+package nl.tudelft.sem.hiring.procedure.recommendation.strategies;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
+import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
+import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Mono;
+
+/**
+ * The class that implements RecommendationStrategy interface by recommending candidate TAs
+ *      based of the max grade they have received for the given course.
+ */
+public class GradeStrategy implements RecommendationStrategy {
+
+    private final transient GatewayConfig gatewayConfig;
+
+    private final transient WebClient webClient;
+
+    private final transient ApplicationRepository repo;
+
+    /**
+     * Instantiates a new GradeStrategy object.
+     *
+     * @param repo the TA application repository
+     * @param gatewayConfig the gateway configuration
+     */
+    public GradeStrategy(ApplicationRepository repo, GatewayConfig gatewayConfig) {
+        this.repo = repo;
+        this.webClient = WebClient.create();
+        this.gatewayConfig = gatewayConfig;
+    }
+
+    /**
+     * Recommends at most the specified number of candidate TAs who have applied
+     *   for a specified course.
+     *   It uses the strategy of the highest grade for the given course.
+     *
+     * @param courseId      the id of the course
+     * @param amount        the maximum number of recommendations to return
+     * @param minValue      the minimum value for the metric (used for filtering)
+     * @return the list of recommendations for candidate TAs based on the highest grade
+     *         for the given course (wrapped in the mono).
+     *         The size of the list is at most 'amount'.
+     */
+    @Override
+    public Mono<List<Recommendation>> recommend(long courseId, int amount, double minValue) {
+        List<Long> applicants = repo.findAllApplicants(courseId);
+
+        if (applicants.isEmpty()) {
+            return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                "No applicants found"));
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.createObjectNode()
+                .put("courseId", courseId)
+                .put("amount", amount)
+                .put("minGrade", minValue)
+                .set("userIds",  mapper.valueToTree(applicants))
+                .toString();
+
+        return this.webClient
+                .post()
+                .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
+                        "api", "courses", "statistics", "user-grade"))
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .body(json, String.class)
+                .exchange()
+                .flatMap(this::processMono);
+    }
+
+    /**
+     * A helper method to process the received mono response.
+     *
+     * @param response   the received mono response
+     * @return the list of recommendations for candidate TAs based on the highest
+     *         grade for the given course (wrapped in the mono).
+     */
+    private Mono<List<Recommendation>> processMono(ClientResponse response) {
+        if (response.statusCode().isError()) {
+            return Mono.error(new ResponseStatusException(response.statusCode(),
+                            "Could not make any recommendations"));
+        }
+        return response
+                .bodyToMono(String.class)
+                .flatMap(this::processMonoBody);
+    }
+
+    /**
+     * A helper method to process the received mono response body.
+     *
+     * @param body      the body from the received mono response
+     * @return the list of recommendations for candidate TAs based on the highest
+     *         grade for the given course (wrapped in the mono).
+     */
+    protected Mono<List<Recommendation>> processMonoBody(String body) {
+        try {
+            return Mono.just(convertJsonToRecommendationList(body));
+        } catch (JsonProcessingException e) {
+            return Mono
+                    .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                            "An error has occurred. Please try again later!"));
+        }
+    }
+}

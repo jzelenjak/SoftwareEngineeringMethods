@@ -2,6 +2,7 @@ package nl.tudelft.sem.hiring.procedure.recommendation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 

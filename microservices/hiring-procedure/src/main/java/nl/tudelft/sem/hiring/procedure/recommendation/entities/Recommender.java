@@ -1,7 +1,8 @@
-package nl.tudelft.sem.hiring.procedure.recommendation;
+package nl.tudelft.sem.hiring.procedure.recommendation.entities;
 
 import java.util.List;
 import javax.validation.constraints.NotNull;
+import nl.tudelft.sem.hiring.procedure.recommendation.strategies.RecommendationStrategy;
 import reactor.core.publisher.Mono;
 
 /**
