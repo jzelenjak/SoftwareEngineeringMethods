@@ -5,8 +5,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.validation.constraints.NotNull;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
@@ -27,6 +31,27 @@ public interface RecommendationStrategy {
      *         The size of the list is at most `amount`
      */
     Mono<List<Recommendation>> recommend(long courseId, int amount, double minValue);
+
+
+    /**
+     * A helper method to process the received mono response.
+     * Used as a callback when flatMapping the received mono.
+     *
+     * @param response   the received mono response
+     * @param callback   child callback that will be executed on the body of the received mono
+     * @return the list of recommendations for candidate TAs based on certain metric
+     *          (wrapped in the mono). The size of the list is at most `amount`.
+     */
+    default Mono<List<Recommendation>> processMono(ClientResponse response,
+                               @NotNull Function<String, Mono<List<Recommendation>>> callback) {
+        if (response.statusCode().isError()) {
+            return Mono.error(new ResponseStatusException(response.statusCode(),
+                    "Could not make any recommendations"));
+        }
+        return response
+                .bodyToMono(String.class)
+                .flatMap(callback);
+    }
 
 
     /**

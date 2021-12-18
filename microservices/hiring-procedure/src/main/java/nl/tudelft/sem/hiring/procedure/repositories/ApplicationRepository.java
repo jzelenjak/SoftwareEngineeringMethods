@@ -2,9 +2,9 @@ package nl.tudelft.sem.hiring.procedure.repositories;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,7 +31,8 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             + " WHERE userId IN (SELECT userId FROM Application WHERE courseId = :cid)"
             + " AND status = 2 GROUP BY userId HAVING COUNT(userId) >= :minValue"
             + " ORDER BY times DESC")
-    List<Object[]> findTopByTotalTimesSelected(@Param("cid") long courseId, long minValue);
+    List<Object[]> findTopByTotalTimesSelected(@Param("cid") long courseId,
+                                               long minValue, Pageable pageable);
 
     @Query("SELECT userId, COUNT(userId) AS times FROM Application"
             + " WHERE courseId IN :cids AND userId IN"
@@ -39,8 +40,9 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             + " AND status = 2 GROUP BY userId HAVING COUNT(userId) >= :minValue"
             + " ORDER BY times DESC")
     List<Object[]> findTopByTimesSelected(@Param("cid") long courseId,
-                                          @Param("cids") List<Long> courseIds, long minValue);
+                                          @Param("cids") List<Long> courseIds,
+                                          long minValue, Pageable pageable);
 
     @Query("SELECT userId FROM Application WHERE courseId = :cid")
-    List<Long> findAllApplicants(@Param("cid") long courseId);
+    List<Long> findAllApplicantsByCourseId(@Param("cid") long courseId);
 }

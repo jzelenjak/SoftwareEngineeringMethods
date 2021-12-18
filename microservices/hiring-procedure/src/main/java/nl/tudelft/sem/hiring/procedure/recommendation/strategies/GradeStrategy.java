@@ -9,7 +9,6 @@ import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
@@ -45,25 +44,25 @@ public class GradeStrategy implements RecommendationStrategy {
      *
      * @param courseId      the id of the course
      * @param amount        the maximum number of recommendations to return
-     * @param minValue      the minimum value for the metric (used for filtering)
+     * @param minGrade      the minimum grade (used for filtering)
      * @return the list of recommendations for candidate TAs based on the highest grade
      *         for the given course (wrapped in the mono).
-     *         The size of the list is at most 'amount'.
+     *         The size of the list is at most `amount`.
      */
     @Override
-    public Mono<List<Recommendation>> recommend(long courseId, int amount, double minValue) {
-        List<Long> applicants = repo.findAllApplicants(courseId);
+    public Mono<List<Recommendation>> recommend(long courseId, int amount, double minGrade) {
+        List<Long> applicants = repo.findAllApplicantsByCourseId(courseId);
 
         if (applicants.isEmpty()) {
-            return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                                "No applicants found"));
+            return Mono
+                   .error(new ResponseStatusException(HttpStatus.NOT_FOUND, "No applicants found"));
         }
 
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.createObjectNode()
                 .put("courseId", courseId)
                 .put("amount", amount)
-                .put("minGrade", minValue)
+                .put("minGrade", minGrade)
                 .set("userIds",  mapper.valueToTree(applicants))
                 .toString();
 
@@ -74,24 +73,7 @@ public class GradeStrategy implements RecommendationStrategy {
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .body(json, String.class)
                 .exchange()
-                .flatMap(this::processMono);
-    }
-
-    /**
-     * A helper method to process the received mono response.
-     *
-     * @param response   the received mono response
-     * @return the list of recommendations for candidate TAs based on the highest
-     *         grade for the given course (wrapped in the mono).
-     */
-    private Mono<List<Recommendation>> processMono(ClientResponse response) {
-        if (response.statusCode().isError()) {
-            return Mono.error(new ResponseStatusException(response.statusCode(),
-                            "Could not make any recommendations"));
-        }
-        return response
-                .bodyToMono(String.class)
-                .flatMap(this::processMonoBody);
+                .flatMap(response -> processMono(response, this::processMonoBody));
     }
 
     /**
@@ -101,7 +83,7 @@ public class GradeStrategy implements RecommendationStrategy {
      * @return the list of recommendations for candidate TAs based on the highest
      *         grade for the given course (wrapped in the mono).
      */
-    protected Mono<List<Recommendation>> processMonoBody(String body) {
+    private Mono<List<Recommendation>> processMonoBody(String body) {
         try {
             return Mono.just(convertJsonToRecommendationList(body));
         } catch (JsonProcessingException e) {

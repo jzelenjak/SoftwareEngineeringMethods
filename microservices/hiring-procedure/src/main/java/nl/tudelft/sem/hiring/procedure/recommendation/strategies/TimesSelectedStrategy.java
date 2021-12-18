@@ -6,8 +6,8 @@ import java.util.stream.Collectors;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
@@ -44,42 +44,21 @@ public class TimesSelectedStrategy implements RecommendationStrategy {
      *
      * @param courseId      the id of the course
      * @param amount        the maximum number of recommendations to return
-     * @param minValue      the minimum value for the metric (used for filtering)
+     * @param minTimes      the minimum number of times selected (used for filtering)
      * @return the list of recommendations for candidate TAs based on the number of
      *         times selected for a TA position for one course (wrapped in the mono).
-     *         The size of the list is at most 'amount'.
+     *         The size of the list is at most `amount`.
      */
     @Override
-    public Mono<List<Recommendation>> recommend(long courseId, int amount, double minValue) {
+    public Mono<List<Recommendation>> recommend(long courseId, int amount, double minTimes) {
         return
            this.webClient
             .get()
             .uri(buildUriWithCourseId(gatewayConfig.getHost(), gatewayConfig.getPort(), courseId,
                     "api", "courses", "get-all-editions"))
             .exchange()
-            .flatMap(response -> processMono(response, courseId, amount, minValue));
-    }
-
-    /**
-     * A helper method to process the received mono response.
-     *
-     * @param response   the received mono response
-     * @param courseId   the id of the course
-     * @param amount     the maximum number of recommendations to return
-     * @param minValue   the minimum value for the metric (used for filtering)
-     * @return the list of recommendations for candidate TAs based on the number of
-     *         times selected for a TA position for one course (wrapped in the mono).
-     *         The size of the list is at most 'amount'.
-     */
-    private Mono<List<Recommendation>> processMono(ClientResponse response, long courseId,
-                                                        int amount, double minValue) {
-        if (response.statusCode().isError()) {
-            return Mono.error(new ResponseStatusException(response.statusCode(),
-                            "Could not find any courses"));
-        }
-        return response
-                .bodyToMono(String.class)
-                .flatMap(body -> processMonoBody(body, courseId, amount, minValue));
+            .flatMap(response -> processMono(response,
+                        body -> processMonoBody(body, courseId, amount, minTimes)));
     }
 
     /**
@@ -88,28 +67,26 @@ public class TimesSelectedStrategy implements RecommendationStrategy {
      * @param body      the body from the received mono response
      * @param courseId  the id of the course
      * @param amount    the maximum number of recommendations to return
-     * @param minValue  the minimum value for the metric (used for filtering)
+     * @param minTimes  the minimum number of times selected (used for filtering)
      * @return the list of recommendations for candidate TAs based on the number of
      *         times selected for a TA position for one course (wrapped in the mono).
      *         The size of the list is at most 'amount'.
      */
-    protected Mono<List<Recommendation>> processMonoBody(String body, long courseId,
-                                                   int amount, double minValue) {
+    private Mono<List<Recommendation>> processMonoBody(String body, long courseId,
+                                                   int amount, double minTimes) {
         try {
             List<Long> courseIds = convertJsonToLongList(body, "courseIds");
             return Mono
                     .just(this.repo
-                            .findTopByTimesSelected(courseId, courseIds, (long) minValue)
-                            .stream()
-                            .limit(amount)
-                            .map(a -> new Recommendation((Long) a[0], ((Long) a[1]).doubleValue()))
-                            .collect(Collectors.toList())
-                    );
+                        .findTopByTimesSelected(courseId, courseIds,
+                                (long) minTimes, PageRequest.of(0, amount))
+                        .stream()
+                        .map(a -> new Recommendation((Long) a[0], ((Long) a[1]).doubleValue()))
+                        .collect(Collectors.toList()));
         } catch (JsonProcessingException e) {
             return Mono
                     .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                             "An error has occurred. Please try again later!"));
         }
     }
-
 }

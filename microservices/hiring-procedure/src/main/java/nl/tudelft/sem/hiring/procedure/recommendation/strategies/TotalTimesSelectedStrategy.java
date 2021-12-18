@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
+import org.springframework.data.domain.PageRequest;
 import reactor.core.publisher.Mono;
 
 /**
@@ -29,17 +30,17 @@ public class TotalTimesSelectedStrategy implements RecommendationStrategy {
      *
      * @param courseId      the id of the course
      * @param amount        the maximum number of recommendations to return
-     * @param minValue      the minimum value for the metric (used for filtering)
+     * @param minTimes      the minimum number of times selected (used for filtering)
      * @return the list of recommendations for candidate TAs based on the number of
      *         times selected for a TA position (wrapped in the mono).
-     *         The size of the list is at most 'amount'.
+     *         The size of the list is at most `amount`.
      */
     @Override
-    public Mono<List<Recommendation>> recommend(long courseId, int amount, double minValue) {
-        return Mono.just(this.repo.findTopByTotalTimesSelected(courseId, (long) minValue)
+    public Mono<List<Recommendation>> recommend(long courseId, int amount, double minTimes) {
+        return Mono.just(this.repo
+                .findTopByTotalTimesSelected(courseId, (long) minTimes, PageRequest.of(0, amount))
                 .stream()
-                .limit(amount)
-                .map(a -> new Recommendation((Long) a[0], ((Long) a[1]).doubleValue()))
+                .map(t -> new Recommendation((Long) t[0], ((Long) t[1]).doubleValue()))
                 .collect(Collectors.toList()));
     }
 }

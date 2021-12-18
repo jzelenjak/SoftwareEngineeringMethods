@@ -1,25 +1,32 @@
 package nl.tudelft.sem.hiring.procedure.recommendation.controller;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-import javax.servlet.http.HttpServletRequest;
+import java.util.Set;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
-import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommender;
+import nl.tudelft.sem.hiring.procedure.recommendation.service.Recommender;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.GradeStrategy;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.HoursStrategy;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.RecommendationStrategy;
+import nl.tudelft.sem.hiring.procedure.recommendation.strategies.StrategyType;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.TimesSelectedStrategy;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.TotalTimesSelectedStrategy;
 import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
+import nl.tudelft.sem.hiring.procedure.validation.AsyncAuthValidator;
+import nl.tudelft.sem.hiring.procedure.validation.AsyncRoleValidator;
+import nl.tudelft.sem.hiring.procedure.validation.AsyncValidator;
+import nl.tudelft.sem.jwt.JwtUtils;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -34,6 +41,8 @@ public class RecommendationController {
 
     private final transient GatewayConfig gatewayConfig;
 
+    private final transient JwtUtils jwtUtils;
+
     private final transient ApplicationRepository applicationRepository;
 
     /**
@@ -42,30 +51,37 @@ public class RecommendationController {
      * @param repo              the application repository
      * @param gatewayConfig     the gateway configuration
      */
-    public RecommendationController(ApplicationRepository repo, GatewayConfig gatewayConfig) {
+    public RecommendationController(ApplicationRepository repo,
+                                    GatewayConfig gatewayConfig, JwtUtils jwtUtils) {
         this.applicationRepository = repo;
         this.gatewayConfig = gatewayConfig;
+        this.jwtUtils = jwtUtils;
     }
 
     /**
      * Gets at most `amount` of candidate TA recommendations for a given course.
      *
-     * @param req   HTTP request
-     * @return a list of recommendations for the specified course. The list is at most size 'number'
-     * @throws IOException if something goes wrong with servlets
+     * @param body    HTTP request body
+     * @param headers HTTP request headers
+     * @return a list of recommendations for the specified course.
      */
     @PostMapping("/")
-    public Mono<List<Recommendation>> recommend(HttpServletRequest req) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode node = mapper.readTree(req.getInputStream());
+    public Mono<List<Recommendation>> recommend(@RequestBody String body,
+                                      @RequestHeader() HttpHeaders headers) {
+        AsyncValidator head = AsyncValidator.Builder
+            .newBuilder()
+            .addValidators(
+                new AsyncAuthValidator(jwtUtils),
+                new AsyncRoleValidator(jwtUtils,
+                        Set.of(AsyncRoleValidator.Roles.LECTURER,
+                                AsyncRoleValidator.Roles.ADMIN)))
+            .build();
 
-        long courseId = node.get("courseId").asLong();
-        int amount = node.get("amount").asInt();
-        double minValue = node.get("minValue").asDouble();
-        String metric = node.get("metric").asText().toUpperCase(Locale.ROOT);
-
-        return recommend(courseId, amount, minValue, metric);
+        return head
+                .validate(headers, body)
+                .flatMap(value -> parseBodyAndRecommend(body));
     }
+
 
     /**
      * A helper method that selects the specified strategy and makes recommendations.
@@ -73,34 +89,59 @@ public class RecommendationController {
      * @param courseId   the id of the course
      * @param amount     the maximum number of recommendations to return
      * @param minValue   the minimum value for the metric (used for filtering)
-     * @param metric     the metric to base recommendations on
+     * @param strategy   the metric to base recommendations on
      *                   (total times selected, times selected for a given course,
      *                   the highest grade or the most hours spent working on the given course)
-     * @return the list of recommendations for candidate TAs based on the the specified metric
+     * @return the list of recommendations for candidate TAs based on the specified metric
      *          (wrapped in the mono). The size of the list is at most `amount`.
      */
     private Mono<List<Recommendation>> recommend(long courseId, int amount,
-                                                 double minValue, String metric) {
-        switch (metric) {
-            case "TOTAL_TIMES_SELECTED":
+                                                 double minValue, StrategyType strategy) {
+        switch (strategy) {
+            case TOTAL_TIMES_SELECTED:
                 RecommendationStrategy strategy1 =
                         new TotalTimesSelectedStrategy(applicationRepository);
                 return new Recommender(strategy1).recommend(courseId, amount, minValue);
-            case "TIMES_SELECTED":
+            case TIMES_SELECTED:
                 RecommendationStrategy strategy2 =
                         new TimesSelectedStrategy(applicationRepository, gatewayConfig);
                 return new Recommender(strategy2).recommend(courseId, amount, minValue);
-            case "GRADE":
+            case GRADE:
                 RecommendationStrategy strategy3 =
                         new GradeStrategy(applicationRepository, gatewayConfig);
                 return new Recommender(strategy3).recommend(courseId, amount, minValue);
-            case "HOURS":
+            //HOURS
+            default:
                 RecommendationStrategy strategy4 =
                         new HoursStrategy(applicationRepository, gatewayConfig);
                 return new Recommender(strategy4).recommend(courseId, amount, minValue);
-            default:
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Unsupported recommendation metric");
+        }
+    }
+
+    /**
+     * A helper method to parse the request JSON body and recommend candidate TAs.
+     *
+     * @param body HTTP request body
+     * @return the list of recommendations for candidate TAs based on the specified metric
+     *         (wrapped in the mono).
+     */
+    private Mono<List<Recommendation>> parseBodyAndRecommend(String body) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode node = mapper.readTree(body);
+            long courseId = node.get("courseId").asLong();
+            int amount = node.get("amount").asInt();
+            double minValue = node.get("minValue").asDouble();
+            StrategyType strategy = StrategyType
+                    .valueOf(node.get("strategy").asText().toUpperCase(Locale.ROOT));
+
+            return recommend(courseId, amount, minValue, strategy);
+        } catch (JsonProcessingException e) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid request body format"));
+        } catch (IllegalArgumentException e) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "The specified strategy does not exist"));
         }
     }
 
