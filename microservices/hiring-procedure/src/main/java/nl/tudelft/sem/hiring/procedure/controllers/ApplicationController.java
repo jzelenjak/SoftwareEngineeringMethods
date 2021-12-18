@@ -18,6 +18,7 @@ import nl.tudelft.sem.hiring.procedure.validation.AsyncCourseExistsValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncCourseTimeValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncRoleValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncRoleValidator.Roles;
+import nl.tudelft.sem.hiring.procedure.validation.AsyncTaLimitValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncUserExistsValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncValidator;
 import nl.tudelft.sem.jwt.JwtUtils;
@@ -158,8 +159,9 @@ public class ApplicationController {
                 new AsyncAuthValidator(jwtUtils),
                 new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)),
                 new AsyncCourseExistsValidator(gatewayConfig, courseId),
-                new AsyncUserExistsValidator(gatewayConfig, userId))
-            .build();
+                new AsyncUserExistsValidator(gatewayConfig, userId),
+                new AsyncTaLimitValidator(gatewayConfig, applicationService, courseId)
+            ).build();
 
         return head.validate(authHeader, "").flatMap(value -> {
             if (!applicationService.checkCandidate(userId, courseId)) {

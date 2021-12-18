@@ -2,6 +2,7 @@ package nl.tudelft.sem.hiring.procedure.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -14,7 +15,9 @@ import com.google.gson.JsonObject;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
@@ -29,6 +32,7 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -67,6 +71,7 @@ public class ApplicationControllerTest {
     private static final String BASE_URL = "/";
     private static final String RESOLVED_TOKEN = "yo";
     private static final String COURSE_ID_PARAM = "courseId=";
+    private static final String COURSE_ID_STR = "courseId";
     private static final String USER_ID_PARAM = "userId=";
     private static final String PARAM_STARTER = "?";
     private static final String PARAM_CONTINUER = "&";
@@ -88,6 +93,18 @@ public class ApplicationControllerTest {
     @AfterAll
     static void tearDown() throws IOException {
         mockWebServer.shutdown();
+    }
+
+    /// Enqueues zero/default-initialized course info object
+    private void enqueueZeroInitCourseInfo() {
+        ZonedDateTime now = ZonedDateTime.now();
+        JsonObject json = new JsonObject();
+        json.addProperty(COURSE_ID_STR, 0);
+        json.addProperty("courseCode", "");
+        json.addProperty("startDate", now.toString());
+        json.addProperty("endData", now.toString());
+        json.addProperty("numberOfStudents", 0);
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(json.toString()));
     }
 
     @Test
@@ -117,12 +134,12 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(APPLY_API
-                + PARAM_STARTER + COURSE_ID_PARAM + courseId)
+                        + PARAM_STARTER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
                 .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isOk());
+                .andExpect(status().isOk());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -139,11 +156,11 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(APPLY_API
-                + PARAM_STARTER + COURSE_ID_PARAM + courseId)
+                        + PARAM_STARTER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
                 .andReturn();
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -165,12 +182,12 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(APPLY_API
-                + PARAM_STARTER + COURSE_ID_PARAM + courseId)
+                        + PARAM_STARTER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
-                        .andReturn();
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -199,12 +216,12 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(APPLY_API
-                + PARAM_STARTER + COURSE_ID_PARAM + courseId)
+                        + PARAM_STARTER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
-                        .andReturn();
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -228,12 +245,12 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(APPLY_API
-                + PARAM_STARTER + COURSE_ID_PARAM + courseId)
+                        + PARAM_STARTER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
-                        .andReturn();
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -249,12 +266,12 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(APPLY_API
-                + PARAM_STARTER + COURSE_ID_PARAM + courseId)
+                        + PARAM_STARTER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
-                        .andReturn();
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -270,7 +287,7 @@ public class ApplicationControllerTest {
                 .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isOk());
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -282,11 +299,11 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
-                .header(AUTH_BODY, JWT))
-            .andReturn();
+                        .header(AUTH_BODY, JWT))
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -297,11 +314,11 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(get("/api/hiring-procedure/get-all-applications")
-                .header(AUTH_BODY, JWT))
-            .andReturn();
+                        .header(AUTH_BODY, JWT))
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -318,7 +335,7 @@ public class ApplicationControllerTest {
                 .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isOk());
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -330,12 +347,12 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId)
-                .header(AUTH_BODY, JWT))
-            .andReturn();
+                        + COURSE_ID_PARAM + courseId)
+                        .header(AUTH_BODY, JWT))
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -346,12 +363,12 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(get(GET_APPLICATIONS_API + PARAM_STARTER
-                + COURSE_ID_PARAM + courseId)
-                .header(AUTH_BODY, JWT))
-            .andReturn();
+                        + COURSE_ID_PARAM + courseId)
+                        .header(AUTH_BODY, JWT))
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -373,16 +390,17 @@ public class ApplicationControllerTest {
                 .setBody(json.toString()));
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200));
+        enqueueZeroInitCourseInfo();
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(HIRE_API
-                + PARAM_STARTER + USER_ID_PARAM + userId
-                + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+                        + PARAM_STARTER + USER_ID_PARAM + userId
+                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
                         .header(AUTH_BODY, JWT))
                 .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isOk());
+                .andExpect(status().isOk());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -401,13 +419,13 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(HIRE_API
-                + PARAM_STARTER + USER_ID_PARAM + userId
-                + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
-                .header(AUTH_BODY, JWT))
-            .andReturn();
+                        + PARAM_STARTER + USER_ID_PARAM + userId
+                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+                        .header(AUTH_BODY, JWT))
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -419,13 +437,13 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(HIRE_API
-                + PARAM_STARTER + USER_ID_PARAM + userId
-                + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
-                .header(AUTH_BODY, JWT))
-            .andReturn();
+                        + PARAM_STARTER + USER_ID_PARAM + userId
+                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+                        .header(AUTH_BODY, JWT))
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -445,13 +463,13 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(HIRE_API
-                + PARAM_STARTER + USER_ID_PARAM + userId
-                + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
-                .header(AUTH_BODY, JWT))
-            .andReturn();
+                        + PARAM_STARTER + USER_ID_PARAM + userId
+                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+                        .header(AUTH_BODY, JWT))
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -480,13 +498,13 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(HIRE_API
-                + PARAM_STARTER + USER_ID_PARAM + userId
-                + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
-                .header(AUTH_BODY, JWT))
-            .andReturn();
+                        + PARAM_STARTER + USER_ID_PARAM + userId
+                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+                        .header(AUTH_BODY, JWT))
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -516,16 +534,17 @@ public class ApplicationControllerTest {
                 .setBody(json.toString()));
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200));
+        enqueueZeroInitCourseInfo();
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(HIRE_API
-                + PARAM_STARTER + USER_ID_PARAM + userId
-                + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
-                .header(AUTH_BODY, JWT))
-            .andReturn();
+                        + PARAM_STARTER + USER_ID_PARAM + userId
+                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+                        .header(AUTH_BODY, JWT))
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -563,7 +582,7 @@ public class ApplicationControllerTest {
         // Create request body and perform the call
         MvcResult result = mockMvc.perform(post("/api/hiring-procedure/withdraw")
                         .header(HttpHeaders.AUTHORIZATION, "")
-                        .queryParam("courseId", String.valueOf(courseId)))
+                        .queryParam(COURSE_ID_STR, String.valueOf(courseId)))
                 .andReturn();
 
         // Await the call
@@ -598,7 +617,7 @@ public class ApplicationControllerTest {
         // Create request body and perform the call
         MvcResult result = mockMvc.perform(post("/api/hiring-procedure/withdraw")
                         .header(HttpHeaders.AUTHORIZATION, "")
-                        .queryParam("courseId", String.valueOf(courseId)))
+                        .queryParam(COURSE_ID_STR, String.valueOf(courseId)))
                 .andReturn();
 
         // Await the call
@@ -637,7 +656,7 @@ public class ApplicationControllerTest {
         // Create request body and perform the call
         MvcResult result = mockMvc.perform(post("/api/hiring-procedure/withdraw")
                         .header(HttpHeaders.AUTHORIZATION, "")
-                        .queryParam("courseId", String.valueOf(courseId)))
+                        .queryParam(COURSE_ID_STR, String.valueOf(courseId)))
                 .andReturn();
 
         // Await the call
@@ -758,12 +777,12 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(get("/api/hiring-procedure/"
-                + "get-contract?courseId=" + courseId)
-                .header(AUTH_BODY, JWT))
-            .andReturn();
+                        + "get-contract?courseId=" + courseId)
+                        .header(AUTH_BODY, JWT))
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isOk());
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -774,12 +793,12 @@ public class ApplicationControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(get("/api/hiring-procedure/"
-                + "get-contract?userId=" + userId + "&courseId=" + courseId)
-                .header(AUTH_BODY, JWT))
-            .andReturn();
+                        + "get-contract?userId=" + userId + "&courseId=" + courseId)
+                        .header(AUTH_BODY, JWT))
+                .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isOk());
+                .andExpect(status().isOk());
     }
 
 }
