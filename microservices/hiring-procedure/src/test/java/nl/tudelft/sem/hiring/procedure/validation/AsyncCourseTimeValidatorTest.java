@@ -9,50 +9,55 @@ import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
+@SpringBootTest(classes = CourseInfoResponseCache.class)
 public class AsyncCourseTimeValidatorTest {
 
     @MockBean
     private transient GatewayConfig gatewayConfigMock;
 
-    private static MockWebServer mockWebServer;
+    @Autowired
+    private transient CourseInfoResponseCache cache;
 
-    @BeforeAll
-    private static void setup() throws IOException {
-        mockWebServer = new MockWebServer();
-        mockWebServer.start();
-    }
+    private transient MockWebServer mockWebServer;
 
     @BeforeEach
-    private void setupEach() {
+    private void setupEach() throws IOException {
+        // Set up the mock server
+        mockWebServer = new MockWebServer();
+        mockWebServer.start();
+
         HttpUrl url = mockWebServer.url("/");
         when(gatewayConfigMock.getHost()).thenReturn(url.host());
         when(gatewayConfigMock.getPort()).thenReturn(url.port());
+
+        // Invalidate the course info cache
+        cache.invalidateCache();
     }
 
-    @AfterAll
-    private static void teardown() throws IOException {
+    @AfterEach
+    private void teardownEach() throws IOException {
         mockWebServer.shutdown();
     }
 
     @Test
     public void testConstructor() {
-        AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock, 42);
+        AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(cache, 42);
         assertNotNull(validator);
     }
 
@@ -60,8 +65,7 @@ public class AsyncCourseTimeValidatorTest {
     public void testValidate() {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock,
-                courseId);
+        final AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(cache, courseId);
 
         // Fetch the local zoned date time, and make it a valid time
         ZonedDateTime current = ZonedDateTime.now().plusYears(1);
@@ -91,8 +95,7 @@ public class AsyncCourseTimeValidatorTest {
     public void testValidateOverDeadline() {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock,
-                courseId);
+        final AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(cache, courseId);
 
         // Fetch the local zoned date time, and make it a valid time
         ZonedDateTime current = ZonedDateTime.now()
@@ -123,8 +126,7 @@ public class AsyncCourseTimeValidatorTest {
     public void testValidateNonExistingCourse() {
         // Construct validator instance and courseId object
         long courseId = 1337;
-        AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfigMock,
-                courseId);
+        AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(cache, courseId);
 
         // Enqueue a response
         mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.value()));

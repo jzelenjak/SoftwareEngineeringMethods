@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import javax.management.InstanceNotFoundException;
 import lombok.Data;
+import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
 import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
 import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
@@ -32,8 +33,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
@@ -47,6 +46,7 @@ public class ApplicationController {
     private static final String INVALID_TOKEN = "Provided token is not valid";
 
     private ApplicationService applicationService;
+    private CourseInfoResponseCache courseInfoCache;
     private WebClient webClient;
     private GatewayConfig gatewayConfig;
     private final transient JwtUtils jwtUtils;
@@ -54,12 +54,17 @@ public class ApplicationController {
     /**
      * Constructor for the Application Controller.
      *
-     * @param applicationService Specifies the ApplicationService
+     * @param applicationService Specifies the ApplicationService.
+     * @param courseInfoCache    course information cache.
+     * @param jwtUtils           JWT utility library.
+     * @param gatewayConfig      is the gateway configuration.
      */
     @Autowired
-    public ApplicationController(ApplicationService applicationService, JwtUtils jwtUtils,
+    public ApplicationController(ApplicationService applicationService,
+                                 CourseInfoResponseCache courseInfoCache, JwtUtils jwtUtils,
                                  GatewayConfig gatewayConfig) {
         this.applicationService = applicationService;
+        this.courseInfoCache = courseInfoCache;
         this.webClient = WebClient.create();
         this.jwtUtils = jwtUtils;
         this.gatewayConfig = gatewayConfig;
@@ -76,11 +81,11 @@ public class ApplicationController {
     public Mono<Void> applyTa(@RequestParam() long courseId,
                               @RequestHeader() HttpHeaders authHeader) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
-            .addValidators(
-                new AsyncAuthValidator(jwtUtils),
-                new AsyncRoleValidator(jwtUtils, Set.of(Roles.STUDENT, Roles.TA)),
-                new AsyncCourseTimeValidator(gatewayConfig, courseId))
-            .build();
+                .addValidators(
+                        new AsyncAuthValidator(jwtUtils),
+                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.STUDENT, Roles.TA)),
+                        new AsyncCourseTimeValidator(courseInfoCache, courseId))
+                .build();
 
         return head.validate(authHeader, "").flatMap(value -> {
             long userId;
@@ -92,7 +97,7 @@ public class ApplicationController {
 
             if (applicationService.checkSameApplication(userId, courseId)) {
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "User has already applied"));
+                        "User has already applied"));
             }
 
             applicationService.createApplication(userId, courseId, LocalDateTime.now());
@@ -110,15 +115,15 @@ public class ApplicationController {
     @GetMapping("/get-applications")
     @ResponseBody
     public Mono<List<Application>> getApplications(@RequestParam() long courseId,
-                                             @RequestHeader() HttpHeaders authHeader) {
+                                                   @RequestHeader() HttpHeaders authHeader) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
-            .addValidators(
-                new AsyncAuthValidator(jwtUtils),
-                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)))
-            .build();
+                .addValidators(
+                        new AsyncAuthValidator(jwtUtils),
+                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)))
+                .build();
 
         return head.validate(authHeader, "").flatMap(value ->
-            Mono.just(applicationService.getApplicationsForCourse(courseId)));
+                Mono.just(applicationService.getApplicationsForCourse(courseId)));
 
 
     }
@@ -133,13 +138,13 @@ public class ApplicationController {
     @ResponseBody
     public Mono<List<Application>> getAllApplications(@RequestHeader() HttpHeaders authHeader) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
-            .addValidators(
-                new AsyncAuthValidator(jwtUtils),
-                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)))
-            .build();
+                .addValidators(
+                        new AsyncAuthValidator(jwtUtils),
+                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)))
+                .build();
 
         return head.validate(authHeader, "").flatMap(value ->
-            Mono.just(applicationService.getAllApplications()));
+                Mono.just(applicationService.getAllApplications()));
     }
 
     /**
@@ -153,20 +158,20 @@ public class ApplicationController {
     @PostMapping("/hire-TA")
     @ResponseBody
     public Mono<Void> hireTa(@RequestParam() long userId, @RequestParam() long courseId,
-                       @RequestHeader() HttpHeaders authHeader) {
+                             @RequestHeader() HttpHeaders authHeader) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
-            .addValidators(
-                new AsyncAuthValidator(jwtUtils),
-                new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)),
-                new AsyncCourseExistsValidator(gatewayConfig, courseId),
-                new AsyncUserExistsValidator(gatewayConfig, userId),
-                new AsyncTaLimitValidator(gatewayConfig, applicationService, courseId)
-            ).build();
+                .addValidators(
+                        new AsyncAuthValidator(jwtUtils),
+                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)),
+                        new AsyncCourseExistsValidator(courseInfoCache, courseId),
+                        new AsyncUserExistsValidator(gatewayConfig, userId),
+                        new AsyncTaLimitValidator(applicationService, courseInfoCache, courseId)
+                ).build();
 
         return head.validate(authHeader, "").flatMap(value -> {
             if (!applicationService.checkCandidate(userId, courseId)) {
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "User is not a viable candidate"));
+                        "User is not a viable candidate"));
             }
             // Register hiring
             applicationService.hire(userId, courseId);
@@ -225,7 +230,7 @@ public class ApplicationController {
                         new AsyncAuthValidator(jwtUtils),
                         new AsyncRoleValidator(jwtUtils,
                                 Set.of(Roles.STUDENT, Roles.TA, Roles.ADMIN)),
-                        new AsyncCourseTimeValidator(gatewayConfig, courseId)
+                        new AsyncCourseTimeValidator(courseInfoCache, courseId)
                 ).build();
 
         // Perform validation, and map to an appropriate response
@@ -258,11 +263,11 @@ public class ApplicationController {
      * Endpoint for retrieving the contract of a user, for a course.
      * Current implementation just returns a template contract, to be filled by the TA.
      *
-     * @param userId is the ID of the user for which the contract is requested.
-     *               Parameter may be null, in which case the contract was requested
-     *               by the userId in the JWT
+     * @param userId   is the ID of the user for which the contract is requested.
+     *                 Parameter may be null, in which case the contract was requested
+     *                 by the userId in the JWT
      * @param courseId is the ID of the course for which the contract is requested
-     * @param headers is the list of the request headers
+     * @param headers  is the list of the request headers
      * @return a byte stream of the contract pdf
      */
     @GetMapping("get-contract")
@@ -273,29 +278,29 @@ public class ApplicationController {
         builder.addValidator(new AsyncAuthValidator(jwtUtils));
         if (userId != null) {
             builder.addValidator(new AsyncRoleValidator(jwtUtils,
-                Set.of(Roles.LECTURER, Roles.ADMIN)));
+                    Set.of(Roles.LECTURER, Roles.ADMIN)));
             AsyncValidator head = builder.build();
             return head.validate(headers, "").flatMap(value -> {
                 try {
                     return Mono.just(Thread.currentThread().getContextClassLoader()
-                        .getResourceAsStream("templatecontract.pdf").readAllBytes());
+                            .getResourceAsStream("templatecontract.pdf").readAllBytes());
                 } catch (IOException e) {
                     return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Resource was not found"));
+                            "Resource was not found"));
                 }
             });
         } else {
             builder.addValidator(new AsyncRoleValidator(jwtUtils,
-                Set.of(Roles.STUDENT)));
+                    Set.of(Roles.STUDENT)));
             AsyncValidator head = builder.build();
             return head.validate(headers, "").flatMap(value -> {
                 try {
                     byte[] contract = Thread.currentThread().getContextClassLoader()
-                        .getResourceAsStream("templatecontract.pdf").readAllBytes();
+                            .getResourceAsStream("templatecontract.pdf").readAllBytes();
                     return Mono.just(contract);
                 } catch (IOException e) {
                     return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Resource was not found"));
+                            "Resource was not found"));
                 }
             });
         }

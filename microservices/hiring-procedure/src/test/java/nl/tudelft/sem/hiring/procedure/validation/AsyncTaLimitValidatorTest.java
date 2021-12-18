@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
 import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
 import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
@@ -24,7 +25,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -34,6 +37,7 @@ import reactor.core.publisher.Mono;
 
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
+@SpringBootTest
 public class AsyncTaLimitValidatorTest {
 
     @MockBean
@@ -41,6 +45,9 @@ public class AsyncTaLimitValidatorTest {
 
     @MockBean
     private transient ApplicationService applicationServiceMock;
+
+    @Autowired
+    private transient CourseInfoResponseCache courseInfoCache;
 
     private static MockWebServer mockWebServer;
 
@@ -55,6 +62,9 @@ public class AsyncTaLimitValidatorTest {
         HttpUrl url = mockWebServer.url("/");
         when(gatewayConfigMock.getHost()).thenReturn(url.host());
         when(gatewayConfigMock.getPort()).thenReturn(url.port());
+
+        // Invalidate the cache before each test
+        courseInfoCache.invalidateCache();
     }
 
     @AfterAll
@@ -74,8 +84,8 @@ public class AsyncTaLimitValidatorTest {
 
     @Test
     public void testConstructor() {
-        AsyncTaLimitValidator validator = new AsyncTaLimitValidator(gatewayConfigMock,
-                applicationServiceMock, 1337);
+        AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
+                courseInfoCache, 1337);
         assertNotNull(validator);
     }
 
@@ -83,8 +93,8 @@ public class AsyncTaLimitValidatorTest {
     public void testValidatePreciselyEnoughTas() throws InterruptedException {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(gatewayConfigMock,
-                applicationServiceMock, courseId);
+        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
+                courseInfoCache, courseId);
 
         // Current hiring statistics
         final int currentTaCount = 10;
@@ -125,8 +135,8 @@ public class AsyncTaLimitValidatorTest {
     public void testValidateCeilStudentTaRatio() throws InterruptedException {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(gatewayConfigMock,
-                applicationServiceMock, courseId);
+        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
+                courseInfoCache, courseId);
 
         // Current hiring statistics
         final int currentTaCount = 10;
@@ -162,8 +172,8 @@ public class AsyncTaLimitValidatorTest {
     public void testValidateTooManyTas() throws InterruptedException {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(gatewayConfigMock,
-                applicationServiceMock, courseId);
+        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
+                courseInfoCache, courseId);
 
         // Current hiring statistics
         final int currentTaCount = 10;
@@ -199,8 +209,8 @@ public class AsyncTaLimitValidatorTest {
     public void testValidateCourseDoesNotExist() throws InterruptedException {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(gatewayConfigMock,
-                applicationServiceMock, courseId);
+        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
+                courseInfoCache, courseId);
 
         // Enqueue a response
         mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.value()));
