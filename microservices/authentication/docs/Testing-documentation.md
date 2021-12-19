@@ -64,9 +64,40 @@
   ![200 OK response](images/authentication/responseRegisterNewUser.png)
 
 - ```Delete the user abli with Authorization header containing the JWT from the root user.```\
-  ![img.png](deleteUserSuccess.png)\
+  ![img.png](images/authentication/deleteUserSuccess.png)\
   Which gives a HttpStatus ```200 - OK```.\
   ![200 OK response](images/authentication/responseRegisterNewUser.png)
+
+
+**Notifications**:
+- ```Add a new notification as a root user.```\
+  ![img.png](images/notifications/AddNotificationSuccess.png)\
+  Which gives a HttpStatus ```200 - OK```.\
+  ![200 OK response](images/authentication/responseRegisterNewUser.png)\
+  Repeat the request 3 times.
+
+- ```Now login again with the root user to see the notificiations.```\
+  ![img.png](images/notifications/loginRootUserWithNotifications.png)
+
+- ```Change the message from notification.```\
+  ![img.png](images/notifications/changeNotificationsMessage.png)\
+  Which gives a HttpStatus ```200 - OK```.\
+  ![200 OK response](images/authentication/responseRegisterNewUser.png)
+
+- ```Get all the notifications from the root user.```\
+  ![img.png](images/notifications/getAllNotificationsFromUser.png)\
+  Which gives a HttpStatus ```200 - OK```.\
+  ![200 OK response](images/authentication/responseRegisterNewUser.png)
+
+- ```Delete all notifications from the root user as the root user.```\
+  ![img.png](images/notifications/deleteNotificationFromUserSuccess.png)\
+  Which gives a HttpStatus ```200 - OK```.
+
+- ```Now login again with the root user to see the notificiations.```\
+  ![img.png](images/notifications/noNewNotificationsRootUser.png)\
+  Which gives a HttpStatus ```200 - OK``` and also displays a message "No new notifications".
+
+
 ## Testing naming convention
-We decided to use the following naming convention for the tests in authentication:
+We decided to use the following naming convention for the tests in the authentication microservice:
 ```<methodWeWantToTest><ConditionWeWantTest>Test()```
