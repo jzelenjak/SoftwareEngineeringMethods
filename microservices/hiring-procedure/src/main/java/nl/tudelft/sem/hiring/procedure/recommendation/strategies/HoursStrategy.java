@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono;
 
 /**
  * The class that implements RecommendationStrategy interface by recommending candidate TAs
- *      based of the total number of hours they have been working as a TA for a given course.
+ * based of the total number of hours they have been working as a TA for a given course.
  */
 public class HoursStrategy implements RecommendationStrategy {
 
@@ -29,7 +29,7 @@ public class HoursStrategy implements RecommendationStrategy {
     /**
      * Instantiates a new HoursStrategy object.
      *
-     * @param repo the TA application repository
+     * @param repo          the TA application repository
      * @param gatewayConfig the gateway configuration
      */
     public HoursStrategy(ApplicationRepository repo, GatewayConfig gatewayConfig) {
@@ -40,15 +40,15 @@ public class HoursStrategy implements RecommendationStrategy {
 
     /**
      * Recommends at most the specified number of candidate TAs who have worked
-     *   the most for a specified course.
-     *   It uses the strategy of the most hours worked as a TA for a given course.
+     * the most for a specified course.
+     * It uses the strategy of the most hours worked as a TA for a given course.
      *
-     * @param courseId      the id of the course
-     * @param amount        the maximum number of recommendations to return
-     * @param minHours      the minimum number of worked hours (used for filtering)
+     * @param courseId the id of the course
+     * @param amount   the maximum number of recommendations to return
+     * @param minHours the minimum number of worked hours (used for filtering)
      * @return the list of recommendations for candidate TAs based on the number of
-     *         hours worked as a TA for a given course (wrapped in the mono).
-     *         The size of the list is at most `amount`.
+     *          hours worked as a TA for a given course (wrapped in the mono).
+     *          The size of the list is at most `amount`.
      */
     @Override
     public Mono<List<Recommendation>> recommend(long courseId, int amount, double minHours) {
@@ -56,33 +56,34 @@ public class HoursStrategy implements RecommendationStrategy {
 
         if (applicants.isEmpty()) {
             return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                                "No applicants found"));
+                "No applicants found"));
         }
 
         return this.webClient
-                .get()
-                .uri(buildUriWithCourseId(gatewayConfig.getHost(), gatewayConfig.getPort(),
-                        courseId, "api", "courses", "get-all-editions"))
-                .exchange()
-                .flatMap(response ->
-                        processMono(response, body ->
-                                  processMonoBodyFromCourses(body, amount, minHours, applicants)));
+            .get()
+            .uri(buildUriWithCourseId(gatewayConfig.getHost(), gatewayConfig.getPort(),
+                courseId, "api", "courses", "get-all-editions"))
+            .exchange()
+            .flatMap(response ->
+                processMono(response, body ->
+                    processMonoBodyFromCourses(body, amount, minHours, applicants)));
     }
 
     /**
      * A helper method to process the mono body received from Courses microservice,
-     *   send a request to the Hour Management microservice and process the response from it.
+     * send a request to the Hour Management microservice and process the response from it.
      *
-     * @param body      the mono body received from Courses microservices
-     * @param amount    the maximum number of recommendations to return
-     * @param minHours  the minimum number of worked hours (used for filtering)
-     * @param userIds   the list of applicants' user IDs
+     * @param body     the mono body received from Courses microservices
+     * @param amount   the maximum number of recommendations to return
+     * @param minHours the minimum number of worked hours (used for filtering)
+     * @param userIds  the list of applicants' user IDs
      * @return the list of recommendations for candidate TAs based on the number of
-     *         hours worked as a TA for a given course (wrapped in the mono).
-     *         The size of the list is at most `amount`.
+     *          hours worked as a TA for a given course (wrapped in the mono).
+     *          The size of the list is at most `amount`.
      */
     private Mono<List<Recommendation>> processMonoBodyFromCourses(String body,
-                                                int amount, double minHours, List<Long> userIds) {
+                                                                  int amount, double minHours,
+                                                                  List<Long> userIds) {
         try {
             List<Long> courseIds = convertJsonToLongList(body, "courseIds");
 
@@ -94,18 +95,19 @@ public class HoursStrategy implements RecommendationStrategy {
             objectNode.set("courseIds", mapper.valueToTree(courseIds));
 
             return this.webClient
-                    .post()
-                    .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
-                            "api", "hour-management", "statistics", "total-user-hours"))
-                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                    .body(objectNode.toString(), String.class)
-                    .exchange()
-                    .flatMap(response ->
-                            processMono(response, this::processMonoBodyFromHours));
-        } catch (JsonProcessingException e) {
+                .post()
+                .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
+                    "api", "hour-management", "statistics", "total-user-hours"))
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .body(Mono.just(objectNode.toString()), String.class)
+                .exchange()
+                .flatMap(response ->
+                    processMono(response, this::processMonoBodyFromHours));
+        } catch (Exception e) {
+            // related to JSON processing (e.g. bad format, missing/incorrect fields)
             return Mono
-                    .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                            "An error has occurred. Please try again later!"));
+                .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "An error has occurred. Please try again later!"));
         }
     }
 
@@ -114,16 +116,16 @@ public class HoursStrategy implements RecommendationStrategy {
      *
      * @param body the mono body received from Hours Microservice
      * @return the list of recommendations for candidate TAs based on the number of
-     *         hours worked as a TA for a given course (wrapped in the mono).
-     *         The size of the list is at most `amount`.
+     *      hours worked as a TA for a given course (wrapped in the mono).
+     *      The size of the list is at most `amount`.
      */
     private Mono<List<Recommendation>> processMonoBodyFromHours(String body) {
         try {
-            return Mono.just(convertJsonToRecommendationList(body));
+            return recommendationsToMono(convertJsonToRecommendationList(body));
         } catch (JsonProcessingException e) {
             return Mono
-                    .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                            "An error has occurred. Please try again later!"));
+                .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "An error has occurred. Please try again later!"));
         }
     }
 }

@@ -2,6 +2,7 @@ package nl.tudelft.sem.hiring.procedure.recommendation.strategies;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
@@ -59,19 +60,18 @@ public class GradeStrategy implements RecommendationStrategy {
         }
 
         ObjectMapper mapper = new ObjectMapper();
-        String json = mapper.createObjectNode()
+        ObjectNode node = mapper.createObjectNode()
                 .put("courseId", courseId)
                 .put("amount", amount)
-                .put("minGrade", minGrade)
-                .set("userIds",  mapper.valueToTree(applicants))
-                .toString();
+                .put("minGrade", minGrade);
+        node.set("userIds", mapper.valueToTree(applicants));
 
         return this.webClient
                 .post()
                 .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
-                        "api", "courses", "statistics", "user-grade"))
+                    "api", "courses", "statistics", "user-grade"))
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .body(json, String.class)
+                .body(Mono.just(node.toString()), String.class)
                 .exchange()
                 .flatMap(response -> processMono(response, this::processMonoBody));
     }
@@ -85,7 +85,7 @@ public class GradeStrategy implements RecommendationStrategy {
      */
     private Mono<List<Recommendation>> processMonoBody(String body) {
         try {
-            return Mono.just(convertJsonToRecommendationList(body));
+            return recommendationsToMono(convertJsonToRecommendationList(body));
         } catch (JsonProcessingException e) {
             return Mono
                     .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
