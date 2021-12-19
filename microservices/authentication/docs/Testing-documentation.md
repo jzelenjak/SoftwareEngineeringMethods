@@ -101,3 +101,7 @@
 ## Testing naming convention
 We decided to use the following naming convention for the tests in the authentication microservice:
 ```<methodWeWantToTest><ConditionWeWantTest>Test()```
+
+## Other notes
+We have a test class to test our ```AuthenticationMain.java``` class which is named ```AuthenticationMainTest.java```. 
+This class is there solely to cover the main Authentication class during testing.
