@@ -88,7 +88,8 @@ public class AuthController {
         // Try to register a new user, if failed an exception will be thrown.
         if (!this.authService.registerUser(username, userId, password)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    String.format("User with NetID %s already exists!", USERNAME));
+                    String.format("User with username %s or NetID %s already exists!",
+                            username, userId));
         }
     }
 
@@ -252,6 +253,22 @@ public class AuthController {
      * Turn list of notifications in json response string.
      *
      * @param list the list of notifications.
+     *
+     * <i>Example:</i>
+     * <pre>
+     *  {
+     *      "notifications": [
+     *          {
+     *             "message" : "Hey there, you are hired!",
+     *             "notificationDate" : "17:54 10-12-2021 Europe/Berlin"
+     *          }
+     *          {
+     *              "message": "Hey there, you are fired!",
+     *              "notificationDate": "16:20 25-12-2021 Europe/Berlin"
+     *          }
+     *      ]
+     *  }
+     * </pre>
      *
      * @return string representation of list of notifications.
      */

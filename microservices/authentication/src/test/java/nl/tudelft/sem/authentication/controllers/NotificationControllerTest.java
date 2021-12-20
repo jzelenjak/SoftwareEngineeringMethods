@@ -120,7 +120,7 @@ class NotificationControllerTest {
 
     @Test
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
-    void getNotificationsFromExistingUserAsAdminSuccessTest() throws Exception {
+    void testGetNotificationsFromExistingUserAsAdminSuccess() throws Exception {
         Notification notification = new Notification(5695444L, "Hi Admin!");
         this.notificationDataRepository.save(notification);
 
@@ -150,7 +150,7 @@ class NotificationControllerTest {
 
     @Test
     @WithMockUser(username = STUDENTUSERNAME, password = SHAREDPASSWORD)
-    void getNotificationsFromExistingUserStudentFailedTest() throws Exception {
+    void testGetNotificationsFromExistingUserAsStudentFailed() throws Exception {
         Notification notification = new Notification(5695444L, "Hi Admin!");
         this.notificationDataRepository.save(notification);
 
@@ -167,7 +167,7 @@ class NotificationControllerTest {
 
     @Test
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
-    void addNotificationAsAdminSuccessTest() throws Exception {
+    void testAddNotificationAsAdminSuccess() throws Exception {
         this.mockMvc
             .perform(post(ADD_URL)
                 .contentType(APPLICATION_JSON)
@@ -196,7 +196,7 @@ class NotificationControllerTest {
 
     @Test
     @WithMockUser(username = LECTURERUSERNAME, password = SHAREDPASSWORD)
-    void addNotificationAsLecturerSuccessTest() throws Exception {
+    void testAddNotificationAsLecturerSuccess() throws Exception {
         this.mockMvc
                 .perform(post(ADD_URL)
                         .contentType(APPLICATION_JSON)
@@ -226,7 +226,7 @@ class NotificationControllerTest {
 
     @Test
     @WithMockUser(username = STUDENTUSERNAME, password = SHAREDPASSWORD)
-    void addNotificationNoRightsFailedTest() throws Exception {
+    void testAddNotificationNoRightsFailed() throws Exception {
         this.mockMvc
                 .perform(post(ADD_URL)
                         .contentType(APPLICATION_JSON)
@@ -244,7 +244,7 @@ class NotificationControllerTest {
 
     @Test
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
-    void addNotificationWithAnotherNotificationSuccessTest() throws Exception {
+    void testAddNotificationWithAnotherNotificationSuccess() throws Exception {
         Notification notification = new Notification(4864864486L, "Hello there!");
         this.notificationDataRepository.save(notification);
 
@@ -268,7 +268,7 @@ class NotificationControllerTest {
 
     @Test
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
-    void changeUserFromNotificationSuccessTest() throws Exception {
+    void testChangeUserFromNotificationSuccess() throws Exception {
         Notification notification = new Notification(4648648L, "Hello!");
         this.notificationDataRepository.save(notification);
         final long targetNotificationId = notification.getNotificationId();
@@ -294,7 +294,7 @@ class NotificationControllerTest {
 
     @Test
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
-    void changeMessageFromNotificationSuccessTest() throws Exception {
+    void testChangeMessageFromNotificationSuccess() throws Exception {
         Notification notification = new Notification(4648648L, "Hi JavAa!");
         this.notificationDataRepository.save(notification);
         final long targetNotificationId = notification.getNotificationId();
@@ -321,7 +321,7 @@ class NotificationControllerTest {
 
     @Test
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
-    void deleteExistingNotificationByIdTest() throws Exception {
+    void testDeleteExistingNotificationById() throws Exception {
         Notification notification = new Notification(1212121L, "Delete me!");
         this.notificationDataRepository.save(notification);
         final long targetNotificationId = notification.getNotificationId();
@@ -339,7 +339,7 @@ class NotificationControllerTest {
 
     @Test
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
-    void deleteExistingNotificationByUserIdTest() throws Exception {
+    void testDeleteExistingNotificationByUserId() throws Exception {
         Notification notification1 = new Notification(1212121L, "Delete me!");
         Notification notification2 = new Notification(1212121L, "Be gone!");
         Notification notification3 = new Notification(1212121L, "Lorem Ipsum!");

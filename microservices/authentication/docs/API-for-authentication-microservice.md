@@ -30,7 +30,7 @@ _409 CONFLICT_ if the user with the given username (netid) already exists.
 
 ```json
 {
-    "message" : "User with netid jegor already exists!"
+    "message" : "User with username jegor or NetID 5221334 already exists!"
 }
 ```
 
@@ -97,17 +97,18 @@ _200 OK_
 If there are notifications for the user that has logged in, then notifications will be sent as well:
 
 ```json
-[
-  {
-    "message" : "Hey there, you are hired!",
-    "notificationDate" : "17:54 10-12-2021 Europe/Berlin"
-  },
-
-  {
-    "message" : "...",
-    "notificationDate" : "..."
-  }
-]
+{
+  "notifications": [
+    {
+      "message": "Hey there, you are hired!",
+      "notificationDate" : "17:55 10-12-2020 Europe/Berlin"
+    }
+    {
+      "message": "Hey there, you are fired!",
+      "notificationDate": "16:20 25-12-2021 Europe/Berlin"
+    }
+  ]
+}
 ```
 
 &#39;Authorization&#39; : &#39;Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqZWdvcj8iLCJyb2xlIjoiU1RVREVOVCIsImlhdCI6MTYzODM2NzE5NCwiZXhwIjoxNjM4MzY3MTk0fQ.a0WJ2NbP4ytAtGpd5PlVU\_mvrEGLpcCxcCNYy8AgNom3IplBTViNZuP0WTgymhXJZU8k-YYRQYR8DxZrgT7w6A&#39;

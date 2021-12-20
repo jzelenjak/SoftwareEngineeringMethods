@@ -31,13 +31,13 @@ class NotificationServiceTest {
     private transient NotificationDataRepository notificationDataRepository;
 
     @Test
-    void addNotificationSuccessTest() {
+    void testAddNotificationSuccess() {
         Assertions.assertTrue(this.notificationService
                 .addNewNotification(1324356L, "You have been promoted to head TA!"));
     }
 
     @Test
-    void addNotificationWithAnotherNotificationSuccessTest() {
+    void testAddNotificationWithAnotherNotificationSuccess() {
         Notification notification = new Notification(1234567L, "You have been selected!");
         this.notificationDataRepository.save(notification);
         Assertions.assertTrue(this.notificationService
@@ -46,7 +46,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    void changeUserFromNotificationSuccessTest() {
+    void testChangeUserFromNotificationSuccess() {
         final long userId = 5534985230058255333L;
         this.notificationDataRepository.save(new Notification(userId, "You have been selected!"));
 
@@ -70,14 +70,14 @@ class NotificationServiceTest {
     }
 
     @Test
-    void changeUserFromNotificationNotFoundTest() {
+    void testChangeUserFromNotificationNotFound() {
         Assertions.assertThrows(EntityNotFoundException.class, () -> this.notificationService
                         .changeUserIdFromNotification(11L, 5555334L),
                 String.format("Notification with id %d has not been found", 11L));
     }
 
     @Test
-    void changeMessageFromNotificationSuccessTest() {
+    void testChangeMessageFromNotificationSuccess() {
         final long userId = 55415553368669L;
         this.notificationDataRepository.save(new Notification(userId, "You have been selected!"));
 
@@ -102,7 +102,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    void changeMessageFromNotificationNotFoundTest() {
+    void testChangeMessageFromNotificationNotFound() {
         Assertions.assertThrows(EntityNotFoundException.class, () -> this.notificationService
                     .changeMessageFromNotification(13L,
                             "Your hours have been approved."),
@@ -110,7 +110,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    void loadByNotificationIdFoundTest() {
+    void testLoadByNotificationIdFound() {
         final long userId = 4477939004820391L;
         Notification notification = new Notification(userId, "You have not been selected.");
         this.notificationDataRepository.save(notification);
@@ -128,13 +128,13 @@ class NotificationServiceTest {
     }
 
     @Test
-    void loadByNotificationIdNotFoundTest() {
+    void testLoadByNotificationIdNotFound() {
         Assertions.assertThrows(EntityNotFoundException.class,
                 () -> this.notificationService.loadNotificationByNotificationId(12345678L));
     }
 
     @Test
-    void loadByUserIdFoundTest() {
+    void testLoadByUserIdFound() {
         final long userId = 2913889L;
         Notification notification1 = new Notification(userId, "Your hours have been rejected.");
         this.notificationDataRepository.save(notification1);
@@ -156,13 +156,13 @@ class NotificationServiceTest {
     }
 
     @Test
-    void loadByUserIdNotFoundTest() {
+    void testLoadByUserIdNotFound() {
         Assertions.assertThrows(EntityNotFoundException.class,
                 () -> this.notificationService.loadNotificationByUserId(12345678L));
     }
 
     @Test
-    void deleteNotificationByNotificationIdSuccessTest() {
+    void testDeleteNotificationByNotificationIdSuccess() {
         final long userId = 9665145305021934L;
         this.notificationDataRepository.save(
                 new Notification(userId, "Your contract has been extended!"));
@@ -187,13 +187,13 @@ class NotificationServiceTest {
     }
 
     @Test
-    void deleteNotificationByNotificationIdFailedTest() {
+    void testDeleteNotificationByNotificationIdFailed() {
         Assertions.assertThrows(EntityNotFoundException.class,
                 () -> this.notificationService.deleteNotificationByNotificationId(12345678L));
     }
 
     @Test
-    void deleteNotificationsByUserIdSuccessTest() {
+    void testDeleteNotificationsByUserIdSuccess() {
         final long userId = 9651548L;
         this.notificationDataRepository.save(
                 new Notification(userId, "Your application has been withdrawn."));
@@ -213,7 +213,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    void deleteNotificationsByUserIdFailedTest() {
+    void testDeleteNotificationsByUserIdFailed() {
         Assertions.assertThrows(EntityNotFoundException.class,
                 () -> this.notificationService.deleteNotificationsFromUser(12345678L));
     }
