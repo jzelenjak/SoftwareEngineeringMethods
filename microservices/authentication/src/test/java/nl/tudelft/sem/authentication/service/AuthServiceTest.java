@@ -41,7 +41,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerRootUserNotRegisteredTest() {
+    void testRegisterRootUserNotRegistered() {
         UserDataRepository repo = Mockito.mock(UserDataRepository.class);
         UserData root = new UserData(rootUsername, passwordEncoder.encode(rootPassword),
                             UserRole.ADMIN, rootUserId);
@@ -63,7 +63,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerRootUserAlreadyRegisteredTest() {
+    void testRegisterRootUserAlreadyRegistered() {
         UserDataRepository repo = Mockito.mock(UserDataRepository.class);
         UserData root = new UserData(rootUsername, passwordEncoder.encode(rootPassword),
                 UserRole.ADMIN, rootUserId);
@@ -82,7 +82,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerUserAlreadyExistsByUsernameTest() {
+    void testRegisterUserAlreadyExistsByUsername() {
         this.userDataRepository
                 .save(new UserData("Andy", encode("amogus"), UserRole.TA, 3957639L));
 
@@ -93,7 +93,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerUserAlreadyExistsByUserIdTest() {
+    void testRegisterUserAlreadyExistsByUserId() {
         this.userDataRepository
                 .save(new UserData("Jegor", encode("amogus"), UserRole.TA, 8105739L));
 
@@ -104,7 +104,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void registerNewUserTest() {
+    void testRegisterNewUser() {
         String username = "impostor";
 
         Assertions.assertTrue(this.authService.registerUser(username, 7803850L, "password2"),
@@ -119,14 +119,14 @@ class AuthServiceTest {
     }
 
     @Test
-    void loadUserByUsernameNotFoundTest() {
+    void testLoadUserByUsernameNotFound() {
         Assertions.assertThrows(UsernameNotFoundException.class,
                 () -> this.authService.loadUserByUsername("jegorka"),
                 "The user must not have been loaded from the repository");
     }
 
     @Test
-    void loadUserByUsernameFoundTest() {
+    void testLoadUserByUsernameFound() {
         UserData user = new UserData("GNU", encode("GNU/LINUX"), UserRole.TA, 3452341L);
         this.userDataRepository.save(user);
 
@@ -137,14 +137,14 @@ class AuthServiceTest {
     }
 
     @Test
-    void loadUserByUserIdNotFoundTest() {
+    void testLoadUserByUserIdNotFound() {
         Assertions.assertThrows(UsernameNotFoundException.class,
                 () -> this.authService.loadUserByUserId(4242442L),
                 "The user must not have been loaded from the repository");
     }
 
     @Test
-    void loadUserByUserIdFoundTest() {
+    void testLoadUserByUserIdFound() {
         UserData user = new UserData("gosha", encode("myfirendamogus"), UserRole.TA, 5327639L);
         this.userDataRepository.save(user);
 
@@ -155,7 +155,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void changePasswordSuccessTest() {
+    void testChangePasswordSuccess() {
         String username = "red_kinda_sus_ngl";
         this.userDataRepository
                 .save(new UserData(username, encode("sus"), UserRole.TA, 3425101L));

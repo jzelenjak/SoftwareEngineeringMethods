@@ -82,7 +82,7 @@ class JwtTokenProviderTest {
 
     @Test
     @WithMockUser(username = "amogus", password = "NoFraudAllowed")
-    void createAndResolveValidTokenTest() throws Exception {
+    void testCreateAndResolveValidToken() throws Exception {
         String jwt = jwtTokenProvider.createToken(1738290L, UserRole.STUDENT, new Date());
         String jwtPrefixed = PREFIX + jwt;
 
@@ -121,7 +121,7 @@ class JwtTokenProviderTest {
 
     @Test
     @WithMockUser(username = "admin1", password = "NoFraudAllowed1")
-    void createAndResolveInvalidTokenExpiredTest() throws Exception {
+    void testCreateAndResolveInvalidTokenExpired() throws Exception {
         Date date = new Date(new Date().getTime() - 10 * 60000);
         String jwt = jwtTokenProvider.createToken(9577681L, UserRole.ADMIN, date);
         String jwtPrefixed = PREFIX + jwt;
@@ -152,7 +152,7 @@ class JwtTokenProviderTest {
     }
 
     @Test
-    void createAndResolveInvalidTokenZeroValidityTest() throws Exception {
+    void testCreateAndResolveInvalidTokenZeroValidity() throws Exception {
         ReflectionTestUtils.setField(jwtTokenProvider, VALIDITY_IN_MINUTES, 0);
 
         String jwt = jwtTokenProvider.createToken(9048182L, UserRole.ADMIN, new Date());
@@ -187,7 +187,7 @@ class JwtTokenProviderTest {
 
     @Test
     @WithMockUser(username = "admin3", password = "NoFraudAllowed3")
-    void resolveTokenWithNoBearerPrefixTest() throws Exception {
+    void testResolveTokenWithNoBearerPrefix() throws Exception {
         String jwt = jwtTokenProvider.createToken(1047399L, UserRole.ADMIN, new Date());
         String username = "admin3";
         String password = "NoFraudAllowed3";

@@ -93,7 +93,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "amongus", password = "kindasusngl")
-    void registerSuccessfullyTest() throws Exception {
+    void testRegisterSuccessfully() throws Exception {
         this.mockMvc
                 .perform(post(REGISTER_URL)
                         .contentType(APPLICATION_JSON)
@@ -107,7 +107,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "AMONGAS", password = "impostor")
-    void registerUnsuccessfullyTest() throws Exception {
+    void testRegisterUnsuccessfully() throws Exception {
         String username = "AMONGAS";
         String password = "impostor";
 
@@ -128,7 +128,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "admin1", password = "MyAdmin1")
-    void changePasswordSuccessfullyTest() throws Exception {
+    void testChangePasswordSuccessfully() throws Exception {
         String username = "admin1";
         String password = "MyAdmin1";
 
@@ -152,7 +152,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmUserButForgotToLogin", password = "StupidMe")
-    void changePasswordUnsuccessfulTest() throws Exception {
+    void testChangePasswordUnsuccessful() throws Exception {
         String username = "IAmUserButForgotToLogin";
         String password = "StupidMe";
 
@@ -172,7 +172,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmInnocent", password = "HeHe")
-    void changePasswordOtherThanMeTest() throws Exception {
+    void testChangePasswordOtherThanMe() throws Exception {
         String username = "IAmInnocent";
         String password = "HeHe";
 
@@ -201,7 +201,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "admin2", password = "passMyWord")
-    void loginSuccessfullyWithNotificationsTest() throws Exception {
+    void testLoginSuccessfullyWithNotifications() throws Exception {
         String username = "admin2";
         String password = "passMyWord";
 
@@ -232,7 +232,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "admin3", password = "GreedyStaysAhead")
-    void loginSuccessfullyWithNoNotificationsTest() throws Exception {
+    void testLoginSuccessfullyWithNoNotifications() throws Exception {
         String username = "admin3";
         String password = "GreedyStaysAhead";
 
@@ -260,7 +260,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "AAMOGUS", password = "sass")
-    void loginNoUserTest() throws Exception {
+    void testLoginNoUser() throws Exception {
         String username = "AAMOGUS";
         String password = "sass";
 
@@ -274,7 +274,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "AMMOGUS", password = "susngl")
-    void loginBadCredentialsTest() throws Exception {
+    void testLoginBadCredentials() throws Exception {
         String username = "AMMOGUS";
         String password = "susngl";
 
@@ -293,7 +293,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmAdmin", password = "pwd8")
-    void changeRoleSuccessfullyAsAdminTest() throws Exception {
+    void testChangeRoleSuccessfullyAsAdmin() throws Exception {
         String username = "IAmAdmin";
         String password = "pwd8";
         String lecturerUsername = "IAmNotYetLecturer";
@@ -331,7 +331,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmGoodAdmin", password = "AdminPower")
-    void changeRoleSuccessfullyAsAdminToStudentTest() throws Exception {
+    void testChangeRoleSuccessfullyAsAdminToStudent() throws Exception {
         String username = "IAmGoodAdmin";
         String password = "AdminPower";
 
@@ -368,7 +368,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmLecturer", password = "AllMightyMe")
-    void changeRoleSuccessfullyAsLecturerTest() throws Exception {
+    void testChangeRoleSuccessfullyAsLecturer() throws Exception {
         String username = "IAmLecturer";
         String password = "AllMightyMe";
 
@@ -405,7 +405,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmAlsoLecturer", password = "IHateFraud")
-    void changeRoleToStudentSuccessfullyAsLecturerTest() throws Exception {
+    void testChangeRoleToStudentSuccessfullyAsLecturer() throws Exception {
         String username = "IAmAlsoLecturer";
         String password = "IHateFraud";
 
@@ -442,7 +442,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmEvilLecturer", password = "Fraud")
-    void changeRoleIllegalAsLecturerTest() throws Exception {
+    void testChangeRoleIllegalAsLecturer() throws Exception {
         String evilUsername = "IAmEvilLecturer";
         String evilPassword = "Fraud";
 
@@ -479,7 +479,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmNewLecturer", password = "NoFraudHere")
-    void changeRoleIllegalTargetRoleAsLecturerTest() throws Exception {
+    void testChangeRoleIllegalTargetRoleAsLecturer() throws Exception {
         String evilUsername = "IAmNewLecturer";
         String evilPassword = "NoFraudHere";
 
@@ -517,7 +517,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmStudent", password = "pWord")
-    void changeRoleNoRightsTest() throws Exception {
+    void testChangeRoleNoRights() throws Exception {
         String username = "IAmStudent";
         String password = "pWord";
 
@@ -543,7 +543,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmAdminButForgotToLogin", password = "pwdForgotToLogin")
-    void changeRoleNoCredentialsTest() throws Exception {
+    void testChangeRoleNoCredentials() throws Exception {
         String adminName = "IAmAdminButForgotToLogin";
         String adminPassword = "pwdForgotToLogin";
 
@@ -566,7 +566,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmNew", password = "42")
-    void changeRoleNonExistingTest() throws Exception {
+    void testChangeRoleNonExisting() throws Exception {
         String adminName = "IAmNew";
         String adminPassword = "42";
 
@@ -592,7 +592,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmAllMightyAdmin", password = "MeAllMightyMe")
-    void deleteExistingUserTest() throws Exception {
+    void testDeleteExistingUser() throws Exception {
         String username = "IAmAllMightyAdmin";
         String password = "MeAllMightyMe";
 
@@ -621,7 +621,7 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "IAmAllMightyAdmin2", password = "MeAllMighty")
-    void deleteNonExistingUserTest() throws Exception {
+    void testDeleteNonExistingUser() throws Exception {
         String username = "IAmAllMightyAdmin2";
         String password = "MeAllMighty";
 
@@ -642,7 +642,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void toJsonSuccessTest() {
+    void testToJsonSuccess() {
         String message = "Hi there :)";
         Notification someNotification = new Notification(41L, message);
         // Add notifications to list.
@@ -671,7 +671,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void toJsonFailedTest() {
+    void testToJsonFailed() {
         String message = "Hey welcome user :)";
         Notification someNotification = new Notification(1L, message);
         String json = String.format("{\"message\":\"%s,\"notificationDate\":\"%s\"}",
@@ -680,7 +680,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void getAllNotificationsFromUserSuccessTest() {
+    void testGetAllNotificationsFromUserSuccess() {
         final long myUserId = 2121212L;
         Notification first = new Notification(myUserId, "I am the first.");
         this.notificationDataRepository.save(first);
