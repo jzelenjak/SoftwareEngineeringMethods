@@ -161,7 +161,7 @@ public class Notification {
      * <i>Example:</i>
      * <pre>
      *  {
-     *      "message" : "Hey there, you are hired!,
+     *      "message" : "Hey there, you are hired!",
      *      "notificationDate" : "17:54 10-12-2021 Europe/Berlin"
      *  }
      * </pre>

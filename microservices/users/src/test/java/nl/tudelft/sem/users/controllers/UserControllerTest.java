@@ -388,7 +388,7 @@ class UserControllerTest {
         String fname = "Sasha";
         String lname = "Bar";
         final String expectedJson = new ObjectMapper().createObjectNode()
-                                    .put(USERID, "3443546").toString();
+                                    .put(USERID, 3443546).toString();
 
         configureGateway("/api/auth/register");
         mockRegister(uname, fname, lname, 3443546L);
@@ -564,8 +564,10 @@ class UserControllerTest {
 
         // Assert
         mockMvcChangeRole(CHANGE_ROLE_API,
-                createJson(USERID, String.valueOf(5422341L), ROLE,
-                        UserRole.TA.name()), prefixedBadToken)
+                new ObjectMapper().createObjectNode()
+                        .put(USERID, 5422341L)
+                        .put(ROLE, UserRole.TA.name())
+                        .toString(), prefixedBadToken)
                 .andExpect(status().isUnauthorized());
         Assertions
                 .assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS))
@@ -590,8 +592,10 @@ class UserControllerTest {
 
         // Assert
         mockMvcChangeRole(CHANGE_ROLE_API,
-                createJson(USERID, String.valueOf(3456774L), ROLE,
-                        UserRole.TA.name()), prefixedToken)
+                new ObjectMapper().createObjectNode()
+                        .put(USERID, 3456774L)
+                        .put(ROLE, UserRole.TA.name())
+                        .toString(), prefixedToken)
                 .andExpect(status().isBadRequest());
         Assertions
                 .assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS))
@@ -615,8 +619,10 @@ class UserControllerTest {
 
         // Assert
         mockMvcChangeRole(CHANGE_ROLE_API,
-                createJson(USERID, String.valueOf(4536654L), ROLE,
-                        UserRole.TA.name()), BEARER + token)
+                new ObjectMapper().createObjectNode()
+                        .put(USERID, 4536654L)
+                        .put(ROLE, UserRole.TA.name())
+                        .toString(), BEARER + token)
                 .andExpect(status().isUnauthorized());
         Assertions
                 .assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS))
@@ -641,8 +647,10 @@ class UserControllerTest {
 
         // Assert
         mockMvcChangeRole(CHANGE_ROLE_API,
-                createJson(USERID, String.valueOf(2376889L), ROLE,
-                        UserRole.TA.name()), BEARER + token)
+                new ObjectMapper().createObjectNode()
+                        .put(USERID, 2376889L)
+                        .put(ROLE, UserRole.TA.name())
+                        .toString(), BEARER + token)
                 .andExpect(status().isUnauthorized());
         Assertions
                 .assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS))
@@ -675,8 +683,10 @@ class UserControllerTest {
 
         // Assert
         MvcResult mvcResult = mockMvcChangeRole(CHANGE_ROLE_API,
-                createJson(USERID, String.valueOf(5465321L), ROLE,
-                        UserRole.LECTURER.name()), BEARER + token)
+                new ObjectMapper().createObjectNode()
+                        .put(USERID, 5465321L)
+                        .put(ROLE, UserRole.LECTURER.name())
+                        .toString(), BEARER + token)
                 .andReturn();
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isForbidden());
@@ -714,8 +724,10 @@ class UserControllerTest {
 
         // Assert
         MvcResult mvcResult = mockMvcChangeRole(CHANGE_ROLE_API,
-                createJson(USERID, String.valueOf(5465321L), ROLE,
-                        UserRole.LECTURER.name()), BEARER + token)
+                new ObjectMapper().createObjectNode()
+                        .put(USERID, 5465321L)
+                        .put(ROLE, UserRole.LECTURER.name())
+                        .toString(), BEARER + token)
                 .andReturn();
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk());
@@ -755,8 +767,10 @@ class UserControllerTest {
 
 
         // Assert
-        mockMvcDeleteByUserId(DELETE_API, createJson(USERID,
-                    String.valueOf(userId)), BEARER + token)
+        mockMvcDeleteByUserId(DELETE_API,
+                new ObjectMapper().createObjectNode()
+                        .put(USERID, userId)
+                        .toString(), BEARER + token)
                 .andExpect(status().isUnauthorized());
 
         Assertions
@@ -788,8 +802,10 @@ class UserControllerTest {
 
 
         // Assert
-        MvcResult mvcResult = mockMvcDeleteByUserId(DELETE_API, createJson(USERID,
-                String.valueOf(userId)), BEARER + token)
+        MvcResult mvcResult = mockMvcDeleteByUserId(DELETE_API,
+                new ObjectMapper().createObjectNode()
+                        .put(USERID, userId)
+                        .toString(), BEARER + token)
                 .andReturn();
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isForbidden());
@@ -828,8 +844,10 @@ class UserControllerTest {
 
 
         // Assert
-        MvcResult mvcResult = mockMvcDeleteByUserId(DELETE_API, createJson(USERID,
-                String.valueOf(userId)), BEARER + token)
+        MvcResult mvcResult = mockMvcDeleteByUserId(DELETE_API,
+                new ObjectMapper().createObjectNode()
+                        .put(USERID, userId)
+                        .toString(), BEARER + token)
                 .andReturn();
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk());
