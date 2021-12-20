@@ -36,7 +36,7 @@ import reactor.core.publisher.Mono;
  * Controller class for recommendations that provides the API.
  */
 @RestController
-@RequestMapping("/api/hiring-procedure/recommend")
+@RequestMapping("/api/hiring-procedure/recommendations")
 public class RecommendationController {
 
     private final transient GatewayConfig gatewayConfig;
@@ -61,25 +61,20 @@ public class RecommendationController {
     /**
      * Gets at most `amount` of candidate TA recommendations for a given course.
      *
-     * @param body    HTTP request body
+     * @param body    HTTP request body (not required, because then
+     *                a more customized exception can be sent)
      * @param headers HTTP request headers
      * @return a list of recommendations for the specified course.
      */
-    @PostMapping("/")
-    public Mono<List<Recommendation>> recommend(@RequestBody String body,
-                                      @RequestHeader() HttpHeaders headers) {
+    @PostMapping("/recommend")
+    public Mono<List<Recommendation>> recommend(@RequestBody(required = false) String body,
+                                      @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder
             .newBuilder()
-            .addValidators(
-                new AsyncAuthValidator(jwtUtils),
-                new AsyncRoleValidator(jwtUtils,
-                        Set.of(AsyncRoleValidator.Roles.LECTURER,
-                                AsyncRoleValidator.Roles.ADMIN)))
+            .addValidators(new AsyncAuthValidator(jwtUtils), new AsyncRoleValidator(jwtUtils,
+                Set.of(AsyncRoleValidator.Roles.LECTURER, AsyncRoleValidator.Roles.ADMIN)))
             .build();
-
-        return head
-                .validate(headers, body)
-                .flatMap(value -> parseBodyAndRecommend(body));
+        return head.validate(headers, body).flatMap(value -> parseBodyAndRecommend(body));
     }
 
 
@@ -127,47 +122,28 @@ public class RecommendationController {
      */
     private Mono<List<Recommendation>> parseBodyAndRecommend(String body) {
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode node = mapper.readTree(body);
-            long courseId = node.get("courseId").asLong();
-            int amount = node.get("amount").asInt();
-            double minValue = node.get("minValue").asDouble();
+            JsonNode node = new ObjectMapper().readTree(body);
+            long courseId = Long.parseLong(node.get("courseId").asText());
+            int amount = Integer.parseInt(node.get("amount").asText());
+            double minValue = Double.parseDouble(node.get("minValue").asText());
             StrategyType strategy = StrategyType
                     .valueOf(node.get("strategy").asText().toUpperCase(Locale.ROOT));
 
             return recommend(courseId, amount, minValue, strategy);
         } catch (JsonProcessingException e) {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Invalid request body format"));
+                "Invalid request body format"));
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Cannot parse the number provided");
         } catch (IllegalArgumentException e) {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "The specified strategy does not exist"));
+                "The specified strategy does not exist"));
+        } catch (Exception e) {
+            // Will be NullPointerException. Since, PMD complains about catching NPE,
+            //  a general exception put here
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Missing fields in the body"));
         }
     }
-
-    /**
-     * Exception handler for invalid JSONs.
-     */
-    @ExceptionHandler(JsonParseException.class)
-    private void invalidJson() {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid request body format");
-    }
-
-    /**
-     * Exception handler for NullPointerExceptions due to missing fields in JSONs.
-     */
-    @ExceptionHandler(NullPointerException.class)
-    private void missingJsonField() {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "JSON field is missing");
-    }
-
-    /**
-     * Exception handler for invalid numbers.
-     */
-    @ExceptionHandler(NumberFormatException.class)
-    private void invalidNumber() {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Cannot parse the number provided");
-    }
-
 }
