@@ -4,17 +4,13 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
-import nl.tudelft.sem.courses.respositories.CourseRepository;
-import nl.tudelft.sem.courses.respositories.GradeRepository;
 import nl.tudelft.sem.courses.services.CourseService;
 import nl.tudelft.sem.jwt.JwtUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,7 +19,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -34,12 +29,20 @@ public class CourseController {
 
     private static final String notAuthorized = "Not authorized";
 
-    @Autowired
-    private transient CourseService courseService;
+    private final transient CourseService courseService;
 
-    @Autowired
-    private transient JwtUtils jwtUtils;
+    private final transient JwtUtils jwtUtils;
 
+    /**
+     * Constructs the CourseController class.
+     *
+     * @param courseService is the course service used to perform business logic.
+     * @param jwtUtils is the JWT utility library used to decode JWT tokens.
+     */
+    public CourseController(CourseService courseService, JwtUtils jwtUtils) {
+        this.courseService = courseService;
+        this.jwtUtils = jwtUtils;
+    }
 
     /**
      * Creates a new course. The request must provide a CourseRequest Object.
