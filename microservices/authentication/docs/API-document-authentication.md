@@ -18,10 +18,18 @@ Endpoint for registering a user. No privileges are needed. For security reasons,
 }
 ```
 
-| Response code | Reason                                                  |
-| ------------- | ------------------------------------------------------- |
-| 200 OK        | Successful completion                                   |
-| 409 CONFLICT  | The user with the given username (NetID) already exists |
+| Response code | Reason                                                   |
+| ------------- | -------------------------------------------------------- |
+| 200 OK        | Successful completion                                    |
+| 409 CONFLICT  | The user with the given username or NetID already exists |
+
+In case there is a _CONFLICT_, the following response is returned;
+
+```json
+{
+  "message" : "User with username jegor or NetID 5221334 already exists!"
+}
+```
 
 ---
 
@@ -71,16 +79,18 @@ Endpoint for logging in. Requires valid credentials. In case of success, sends b
 Upon successful login, all notifications that are available for the user that logs in are send to the user using the format below. The token that is provided by the authentication microservice can be found in the *Authorization* header value.
 
 ```json
-[
-  {
-    "message" : "Hey there, you are hired!",
-    "notificationDate" : "17:54 10-12-2021 Europe/Berlin"
-  },
-  {
-    "message" : "...",
-    "notificationDate" : "..."
-  }
-]
+{
+  "notifications": [
+    {
+      "message": "Hey there, you are hired!",
+      "notificationDate" : "17:55 10-12-2020 Europe/Berlin"
+    },
+    {
+      "message": "Hey there, you are fired!",
+      "notificationDate": "16:20 25-12-2021 Europe/Berlin"
+    }
+  ]
+}
 ```
 
 | Header attribute | Value                                                        |

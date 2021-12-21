@@ -22,79 +22,79 @@ class NotificationTest {
     }
 
     @Test
-    void getNotificationIdTest() {
+    void testGetNotificationId() {
         notification.setNotificationId(notificationId);
         Assertions.assertEquals(notificationId, notification.getNotificationId());
     }
 
     @Test
-    void setNotificationIdTest() {
+    void testSetNotificationId() {
         Notification notification = new Notification();
         notification.setNotificationId(12L);
         Assertions.assertEquals(12L, notification.getNotificationId());
     }
 
     @Test
-    void getUserIdTest() {
+    void testGetUserId() {
         Assertions.assertEquals(userId, notification.getUserId());
     }
 
     @Test
-    void setUserIdTest() {
+    void testSetUserId() {
         Notification notification = new Notification();
         notification.setUserId(userId);
         Assertions.assertEquals(userId, notification.getUserId());
     }
 
     @Test
-    void getMessageTest() {
+    void testGetMessage() {
         Assertions.assertEquals(message, notification.getMessage());
     }
 
     @Test
-    void setMessageTest() {
+    void testSetMessage() {
         Notification notification = new Notification();
         notification.setMessage(newMessage);
         Assertions.assertEquals(newMessage, notification.getMessage());
     }
 
     @Test
-    void getNotificationDateTest() {
+    void testGetNotificationDate() {
         Assertions.assertEquals(notificationDate.toLocalDate(),
                 notification.getNotificationDate().toLocalDate());
     }
 
     @Test
-    void setNotificationDateTest() {
+    void testSetNotificationDate() {
         Notification notification = new Notification();
         notification.setNotificationDate(notificationDate);
         Assertions.assertEquals(notificationDate, notification.getNotificationDate());
     }
 
     @Test
-    void equalsSameTest() {
+    void testEqualsSame() {
         Assertions.assertEquals(notification, notification);
     }
 
     @Test
-    void equalsAnotherObjectTest() {
+    void testEqualsAnotherObject() {
         Assertions.assertNotEquals(notification, 42);
     }
 
     @Test
-    void equalsEqualTest() {
+    void testEqualsEqual() {
         Notification sameNotification = new Notification(userId, message);
         Assertions.assertEquals(notification, sameNotification);
     }
 
     @Test
-    void equalsDifferentMessageTest() {
+    void testEqualsDifferentMessage() {
         Notification notSameNotification = new Notification(userId, newMessage);
         Assertions.assertNotEquals(notification, notSameNotification);
     }
 
     @Test
-    void equalsDifferentNotificationIdTest() {
+    void testEqualsDifferentNotificationId() {
         Notification notSameNotification = new Notification(userId, newMessage);
         notification.setNotificationId(123321L);
         notSameNotification.setNotificationId(321123L);
@@ -102,25 +102,25 @@ class NotificationTest {
     }
 
     @Test
-    void equalsDifferentUserIdTest() {
+    void testEqualsDifferentUserId() {
         Notification notSameNotification = new Notification(1L, newMessage);
         Assertions.assertNotEquals(notification, notSameNotification);
     }
 
     @Test
-    void hashCodeSameTest() {
+    void testHashCodeSame() {
         Notification otherNotification = new Notification(userId, message);
         Assertions.assertEquals(notification.hashCode(), otherNotification.hashCode());
     }
 
     @Test
-    void hashCodeDifferentTest() {
+    void testHashCodeDifferent() {
         Notification otherNotification = new Notification(userId, newMessage);
         Assertions.assertNotEquals(notification.hashCode(), otherNotification.hashCode());
     }
 
     @Test
-    void toJsonSuccessTest() {
+    void testToJsonSuccess() {
         Notification someNotification = new Notification(userId, message);
         LocalDateTime timeStamp = someNotification.getNotificationDate();
         String json = String.format("{\"message\":\"%s\",\"notificationDate\":\"%s\"}",
@@ -134,7 +134,7 @@ class NotificationTest {
     }
 
     @Test
-    void toJsonFailedTest() {
+    void testToJsonFailed() {
         Notification someNotification = new Notification(userId, message);
         String json = String.format("{\"message\":\"%s,\"notificationDate\":\"%s\"}",
                 this.message, this.notificationDate.toLocalDate().toString());
