@@ -5,9 +5,12 @@ mainClassName = 'nl.tudelft.sem.hiring.procedure.HiringProcedureMain'
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'com.google.guava:guava:31.0.1-jre'
     implementation 'io.jsonwebtoken:jjwt-api:0.11.2'
+
     implementation project(':libs:heartbeat')
     implementation project(':libs:jwt')
+
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.2',
             'io.jsonwebtoken:jjwt-jackson:0.11.2'
     testImplementation 'com.squareup.okhttp3:mockwebserver'
