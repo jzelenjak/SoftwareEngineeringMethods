@@ -61,15 +61,14 @@ public class NotificationController {
      * Gets all notifications from specified user. Only possible by admin.
      *
      * @param req the HTTP request.
-     * @param res the HTTP response.
      *
      * @return all notifications from current user.
      */
     @GetMapping("/get")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public List<Notification> getAllNotificationsFromUser(HttpServletRequest req,
-                                   HttpServletResponse res) throws IOException {
+    public List<Notification> getAllNotificationsFromUser(HttpServletRequest req)
+            throws IOException {
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         final long targetUserId = Long.parseLong(jsonNode.get(USERID).asText());
 
@@ -84,14 +83,12 @@ public class NotificationController {
      * If not, ResponseStatusException with 403 FORBIDDEN will be thrown.
      *
      * @param req the HTTP request.
-     * @param res the HTTP response.
      * @throws IOException IO exception if something goes wrong with the servlets.
      */
     @PostMapping("/add")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public void addNewNotification(HttpServletRequest req,
-                    HttpServletResponse res) throws IOException {
+    public void addNewNotification(HttpServletRequest req) throws IOException {
         // Only admin or lecturer is allowed to do this, so we check this.
         checkAdminOrLecturer(req);
 
@@ -108,14 +105,12 @@ public class NotificationController {
      * If not, ResponseStatusException with 403 FORBIDDEN will be thrown.
      *
      * @param req the HTTP request.
-     * @param res the HTTP response.
      * @throws IOException IO exception if something goes wrong with the servlets.
      */
     @PutMapping("/change_user")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public void changeUserFromNotification(HttpServletRequest req,
-                          HttpServletResponse res) throws IOException {
+    public void changeUserFromNotification(HttpServletRequest req) throws IOException {
         // Only admin is allowed to do this, so we check this.
         checkAdmin(req);
 
@@ -130,14 +125,12 @@ public class NotificationController {
      * If not, ResponseStatusException with 403 FORBIDDEN will be thrown.
      *
      * @param req the HTTP request.
-     * @param res the HTTP response.
      * @throws IOException the io exception if something goes wrong with the servlets.
      */
     @PutMapping("/change_message")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public void changeMessageFromNotification(HttpServletRequest req,
-                                           HttpServletResponse res) throws IOException {
+    public void changeMessageFromNotification(HttpServletRequest req) throws IOException {
         // Only admin is allowed to do this, so we check this.
         checkAdmin(req);
 
@@ -152,14 +145,12 @@ public class NotificationController {
      * If not, ResponseStatusException with 403 FORBIDDEN will be thrown.
      *
      * @param req the HTTP request.
-     * @param res the HTTP response.
      * @throws IOException IO exception if something goes wrong with the servlets.
      */
     @DeleteMapping("/delete")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public void deleteNotificationById(HttpServletRequest req,
-                    HttpServletResponse res) throws IOException {
+    public void deleteNotificationById(HttpServletRequest req) throws IOException {
         // Only admin is allowed to do this, so we check this.
         checkAdmin(req);
 
@@ -173,14 +164,12 @@ public class NotificationController {
      * If not, ResponseStatusException with 403 FORBIDDEN will be thrown.
      *
      * @param req the HTTP request.
-     * @param res the HTTP response.
      * @throws IOException the io exception if something goes wrong with the servlets.
      */
     @DeleteMapping("/delete_user")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public void deleteNotificationFromUser(HttpServletRequest req,
-                                   HttpServletResponse res) throws IOException {
+    public void deleteNotificationFromUser(HttpServletRequest req) throws IOException {
         // Only admin is allowed to do this, so we check this.
         checkAdmin(req);
 

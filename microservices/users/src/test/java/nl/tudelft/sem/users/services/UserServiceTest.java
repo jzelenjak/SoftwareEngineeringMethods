@@ -13,7 +13,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.dao.DataIntegrityViolationException;
 
-class UserServiceTest {
+class   UserServiceTest {
     private transient UserRepository userRepository;
 
     private transient UserService userService;

@@ -1,5 +1,7 @@
 # Hour Management - API Document
 
+## Fetch declarations
+
 ```
 GET  /api/hour-management/declaration
 ```
@@ -33,27 +35,6 @@ Upon calling this endpoint, a list of declaration objects is returned in a JSON 
 ---
 
 ```
-POST /api/hour-management/declaration
-```
-
-Endpoint used to declare hours. Only **admins** and **TAs** are permitted to declare hours. The information with respect to the declaration is placed in the body of the request. This request body should look similar to the JSON object below.
-
-```json
-{
-    "studentId": 54321,
-    "courseId": 78910,
-    "declaredHours": 10.5
-}
-```
-
-| Response code | Reason                                       |
-| ------------- | -------------------------------------------- |
-| 200 OK        | Successful completion                        |
-| 403 FORBIDDEN | User is not permitted to access the endpoint |
-
----
-
-```
 GET  /api/hour-management/declaration/{id}
 ```
 
@@ -77,38 +58,6 @@ The *id* used within the path is the ID of the declaration.
 | 200 OK        | Successful completion                        |
 | 404 NOT FOUND | No declarations in the system                |
 | 403 FORBIDDEN | User is not permitted to access the endpoint |
-
----
-
-```
-DELETE  /api/hour-management/{id}/reject
-```
-
-Endpoint used to reject an hour declaration. Only **admins** and **lecturers** are permitted to reject hour declarations. Upon rejection, a notification is sent to the TA.
-
-The *id* used within the path is the ID of the declaration.
-
-| Response code   | Reason                                                   |
-| --------------- | -------------------------------------------------------- |
-| 200 OK          | Successful completion                                    |
-| 400 BAD REQUEST | Declaration does not exist, or has already been approved |
-| 403 FORBIDDEN   | User is not permitted to access the endpoint             |
-
----
-
-```
-PUT  /api/hour-management/{id}/approve
-```
-
-Endpoint used to approve an hour declaration. Only **admins** and **lecturers** are permitted to approve hour declarations. Upon approval, a notification is sent to the TA.
-
-The *id* used within the path is the ID of the declaration.
-
-| Response code   | Reason                                                   |
-| --------------- | -------------------------------------------------------- |
-| 200 OK          | Successful completion                                    |
-| 400 BAD REQUEST | Declaration does not exist, or has already been approved |
-| 403 FORBIDDEN   | User is not permitted to access the endpoint             |
 
 ---
 
@@ -173,6 +122,67 @@ The *id* used within the path is the ID of the declaration.
 | 403 FORBIDDEN   | User is not permitted to access the endpoint |
 
 ---
+
+## Declare hours
+
+```
+POST /api/hour-management/declaration
+```
+
+Endpoint used to declare hours. Only **admins** and **TAs** are permitted to declare hours. The information with respect to the declaration is placed in the body of the request. This request body should look similar to the JSON object below.
+
+```json
+{
+    "studentId": 54321,
+    "courseId": 78910,
+    "declaredHours": 10.5
+}
+```
+
+| Response code | Reason                                       |
+| ------------- | -------------------------------------------- |
+| 200 OK        | Successful completion                        |
+| 403 FORBIDDEN | User is not permitted to access the endpoint |
+
+---
+
+## Reject declarations
+
+```
+DELETE  /api/hour-management/{id}/reject
+```
+
+Endpoint used to reject an hour declaration. Only **admins** and **lecturers** are permitted to reject hour declarations. Upon rejection, a notification is sent to the TA.
+
+The *id* used within the path is the ID of the declaration.
+
+| Response code   | Reason                                                   |
+| --------------- | -------------------------------------------------------- |
+| 200 OK          | Successful completion                                    |
+| 400 BAD REQUEST | Declaration does not exist, or has already been approved |
+| 403 FORBIDDEN   | User is not permitted to access the endpoint             |
+
+---
+
+## Approve declarations
+
+```
+PUT  /api/hour-management/{id}/approve
+```
+
+Endpoint used to approve an hour declaration. Only **admins** and **lecturers** are permitted to approve hour declarations. Upon approval, a notification is sent to the TA.
+
+The *id* used within the path is the ID of the declaration.
+
+| Response code   | Reason                                                   |
+| --------------- | -------------------------------------------------------- |
+| 200 OK          | Successful completion                                    |
+| 400 BAD REQUEST | Declaration does not exist, or has already been approved |
+| 403 FORBIDDEN   | User is not permitted to access the endpoint             |
+
+---
+
+## Statistics
 
 ```
 GET  /api/hour-management/declaration/statistics/total-hours

@@ -1,6 +1,8 @@
 package nl.tudelft.sem.courses.communication;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,44 +11,24 @@ import lombok.Setter;
 @Setter
 public class CourseRequest {
 
-    private String courseId;
-    private LocalDateTime startDate;
-    private LocalDateTime finishDate;
+    private String courseCode;
+    private ZonedDateTime startDate;
+    private ZonedDateTime finishDate;
+    private int numStudents;
 
     /**
      * General course request constructor requires start date , finish date and the course id.
      *
-     * @param courseId -  The id of the course
+     * @param courseCode -  The id of the course
      * @param startDate - The starting date of the course
      * @param finishDate - The finishing date of the course
      */
-    public CourseRequest(String courseId, LocalDateTime startDate, LocalDateTime finishDate) {
-        this.courseId = courseId;
+    public CourseRequest(String courseCode, ZonedDateTime startDate,
+                         ZonedDateTime finishDate, int numStudents) {
+        this.courseCode = courseCode;
         this.startDate = startDate;
         this.finishDate = finishDate;
+        this.numStudents = numStudents;
     }
 
-    public String getCourseId() {
-        return courseId;
-    }
-
-    public void setCourseId(String courseId) {
-        this.courseId = courseId;
-    }
-
-    public LocalDateTime getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(LocalDateTime startDate) {
-        this.startDate = startDate;
-    }
-
-    public LocalDateTime getFinishDate() {
-        return finishDate;
-    }
-
-    public void setFinishDate(LocalDateTime finishDate) {
-        this.finishDate = finishDate;
-    }
 }
