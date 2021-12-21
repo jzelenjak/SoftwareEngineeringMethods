@@ -14,7 +14,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import java.io.IOException;
@@ -507,12 +506,12 @@ class UserControllerTest {
     void getByRoleNotFoundTest() throws Exception {
         List<User> users = new ArrayList<>();
 
-        mockGetByRole(UserRole.CANDIDATE_TA, users);
+        mockGetByRole(UserRole.TA, users);
 
-        mockMvcGetByRole(BY_ROLE, createJson(ROLE, UserRole.CANDIDATE_TA.name()))
+        mockMvcGetByRole(BY_ROLE, createJson(ROLE, UserRole.TA.name()))
                 .andExpect(status().isNotFound());
 
-        verifyGetByRole(UserRole.CANDIDATE_TA, 1);
+        verifyGetByRole(UserRole.TA, 1);
     }
 
     @Test

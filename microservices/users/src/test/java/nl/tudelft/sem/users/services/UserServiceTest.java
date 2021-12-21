@@ -385,7 +385,7 @@ class UserServiceTest {
         userFromRepo.setUserId(userId);
 
         User userSaved = new User(userFromRepo.getUsername(),
-                userFromRepo.getFirstName(), userFromRepo.getLastName(), UserRole.CANDIDATE_TA);
+                userFromRepo.getFirstName(), userFromRepo.getLastName(), UserRole.STUDENT);
         userSaved.setUserId(userId);
 
         mockFindByUserId(userId, userFromRepo);
@@ -470,7 +470,7 @@ class UserServiceTest {
         mockFindByUserId(userId, null);
 
         Assertions
-            .assertThat(userService.changeRole(userId, UserRole.CANDIDATE_TA, UserRole.ADMIN))
+            .assertThat(userService.changeRole(userId, UserRole.STUDENT, UserRole.ADMIN))
             .isFalse();
 
         verifyFindByUserId(userId, 1);
@@ -480,22 +480,52 @@ class UserServiceTest {
     }
 
     @Test
-    void changeRoleFromStudentToCandidateTaSuccessfulTest() {
+    void changeRoleFromStudentToTaSuccessfulTest() {
         User userFromRepo = new User("nglblob@tudelft.nl", "ngl", "blob", UserRole.STUDENT);
         userFromRepo.setUserId(userId);
 
-        User userSaved = new User("nglblob@tudelft.nl", "ngl", "blob", UserRole.CANDIDATE_TA);
+        User userSaved = new User("nglblob@tudelft.nl", "ngl", "blob", UserRole.STUDENT);
         userSaved.setUserId(userId);
 
         mockFindByUserId(userId, userFromRepo);
         mockSave(userSaved, userSaved);
 
         Assertions
-            .assertThat(userService.changeRole(userId, UserRole.CANDIDATE_TA, UserRole.ADMIN))
+            .assertThat(userService.changeRole(userId, UserRole.TA, UserRole.LECTURER))
             .isTrue();
 
         verifyFindByUserId(userId, 2);  // Once in isAllowedToChangeRole, once in changeRole
         verifySave(userSaved, 1);
+    }
+
+    @Test
+    void changeRoleFromAdminToStudentFailureTest() {
+        User userFromRepo = new User("nglbob@tudelft.nl", "nglb", "ob", UserRole.ADMIN);
+        userFromRepo.setUserId(userId);
+
+        mockFindByUserId(userId, userFromRepo);
+
+        Assertions
+            .assertThat(userService.changeRole(userId, UserRole.STUDENT, UserRole.LECTURER))
+            .isFalse();
+
+        verifyFindByUserId(userId, 1);
+        Mockito.verify(userRepository, Mockito.times(0)).save(Mockito.any());
+    }
+
+    @Test
+    void changeRoleFromStudentToAdminFailureTest() {
+        User userFromRepo = new User("blob@tudelft.nl", "b", "lob", UserRole.STUDENT);
+        userFromRepo.setUserId(userId);
+
+        mockFindByUserId(userId, userFromRepo);
+
+        Assertions
+            .assertThat(userService.changeRole(userId, UserRole.ADMIN, UserRole.LECTURER))
+            .isFalse();
+
+        verifyFindByUserId(userId, 1);
+        Mockito.verify(userRepository, Mockito.times(0)).save(Mockito.any());
     }
 
     /**
