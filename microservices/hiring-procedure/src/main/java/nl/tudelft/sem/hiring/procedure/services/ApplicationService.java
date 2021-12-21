@@ -2,6 +2,7 @@ package nl.tudelft.sem.hiring.procedure.services;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
 import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
@@ -150,5 +151,40 @@ public class ApplicationService {
                 applicationRepository.save(application);
             }
         }
+    }
+
+    /**
+     * Method for setting the maximum amount of allowed contractual hours for an application.
+     *
+     * @param applicationId The ID of the application for which to change the maxHours variable
+     * @param maxHours The amount to which to update
+     * @throws NoSuchElementException when an application with that associated id does not exist.
+     */
+    public void setMaxHours(long applicationId, int maxHours) throws NoSuchElementException {
+        Optional<Application> applicationOptional = applicationRepository.findById(applicationId);
+        if (applicationOptional.isPresent()) {
+            Application application = applicationOptional.get();
+            application.setMaxHours(maxHours);
+            applicationRepository.save(application);
+        } else {
+            throw new NoSuchElementException("Application with that id does not exist.");
+        }
+    }
+
+    /**
+     * Method for getting the maximum amount of allowed contractual hours for an application.
+     *
+     * @param userId The ID of the user for which to get the maxHours variable
+     * @param courseId The ID of the course for which to get the maxHours variable
+     * @return The maxHours of the application with those two parameters
+     * @throws NoSuchElementException when no applications with those parameters exist
+     */
+    public int getMaxHours(long userId, long courseId) throws NoSuchElementException {
+        List<Application> applications = applicationRepository.findAllByUserIdAndAndCourseId(userId, courseId);
+        if (applications.size() != 0) {
+            Application application = applications.get(0);
+            return application.getMaxHours();
+        }
+        throw new NoSuchElementException("Application with those parameters does not exist.");
     }
 }

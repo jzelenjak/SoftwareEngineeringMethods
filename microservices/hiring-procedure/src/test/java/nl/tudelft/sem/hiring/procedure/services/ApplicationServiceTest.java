@@ -2,6 +2,7 @@ package nl.tudelft.sem.hiring.procedure.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
 import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
@@ -202,6 +204,45 @@ public class ApplicationServiceTest {
         applicationService.rejectApplication(application1.getApplicationId());
         verify(applicationMock, times(1)).setStatus(ApplicationStatus.REJECTED);
         verify(applicationRepository).save(applicationMock);
+    }
+
+    @Test
+    public void testSetMaxHoursPass() {
+        when(applicationRepository.findById(application1.getApplicationId()))
+                .thenReturn(Optional.of(application1));
+
+        applicationService.setMaxHours(application1.getApplicationId(), 150);
+        application1.setMaxHours(150);
+
+        verify(applicationRepository).save(application1);
+    }
+
+    @Test
+    public void testSetMaxHoursFail() {
+        when(applicationRepository.findById(application1.getApplicationId()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () ->
+                applicationService.setMaxHours(application1.getApplicationId(), 150));
+    }
+
+    @Test
+    public void testGetMaxHoursPass() {
+        when(applicationRepository.findAllByUserIdAndAndCourseId(application1.getUserId(),
+                application1.getCourseId())).thenReturn(List.of(application1));
+
+        assertEquals(applicationService.getMaxHours(application1.getUserId(),
+                application1.getCourseId()), 200);
+    }
+
+    @Test
+    public void testGetMaxHoursFail() {
+        when(applicationRepository.findAllByUserIdAndAndCourseId(application1.getUserId(),
+                application1.getCourseId())).thenReturn(List.of());
+
+        assertThrows(NoSuchElementException.class, () ->
+                applicationService.getMaxHours(application1.getUserId(),
+                        application1.getCourseId()));
     }
 
 }
