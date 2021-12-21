@@ -14,6 +14,7 @@ import com.google.gson.JsonObject;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -79,6 +80,9 @@ public class ApplicationControllerTest {
             + "c3VlciI6Iklzc3VlciIsIlVzZXJuYW1lIjoibXRvYWRlciIsImV4cCI6MTYzODYzNDYyMiwiaWF0Ijo"
             + "xNjM4NjM0NjIyfQ.atOFZMwAy3ERmNLmCtrxTGd1eKo1nHeTGAoM9-tXZys";
 
+    private transient Application application
+            = new Application(userId, courseId, LocalDateTime.now());
+
     @BeforeAll
     static void setup() throws IOException {
         mockWebServer = new MockWebServer();
@@ -91,13 +95,13 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void controllerNoEndpointTest() throws Exception {
+    public void testControllerNoEndpoint() throws Exception {
         mockMvc.perform(get("/api/hiring-procedure/non-existing"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    public void applyEndpointTestPass() throws Exception {
+    public void testApplyEndpointPass() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -131,7 +135,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointUserNotStudent() throws Exception {
+    public void testApplyEndpointUserNotStudent() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -147,7 +151,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointDeadlinePassed() throws Exception {
+    public void testApplyEndpointDeadlinePassed() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -158,7 +162,8 @@ public class ApplicationControllerTest {
         when(gatewayConfig.getPort()).thenReturn(url.port());
         when(gatewayConfig.getHost()).thenReturn(url.host());
         JsonObject json = new JsonObject();
-        json.addProperty(START_TIME, ZonedDateTime.now().plusWeeks(1).toString());
+        json.addProperty(START_TIME, ZonedDateTime.now()
+                .plusWeeks(1).toString());
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setBody(json.toString()));
@@ -179,7 +184,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointUserApplied() throws Exception {
+    public void testApplyEndpointUserApplied() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -213,7 +218,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointCourseNotFound() throws Exception {
+    public void testApplyEndpointCourseNotFound() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -242,7 +247,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointInvalidToken() throws Exception {
+    public void testApplyEndpointInvalidToken() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
@@ -258,7 +263,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getAllEndpointPass() throws Exception {
+    public void testGetAllEndpointPass() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -274,7 +279,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getAllEndpointNotLecturer() throws Exception {
+    public void testGetAllEndpointNotLecturer() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -290,7 +295,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getAllEndpointInvalidToken() throws Exception {
+    public void testGetAllEndpointInvalidToken() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
@@ -305,7 +310,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getApplicationsEndpointPass() throws Exception {
+    public void testGetApplicationsEndpointPass() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -322,7 +327,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getApplicationsEndpointNotLecturer() throws Exception {
+    public void testGetApplicationsEndpointNotLecturer() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -339,7 +344,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getApplicationsEndpointInvalidToken() throws Exception {
+    public void testGetApplicationsEndpointInvalidToken() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
@@ -355,7 +360,48 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointTestPass() throws Exception {
+    public void testHireEndpointPass() throws Exception {
+        // Set mocks
+        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
+        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        when(applicationService.checkCandidate(userId, courseId)).thenReturn(true);
+        when(applicationService.getApplication(userId, courseId))
+                .thenReturn(Optional.of(application));
+
+        // Register listener and setup url
+        HttpUrl url = mockWebServer.url(BASE_URL);
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
+        JsonObject json = new JsonObject();
+        json.addProperty(START_TIME, courseStartNextYear.toString());
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(json.toString()));
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200));
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(HIRE_API)
+                        .param("userId", String.valueOf(userId))
+                        .param("course" + "Id", String.valueOf(courseId))
+                        .header(AUTH_BODY, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isOk());
+
+        // Extra checks
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest);
+        assertEquals(GET_METHOD, recordedRequest.getMethod());
+        recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest);
+        assertEquals(GET_METHOD, recordedRequest.getMethod());
+    }
+
+    @Test
+    public void testHireEndpointApplicationNotFoundFailed() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -375,14 +421,14 @@ public class ApplicationControllerTest {
                 .setResponseCode(200));
 
         // Perform the call
-        MvcResult result = mockMvc.perform(post(HIRE_API
-                + PARAM_STARTER + USER_ID_PARAM + userId
-                + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+        MvcResult result = mockMvc.perform(post(HIRE_API)
+                        .param("userId", String.valueOf(userId))
+                        .param("course" + "Id", String.valueOf(courseId))
                         .header(AUTH_BODY, JWT))
                 .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
-            .andExpect(status().isOk());
+                .andExpect(status().isNotFound());
 
         // Extra checks
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -394,7 +440,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointInvalidToken() throws Exception {
+    public void testHireEndpointInvalidToken() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
@@ -411,7 +457,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointNotLecturer() throws Exception {
+    public void testHireEndpointNotLecturer() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -429,7 +475,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointCourseNotFound() throws Exception {
+    public void testHireEndpointCourseNotFound() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -460,7 +506,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointUserNotFound() throws Exception {
+    public void testHireEndpointUserNotFound() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -498,7 +544,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointNotViable() throws Exception {
+    public void testHireEndpointNotViable() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -683,6 +729,7 @@ public class ApplicationControllerTest {
         verify(applicationService, times(1)).rejectApplication(applicationId);
     }
 
+
     @Test
     void testRejectNonExisting() throws Exception {
         // Configure the mocks
@@ -751,7 +798,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    void getOwnContractTest() throws Exception {
+    void testGetOwnContractSuccess() throws Exception {
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
@@ -767,7 +814,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    void getContractTest() throws Exception {
+    void testGetContractSuccess() throws Exception {
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
