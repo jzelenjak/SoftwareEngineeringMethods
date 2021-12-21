@@ -178,10 +178,11 @@ public class ApplicationController {
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "User is not a viable candidate"));
             }
-            Optional<Application> optionalApplication = applicationService.getApplication(userId, courseId);
+            Optional<Application> optionalApplication =
+                    applicationService.getApplication(userId, courseId);
             if (optionalApplication.isEmpty()) {
-                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        String.format("Application with userId %s and courseId %s has not been found.",
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, String.format(
+                        "Application with userId %s and courseId %s has not been found.",
                                 userId, courseId)));
             }
             Application application = optionalApplication.get();
@@ -190,7 +191,8 @@ public class ApplicationController {
 
             // Send notification request
             notificationService.notify(userId,
-                    String.format("Your application with id %s has been approved.", application.getApplicationId()),
+                    String.format("Your application with id %s has been approved.",
+                            application.getApplicationId()),
                     authHeader.getFirst(HttpHeaders.AUTHORIZATION));
             return Mono.empty();
         });
@@ -233,7 +235,8 @@ public class ApplicationController {
 
             // Send notification request
             notificationService.notify(application.getUserId(),
-                    String.format("Your application with id %s has been rejected.", application.getApplicationId()),
+                    String.format("Your application with id %s has been rejected.",
+                            application.getApplicationId()),
                     headers.getFirst(HttpHeaders.AUTHORIZATION));
             return Mono.empty();
         });
