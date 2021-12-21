@@ -2,16 +2,18 @@ package nl.tudelft.sem.courses.services;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
+import nl.tudelft.sem.courses.entities.Teaches;
+import nl.tudelft.sem.courses.entities.TeachesPk;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import nl.tudelft.sem.courses.respositories.TeachesRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class CourseService {
@@ -22,15 +24,18 @@ public class CourseService {
 
     private transient GradeRepository gradeRepository;
 
+    private transient TeachesRepository teachesRepository;
+
     /**
      * Constructor for Dependency Injection.
      *
      * @param courseRepository - A repository object for courses
      * @param gradeRepository -  A repository object for grades
      */
-    public CourseService(CourseRepository courseRepository, GradeRepository gradeRepository) {
+    public CourseService(CourseRepository courseRepository, GradeRepository gradeRepository, TeachesRepository teachesRepository) {
         this.courseRepository = courseRepository;
         this.gradeRepository = gradeRepository;
+        this.teachesRepository = teachesRepository;
     }
 
     /**
@@ -151,7 +156,7 @@ public class CourseService {
         //checking if a grade already exists for this user
         Grade existingGrade = getGrade(request.getUserId(), request.getCourseId());
 
-        if (existingGrade != null && existingGrade.getGradeValue() >= request.getGrade()) {
+        if (existingGrade != null && existingGrade.getGradeValue() <= request.getGrade()) {
             return false;
         }
 
@@ -160,12 +165,62 @@ public class CourseService {
                 Course course = getCourse(request.getCourseId());
                 Grade grade = new Grade(course, request.getUserId(), request.getGrade());
                 gradeRepository.save(grade);
-            } else {
-                existingGrade.setGradeValue(request.getGrade());
-                gradeRepository.save(existingGrade);
             }
             return true;
         } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Gives all the course ids for the
+     * courses the lecturer teaches.
+     *
+     * @param lecturerId - id of the lecturer
+     * @return list of course id's
+     */
+    public List<Long> getCourseIdForLecturer(long lecturerId) {
+        List<Teaches> list = teachesRepository.findAllByLecturerId(lecturerId);
+
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        List<Long> result = list.stream().map(teaches -> teaches.getCourseId()).collect(Collectors.toList());
+
+        return result;
+    }
+
+    /**
+     * Checks if the lecturer teaches a specific course.
+     *
+     * @param lecturerId - lecturer's id
+     * @param courseId - the courses id
+     * @return true if lecturer teaches course otherwise false
+     */
+    public Boolean lecturerTeachesCourse(long lecturerId, long courseId) {
+        Optional<Teaches> teachesCourse = teachesRepository.findById(new TeachesPk(courseId, lecturerId));
+        if (teachesCourse.isEmpty()) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * assigns a lecturer to a course.
+     * This is done by creating a teach entity
+     *
+     * @param lecturerId - lecturer's id
+     * @param courseId - id of the course
+     * @return if operation was successful or not
+     */
+    public Boolean createTeaches(long lecturerId, long courseId) {
+        try {
+            Teaches teach = new Teaches(courseId, lecturerId);
+            teachesRepository.save(teach);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
             return false;
         }
     }

@@ -6,7 +6,7 @@
 POST   /api/auth/register
 ```
 
-Endpoint for registering a user. No privileges are needed. For security reasons, everyone is registered as a student initially, but can be promoted by a lecturer or an admin later.
+Endpoint for registering a user. No privileges are needed. For security reasons, everyone is registered as a student initially, but can be promoted by a teaches or an admin later.
 
 **Expected body format:**
 
@@ -110,7 +110,7 @@ Upon successful login, all notifications that are available for the user that lo
 PUT    /api/auth/change_role
 ```
 
-Endpoint for changing the role of a user. Can only be done by admins or lecturers (a lecturer can only change a user to be a TA, candidate TA or a student), whereas an admin can do everything.
+Endpoint for changing the role of a user. Can only be done by admins or lecturers (a teaches can only change a user to be a TA, candidate TA or a student), whereas an admin can do everything.
 
 **Expected body format:**
 
@@ -126,7 +126,7 @@ _NB! Include the JWT token in &#39;Authorization&#39; header and make sure it st
 | Response code | Reason                                                       |
 | ------------- | ------------------------------------------------------------ |
 | 200 OK        | Successful completion                                        |
-| 403 FORBIDDEN | The authorization token is invalid, or a lecturer attempts to promote a user to a role that is at least as high as the lecturer |
+| 403 FORBIDDEN | The authorization token is invalid, or a teaches attempts to promote a user to a role that is at least as high as the teaches |
 
 ---
 

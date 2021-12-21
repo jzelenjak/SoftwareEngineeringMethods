@@ -11,6 +11,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
@@ -19,6 +21,7 @@ import nl.tudelft.sem.courses.controllers.CourseController;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
+import nl.tudelft.sem.courses.respositories.TeachesRepository;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +53,7 @@ public class CourseControllerTest {
     private static final String getCoursePath = "/api/courses/get/courses/";
     private static final String courseCode = "CSE2216";
     private static final String createGradePath = "/api/courses/create/grade";
+    private static final String assignLecturerPath = "/api/courses/create/lecturer/1/1";
     private static final ZonedDateTime date = ZonedDateTime.now();
     private static final CourseRequest courseRequest = new CourseRequest(courseCode,
             date, date, 1);
@@ -62,6 +66,9 @@ public class CourseControllerTest {
 
     @Autowired
     private transient ObjectMapper objectMapper;
+
+    @Autowired
+    private transient TeachesRepository teachesRepository;
 
     @MockBean
     private transient JwtUtils jwtUtils;
@@ -76,6 +83,7 @@ public class CourseControllerTest {
     void setup() {
         courseRepository.deleteAll();
         gradeRepository.deleteAll();
+        teachesRepository.deleteAll();
 
         //mock the jwtUtils
         when(jwtUtils.resolveToken(Mockito.any())).thenReturn("");
@@ -410,5 +418,94 @@ public class CourseControllerTest {
         Assert.assertNotEquals("LECTURER", jwtUtils.getRole(result));
         Assert.assertEquals(false, courseController.checkIfLecturer(result));
 
+    }
+
+    @Test
+    void addNewLecturerToCourse() throws Exception {
+        mockMvc.perform(post(assignLecturerPath)
+                .header(authorizationHeader, "")
+                .contentType(jsonContentHeader))
+                .andExpect(status().isOk());
+
+    }
+
+    @Test
+    void notAuthorizedToAddLecturer() throws Exception {
+        mockMvc.perform(post(assignLecturerPath))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetCoursesOfLecuterer() throws Exception {
+        mockMvc.perform(post(assignLecturerPath)
+                .header(authorizationHeader, "")
+                .contentType(jsonContentHeader))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/courses/create/lecturer/1/2")
+                .header(authorizationHeader, "")
+                .contentType(jsonContentHeader))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/courses/create/lecturer/1/3")
+                .header(authorizationHeader, "")
+                .contentType(jsonContentHeader))
+                .andExpect(status().isOk());
+
+        MvcResult mvcResult = mockMvc.perform(get("/api/courses/get/lecturer/courses/1")
+                .header(authorizationHeader, ""))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        List<Long> expectedResult = Arrays.asList(1L, 2L, 3L);
+
+        String response= mvcResult.getResponse().getContentAsString();
+        List<Long> result = objectMapper.readValue(response,
+                new TypeReference<List<Long>>(){});
+
+        Assert.assertEquals(expectedResult, result);
+
+    }
+
+    @Test
+    void testFailedToGetAnyCourses() throws Exception {
+        mockMvc.perform(get("/api/courses/get/lecturer/courses/1")
+                .header(authorizationHeader, ""))
+                .andExpect(status().isNotFound());
+
+    }
+
+    @Test
+    void testNotAuthorizedToGetLecturers() throws Exception {
+        mockMvc.perform(get("/api/courses/get/lecturer/courses/1"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testLecturerTeachesCourse() throws Exception {
+        mockMvc.perform(post(assignLecturerPath)
+                .header(authorizationHeader, "")
+                .contentType(jsonContentHeader))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/courses/get/teaches/1/1")
+                .header(authorizationHeader, "")
+                .contentType(jsonContentHeader))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testLecturerDoesNotTeachCourse() throws Exception {
+        mockMvc.perform(get("/api/courses/get/teaches/1/1")
+                .header(authorizationHeader, "")
+                .contentType(jsonContentHeader))
+                .andExpect(status().isNotFound());
+
+    }
+
+    @Test
+    void testNoAuthenticationLecturerTeachingCourse() throws Exception {
+        mockMvc.perform(get("/api/courses/get/teaches/1/1"))
+                .andExpect(status().isForbidden());
     }
 }

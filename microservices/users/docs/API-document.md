@@ -6,7 +6,7 @@
 POST   /api/users/register
 ```
 
-Endpoint for registering a user. It also registers the user with the Authentication microservice. No privileges are needed. For security reasons, everyone is registered as a student initially, but can be promoted by a lecturer or an admin later.
+Endpoint for registering a user. It also registers the user with the Authentication microservice. No privileges are needed. For security reasons, everyone is registered as a student initially, but can be promoted by a teaches or an admin later.
 
 *NB! The token will NOT be sent back. Use /api/auth/login to get it.*
 
@@ -157,7 +157,7 @@ Upon success, the following response is returned;
 PUT    /api/users/change_role
 ```
 
-Endpoint for changing the role of a user. Can only be done by **admins** or **lecturers** (a lecturer can *only* change a user to be a TA, or a student), whereas an admin can do everything. It also changes the role in Authentication Microservice.
+Endpoint for changing the role of a user. Can only be done by **admins** or **lecturers** (a teaches can *only* change a user to be a TA, or a student), whereas an admin can do everything. It also changes the role in Authentication Microservice.
 
 **Expected body format**:
 

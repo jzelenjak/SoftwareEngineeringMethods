@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -93,6 +94,41 @@ public class GradeTest {
         Grade grade2 = new Grade(2, course2, userId, 2.0f);
         boolean result = grade.equals(grade2);
         assertFalse(result);
+    }
+
+    @Test
+    public void equalsNullTest() {
+        Grade grade = new Grade(2, course, 1, 2.0f);
+        boolean result = grade.equals(null);
+        assertFalse(result);
+    }
+
+    @Test
+    public void equalsSameObject() {
+        Grade grade = new Grade(2, course, 1, 2.0f);
+        boolean result = grade.equals(grade);
+        assertTrue(result);
+    }
+
+    @Test
+    public void equalsidsAredifferent() {
+        Grade grade = new Grade(2, course, 1, 2.0f);
+        Grade grade2 = new Grade(5,  course, 2,2.0f);
+        assertFalse(grade.equals(grade2));
+    }
+
+    @Test
+    public void gradeIdIsTheSame() {
+        Grade grade = new Grade(5, course, 1, 2.0f);
+        Grade grade2 = new Grade(5,  course, 2,2.0f);
+        assertTrue(grade.equals(grade2));
+    }
+
+    @Test
+    public void coursesAreEqual() {
+        Grade grade = new Grade(5, course, 1, 2.0f);
+        Grade grade2 = new Grade(1,  course, 1,2.0f);
+        assertTrue(grade.equals(grade2));
     }
 
 }
