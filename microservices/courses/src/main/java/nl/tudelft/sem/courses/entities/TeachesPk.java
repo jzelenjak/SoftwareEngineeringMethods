@@ -12,4 +12,5 @@ import java.io.Serializable;
 public class TeachesPk implements Serializable {
     private Long courseId;
     private Long lecturerId;
+    public static final long serialVersionUID = 1;
 }

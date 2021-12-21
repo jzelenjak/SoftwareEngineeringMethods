@@ -99,7 +99,8 @@ public class GradeTest {
     @Test
     public void equalsNullTest() {
         Grade grade = new Grade(2, course, 1, 2.0f);
-        boolean result = grade.equals(null);
+        Grade grade2 = null;
+        boolean result = grade.equals(grade2);
         assertFalse(result);
     }
 
@@ -113,21 +114,21 @@ public class GradeTest {
     @Test
     public void equalsidsAredifferent() {
         Grade grade = new Grade(2, course, 1, 2.0f);
-        Grade grade2 = new Grade(5,  course, 2,2.0f);
+        Grade grade2 = new Grade(5,  course, 2, 2.0f);
         assertFalse(grade.equals(grade2));
     }
 
     @Test
     public void gradeIdIsTheSame() {
         Grade grade = new Grade(5, course, 1, 2.0f);
-        Grade grade2 = new Grade(5,  course, 2,2.0f);
+        Grade grade2 = new Grade(5,  course, 2, 2.0f);
         assertTrue(grade.equals(grade2));
     }
 
     @Test
     public void coursesAreEqual() {
         Grade grade = new Grade(5, course, 1, 2.0f);
-        Grade grade2 = new Grade(1,  course, 1,2.0f);
+        Grade grade2 = new Grade(1,  course, 1, 2.0f);
         assertTrue(grade.equals(grade2));
     }
 

@@ -42,6 +42,7 @@ public class CourseServiceTest {
             new CourseRequest("CSE2215", date, date, 1);
     private static final String courseCode = "CSE2215";
     private static final String addedCourse = "Success. Added course";
+    private static final String failedString = "Failed";
     private static final Teaches teaches = new Teaches(1, 1);
 
 
@@ -79,7 +80,7 @@ public class CourseServiceTest {
         String result2 = courseService.addNewCourses(courseRequest);
         verify(courseRepository, Mockito.times(1)).save(Mockito.any());
         Assert.assertEquals(result, addedCourse);
-        Assert.assertEquals(result2, "Failed");
+        Assert.assertEquals(result2, failedString);
 
     }
 
@@ -136,7 +137,7 @@ public class CourseServiceTest {
 
         String result = courseService.deleteCourse(1);
         verify(courseRepository, Mockito.times(0)).delete(Mockito.any());
-        Assert.assertEquals("Failed", result);
+        Assert.assertEquals(failedString, result);
     }
 
     @Test
@@ -145,7 +146,7 @@ public class CourseServiceTest {
 
         String result = courseService.deleteCourse(1);
         verify(courseRepository, Mockito.times(0)).delete(Mockito.any());
-        Assert.assertEquals("Failed", result);
+        Assert.assertEquals(failedString, result);
     }
 
 
@@ -164,7 +165,7 @@ public class CourseServiceTest {
 
         String result = courseService.deleteCourse(1);
         verify(courseRepository, Mockito.times(1)).delete(Mockito.any());
-        Assert.assertEquals("Failed", result);
+        Assert.assertEquals(failedString, result);
     }
 
 
@@ -485,7 +486,7 @@ public class CourseServiceTest {
 
         when(teachesRepository.findAllByLecturerId(1)).thenReturn(list);
         List<Long> courseIds = courseService.getCourseIdForLecturer(1);
-        Assert.assertEquals(Arrays.asList(1L,2L,3L), courseIds);
+        Assert.assertEquals(Arrays.asList(1L, 2L, 3L), courseIds);
         verify(teachesRepository, Mockito.times(1)).findAllByLecturerId(1);
 
     }
@@ -507,7 +508,8 @@ public class CourseServiceTest {
 
     @Test
     void testLecturerDoesNotTeachCourse() {
-        when(teachesRepository.findById(new TeachesPk(1L, 1L))).thenReturn(Optional.ofNullable(null));
+        when(teachesRepository.findById(new TeachesPk(1L, 1L)))
+                .thenReturn(Optional.ofNullable(null));
         Assert.assertFalse(courseService.lecturerTeachesCourse(1, 1));
         verify(teachesRepository, Mockito.times(1)).findById(Mockito.any());
     }

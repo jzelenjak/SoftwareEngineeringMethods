@@ -459,7 +459,7 @@ public class CourseControllerTest {
 
         List<Long> expectedResult = Arrays.asList(1L, 2L, 3L);
 
-        String response= mvcResult.getResponse().getContentAsString();
+        String response = mvcResult.getResponse().getContentAsString();
         List<Long> result = objectMapper.readValue(response,
                 new TypeReference<List<Long>>(){});
 

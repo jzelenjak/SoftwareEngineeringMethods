@@ -93,7 +93,8 @@ public class CourseTest {
     @Test
     public void oneObjectIsNull() {
         Course course = new Course(1, courseCode, date, date, 1);
-        boolean result = course.equals(null);
+        Course course2 = null;
+        boolean result = course.equals(course2);
         assertFalse(result);
     }
 
@@ -108,7 +109,7 @@ public class CourseTest {
 
     @Test
     public void coursesAreEqual() {
-              Course course = new Course(1, courseCode, date, date, 1);
+        Course course = new Course(1, courseCode, date, date, 1);
         Course course2 = new Course(2, courseCode, date, date, 1);
         boolean result = course.equals(course2);
         assertTrue(result);
@@ -117,7 +118,7 @@ public class CourseTest {
     @Test
     public void numberOfStudentsDifferent() {
         Course course = new Course(1, courseCode, date, date, 1);
-        Course course2 = new Course(2, courseCode, date,date, 2);
+        Course course2 = new Course(2, courseCode, date, date, 2);
         boolean result = course.equals(course2);
         assertFalse(result);
     }

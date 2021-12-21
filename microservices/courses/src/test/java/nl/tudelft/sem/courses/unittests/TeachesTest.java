@@ -31,8 +31,8 @@ public class TeachesTest {
 
     @Test
     public void testEqualsMethod() {
-        Teaches teaches1 = new Teaches(1,1);
-        Teaches teaches2 = new Teaches(1,1);
+        Teaches teaches1 = new Teaches(1, 1);
+        Teaches teaches2 = new Teaches(1, 1);
         Boolean isEqual = teaches1.equals(teaches2);
         Assert.assertTrue(isEqual);
     }
@@ -40,8 +40,8 @@ public class TeachesTest {
 
     @Test
     public void testIsNotEqualCourseIdMethod() {
-        Teaches teaches1 = new Teaches(1,1);
-        Teaches teaches2 = new Teaches(2,1);
+        Teaches teaches1 = new Teaches(1, 1);
+        Teaches teaches2 = new Teaches(2, 1);
         Boolean isEqual = teaches1.equals(teaches2);
         Assert.assertFalse(isEqual);
     }
@@ -49,8 +49,8 @@ public class TeachesTest {
 
     @Test
     public void testIsNotEqualLecturerIdMethod() {
-        Teaches teaches1 = new Teaches(1,1);
-        Teaches teaches2 = new Teaches(1,2);
+        Teaches teaches1 = new Teaches(1, 1);
+        Teaches teaches2 = new Teaches(1, 2);
         Boolean isEqual = teaches1.equals(teaches2);
         Assert.assertFalse(isEqual);
     }
@@ -59,7 +59,8 @@ public class TeachesTest {
     @Test
     public void equalsNull() {
         Teaches teaches  = new Teaches(10, 3);
-        boolean isEqual = teaches.equals(null);
+        Teaches teaches2 = null;
+        boolean isEqual = teaches.equals(teaches2);
         Assert.assertFalse(isEqual);
     }
 
