@@ -2,6 +2,7 @@ package nl.tudelft.sem.hiring.procedure.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,6 +17,7 @@ import io.jsonwebtoken.Jws;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
@@ -40,6 +42,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -76,10 +79,14 @@ public class ApplicationControllerTest {
     private static final String COURSE_ID_STR = "courseId";
     private static final String USER_ID_PARAM = "userId=";
     private static final String NUMBER_OF_STUDENTS = "numberOfStudents";
+    private static final String USER_ID_STR = "userId";
+    private static final String APPLICATION_ID_PARAM = "applicationId";
     private static final String PARAM_STARTER = "?";
     private static final String PARAM_CONTINUER = "&";
     private static final String APPLY_API = "/api/hiring-procedure/apply";
     private static final String HIRE_API = "/api/hiring-procedure/hire-TA";
+    private static final String GET_HOURS_API = "/api/hiring-procedure/get-max-hours";
+    private static final String SET_HOURS_API = "/api/hiring-procedure/set-max-hours";
     private static final String GET_APPLICATIONS_API = "/api/hiring-procedure/get-applications";
     private static final String GET_METHOD = "GET";
     private static final String JWT = "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoic3R1ZGVudCIsIklz"
@@ -679,7 +686,7 @@ public class ApplicationControllerTest {
         // Create request body and perform the call
         MvcResult result = mockMvc.perform(post("/api/hiring-procedure/reject")
                         .header(HttpHeaders.AUTHORIZATION, "")
-                        .queryParam("applicationId", String.valueOf(applicationId)))
+                        .queryParam(APPLICATION_ID_PARAM, String.valueOf(applicationId)))
                 .andReturn();
 
         // Await the call
@@ -707,7 +714,7 @@ public class ApplicationControllerTest {
         // Create request body and perform the call
         MvcResult result = mockMvc.perform(post("/api/hiring-procedure/reject")
                         .header(HttpHeaders.AUTHORIZATION, "")
-                        .queryParam("applicationId", String.valueOf(applicationId)))
+                        .queryParam(APPLICATION_ID_PARAM, String.valueOf(applicationId)))
                 .andReturn();
 
         // Await the call
@@ -737,7 +744,7 @@ public class ApplicationControllerTest {
         // Create request body and perform the call
         MvcResult result = mockMvc.perform(post("/api/hiring-procedure/reject")
                         .header(HttpHeaders.AUTHORIZATION, "")
-                        .queryParam("applicationId", String.valueOf(applicationId)))
+                        .queryParam(APPLICATION_ID_PARAM, String.valueOf(applicationId)))
                 .andReturn();
 
         // Await the call
@@ -779,6 +786,175 @@ public class ApplicationControllerTest {
 
         mockMvc.perform(asyncDispatch(result))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetMaxHoursLecturerPass() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_HOURS_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetMaxHoursTaPass() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.TA.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_HOURS_API)
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetMaxHoursLecturerNoApplication() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        when(applicationService.getMaxHours(userId, courseId))
+                .thenThrow(new NoSuchElementException("Application not found."));
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_HOURS_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetMaxHoursTaNoApplication() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.TA.name());
+        when(applicationService.getMaxHours(Mockito.anyLong(), Mockito.eq(courseId)))
+                .thenThrow(new NoSuchElementException("Application not found."));
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_HOURS_API)
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetMaxHoursLecturerNotPermitted() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_HOURS_API)
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetMaxHoursTaNotPermitted() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.TA.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_HOURS_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testSetMaxHoursPass() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        JsonObject json = new JsonObject();
+        json.addProperty("maxHours", 50);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_HOURS_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testSetMaxHoursBadBody() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        JsonObject json = new JsonObject();
+        json.addProperty("max_hours", 50);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_HOURS_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testSetMaxHoursStudent() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+
+        JsonObject json = new JsonObject();
+        json.addProperty("maxHours", 50);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_HOURS_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testSetMaxHoursNoApplication() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        doThrow(new NoSuchElementException("Application not found."))
+                .when(applicationService).setMaxHours(1, 50);
+
+        JsonObject json = new JsonObject();
+        json.addProperty("maxHours", 50);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_HOURS_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
     }
 
 }

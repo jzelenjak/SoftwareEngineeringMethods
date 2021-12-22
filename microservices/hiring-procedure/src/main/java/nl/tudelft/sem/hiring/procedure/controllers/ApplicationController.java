@@ -1,14 +1,20 @@
 package nl.tudelft.sem.hiring.procedure.controllers;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonReader;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import javax.management.InstanceNotFoundException;
 import lombok.Data;
+import lombok.val;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
 import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
@@ -29,6 +35,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -94,11 +101,7 @@ public class ApplicationController {
 
         return head.validate(authHeader, "").flatMap(value -> {
             long userId;
-            try {
-                userId = getUserIdFromToken(authHeader);
-            } catch (InstanceNotFoundException e) {
-                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, INVALID_TOKEN));
-            }
+            userId = getUserIdFromToken(authHeader);
 
             if (applicationService.checkSameApplication(userId, courseId)) {
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
@@ -316,7 +319,7 @@ public class ApplicationController {
             });
         } else {
             builder.addValidator(new AsyncRoleValidator(jwtUtils,
-                    Set.of(Roles.STUDENT)));
+                    Set.of(Roles.STUDENT, Roles.TA)));
             AsyncValidator head = builder.build();
             return head.validate(headers, "").flatMap(value -> {
                 try {
@@ -332,19 +335,88 @@ public class ApplicationController {
     }
 
     /**
+     * Endpoint for fetching the maximum contractually allowed hours of work for an application.
+     *
+     * @param userId The ID of the user that is associated to that application.
+     *               If the user is a student, this is not specified.
+     * @param courseId The ID of the course that is associated to that application
+     * @param headers The headers of the request. Should contain the JWT.
+     * @return The max allowed hours
+     */
+    @GetMapping("get-max-hours")
+    public Mono<Integer> getMaxHours(@RequestParam(required = false) Long userId,
+                           @RequestParam long courseId,
+                           @RequestHeader HttpHeaders headers) {
+        AsyncValidator.Builder builder = AsyncValidator.Builder.newBuilder();
+        builder.addValidator(new AsyncAuthValidator(jwtUtils));
+        if (userId != null) {
+            builder.addValidator(new AsyncRoleValidator(jwtUtils,
+                    Set.of(Roles.LECTURER, Roles.ADMIN)));
+
+        } else {
+            builder.addValidator(new AsyncRoleValidator(jwtUtils,
+                    Set.of(Roles.TA)));
+        }
+        AsyncValidator head = builder.build();
+        return head.validate(headers, "").flatMap(value -> {
+            Long finalUserId = userId;
+            if (userId == null) {
+                finalUserId = getUserIdFromToken(headers);
+            }
+            try {
+                return Mono.just(applicationService.getMaxHours(finalUserId, courseId));
+            } catch (NoSuchElementException e) {
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "There is no submission that is associated to that userId and courseId"));
+            }
+        });
+    }
+
+    /**
+     * Endpoint for updating the value of the maximum allowed hours for an application.
+     *
+     * @param applicationId The id of the application for which to update the value.
+     * @param headers The headers of the request. Should contain the JWT.
+     * @param body The body of the request. Should contain the specified maxHours.
+     * @return 200 OK if request goes through, or errors if anything goes wrong.
+     */
+    @PostMapping("set-max-hours")
+    public Mono<Void> setMaxHours(@RequestParam long applicationId,
+                                  @RequestHeader HttpHeaders headers, @RequestBody String body) {
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+                .addValidators(new AsyncAuthValidator(jwtUtils),
+                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN))
+                ).build();
+        return head.validate(headers, "").flatMap(value -> {
+            int hours;
+            Gson gson = new Gson();
+            JsonElement hoursJsonObject = gson.fromJson(body, JsonObject.class).get("maxHours");
+            if (hoursJsonObject == null) {
+                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Body was not configured accordingly. Please see documentation"));
+            }
+            hours = hoursJsonObject.getAsInt();
+            try {
+                applicationService.setMaxHours(applicationId, hours);
+            } catch (NoSuchElementException e) {
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "There is no submission that is associated to that userId and courseId"));
+            }
+            return Mono.empty();
+        });
+    }
+
+    /**
      * Checks if the JWT is valid. If it is, returns the userId.
      *
      * @param authJwt The authentication header received from the client
      * @return The userId
      * @throws InstanceNotFoundException when the JWT is invalid
      */
-    private long getUserIdFromToken(HttpHeaders authJwt) throws InstanceNotFoundException {
+    private long getUserIdFromToken(HttpHeaders authJwt) {
         String resolvedToken = jwtUtils.resolveToken(authJwt.getFirst("Authorization"));
         Jws<Claims> userClaims = jwtUtils.validateAndParseClaims(resolvedToken);
-        if (userClaims != null) {
-            return jwtUtils.getUserId(userClaims);
-        }
-        throw new InstanceNotFoundException(INVALID_TOKEN);
+        return jwtUtils.getUserId(userClaims);
     }
 
 }
