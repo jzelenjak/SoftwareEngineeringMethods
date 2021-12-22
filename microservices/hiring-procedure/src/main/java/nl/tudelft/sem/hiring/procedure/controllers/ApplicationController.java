@@ -409,6 +409,49 @@ public class ApplicationController {
     }
 
     /**
+     * Endpoint for updating the value of the maximum allowed hours for an application.
+     *
+     * @param applicationId The id of the application for which to update the value.
+     * @param headers The headers of the request. Should contain the JWT.
+     * @param body The body of the request. Should contain the specified maxHours.
+     * @return 200 OK if request goes through, or errors if anything goes wrong.
+     */
+    @PostMapping("rate")
+    public Mono<Void> setRating(@RequestParam long applicationId,
+                                  @RequestHeader HttpHeaders headers, @RequestBody String body) {
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+                .addValidators(new AsyncAuthValidator(jwtUtils),
+                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN))
+                ).build();
+
+        return head.validate(headers, "").flatMap(value -> {
+            double rating;
+            Gson gson = new Gson();
+            JsonElement ratingJsonObject = gson.fromJson(body, JsonObject.class).get("rating");
+            if (ratingJsonObject == null) {
+                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Body was not configured accordingly. Please see documentation"));
+            }
+            rating = ratingJsonObject.getAsDouble();
+            if (rating < 0.0 || rating > 10.0)
+                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Rating should be between 0 and 10."));
+            try {
+                applicationService.setRating(applicationId, rating);
+            } catch (Exception e) {
+                if (e.getClass().equals(NoSuchElementException.class)) {
+                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "There is no submission that is associated to that "
+                                    + "userId and courseId"));
+                }
+                return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "The respective application has not been approved"));
+            }
+            return Mono.empty();
+        });
+    }
+
+    /**
      * Checks if the JWT is valid. If it is, returns the userId.
      *
      * @param authJwt The authentication header received from the client

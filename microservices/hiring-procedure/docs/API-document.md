@@ -250,6 +250,7 @@ Endpoint for rating a TA. The header of the request should contain the JWT of th
 | --------------- | ------------------------------------------------------------ |
 | 200 OK          | Successful completion                                        |
 | 400 BAD REQUEST | Body is not according to guideline                           |
+| 400 BAD REQUEST | Rating is not between 0 and 10                               |
 | 403 FORBIDDEN   | User is not permitted to access the endpoint                 |
 | 403 FORBIDDEN   | The specified application is not approved                    |
 | 404 NOT FOUND   | The specified application does not exist                     |
