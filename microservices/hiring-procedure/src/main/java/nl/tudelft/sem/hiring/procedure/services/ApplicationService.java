@@ -156,7 +156,7 @@ public class ApplicationService {
     /**
      * Method for setting the maximum amount of allowed contractual hours for an application.
      *
-     * @param applicationId The ID of the application for which to change the maxHours variable
+     * @param applicationId The ID of the application for which to change the maximum allowed hours
      * @param maxHours The amount to which to update
      * @throws NoSuchElementException when an application with that associated id does not exist.
      */
@@ -174,13 +174,14 @@ public class ApplicationService {
     /**
      * Method for getting the maximum amount of allowed contractual hours for an application.
      *
-     * @param userId The ID of the user for which to get the maxHours variable
-     * @param courseId The ID of the course for which to get the maxHours variable
+     * @param userId The ID of the user for which to get the maximum allowed hours
+     * @param courseId The ID of the course for which to get the maximum allowed hours
      * @return The maxHours of the application with those two parameters
      * @throws NoSuchElementException when no applications with those parameters exist
      */
     public int getMaxHours(long userId, long courseId) throws NoSuchElementException {
-        List<Application> applications = applicationRepository.findAllByUserIdAndAndCourseId(userId, courseId);
+        List<Application> applications = applicationRepository
+                .findAllByUserIdAndAndCourseId(userId, courseId);
         if (applications.size() != 0) {
             Application application = applications.get(0);
             return application.getMaxHours();

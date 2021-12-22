@@ -32,7 +32,14 @@ import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
@@ -305,8 +312,8 @@ public class ApplicationController {
     /**
      * Endpoint for fetching the maximum contractually allowed hours of work for an application.
      *
-     * @param userId The ID of the user that is associated to that application. If the user is a student,
-     *               this is not specified.
+     * @param userId The ID of the user that is associated to that application.
+     *               If the user is a student, this is not specified.
      * @param courseId The ID of the course that is associated to that application
      * @param headers The headers of the request. Should contain the JWT.
      * @return The max allowed hours
@@ -334,7 +341,8 @@ public class ApplicationController {
             try {
                 return Mono.just(applicationService.getMaxHours(finalUserId, courseId));
             } catch (NoSuchElementException e) {
-                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND));
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "There is no submission that is associated to that userId and courseId"));
             }
         });
     }
@@ -348,8 +356,8 @@ public class ApplicationController {
      * @return 200 OK if request goes through, or errors if anything goes wrong.
      */
     @PostMapping("set-max-hours")
-    public Mono<Void> setMaxHours(@RequestParam long applicationId, @RequestHeader HttpHeaders headers,
-                                  @RequestBody String body) {
+    public Mono<Void> setMaxHours(@RequestParam long applicationId,
+                                  @RequestHeader HttpHeaders headers, @RequestBody String body) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(new AsyncAuthValidator(jwtUtils),
                         new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN))
@@ -359,13 +367,15 @@ public class ApplicationController {
             Gson gson = new Gson();
             JsonElement hoursJsonObject = gson.fromJson(body, JsonObject.class).get("maxHours");
             if (hoursJsonObject == null) {
-                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST));
+                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Body was not configured accordingly. Please see documentation"));
             }
             hours = hoursJsonObject.getAsInt();
             try {
                 applicationService.setMaxHours(applicationId, hours);
             } catch (NoSuchElementException e) {
-                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND));
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "There is no submission that is associated to that userId and courseId"));
             }
             return Mono.empty();
         });
