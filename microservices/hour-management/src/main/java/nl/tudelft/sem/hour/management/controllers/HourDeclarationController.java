@@ -20,6 +20,8 @@ import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
 import nl.tudelft.sem.hour.management.services.NotificationService;
 import nl.tudelft.sem.hour.management.services.StatisticsService;
 import nl.tudelft.sem.hour.management.validation.AsyncAuthValidator;
+import nl.tudelft.sem.hour.management.validation.AsyncCourseTimeValidator;
+import nl.tudelft.sem.hour.management.validation.AsyncHiringValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator.Roles;
 import nl.tudelft.sem.hour.management.validation.AsyncValidator;
@@ -41,7 +43,7 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/api/hour-management")
+@RequestMapping("/api/hour-management/declaration")
 @Data
 public class HourDeclarationController {
 
@@ -53,22 +55,11 @@ public class HourDeclarationController {
     private final transient StatisticsService statisticsService;
 
     /**
-     * Entry point of the repo, also acts as a sanity check.
-     *
-     * @return a simple greeting
-     */
-    @GetMapping
-    public @ResponseBody
-    String hello() {
-        return "Hello from Hour Management";
-    }
-
-    /**
      * Gets all the stored declarations in the system.
      *
      * @return all stored declaration in the system
      */
-    @GetMapping("/declaration")
+    @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     Mono<List<HourDeclaration>> getAllDeclarations(
@@ -99,7 +90,7 @@ public class HourDeclarationController {
      * @param hourDeclarationRequest hour declaration that will be saved
      * @return an informative message about status of request
      */
-    @PostMapping("/declaration")
+    @PostMapping
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     Mono<String> declareHours(@RequestHeader HttpHeaders headers,
@@ -126,7 +117,7 @@ public class HourDeclarationController {
      * @param declarationId id of the desired student
      * @return all declared hours associated with a student
      */
-    @GetMapping("/declaration/{id}")
+    @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     Mono<HourDeclaration> getSpecifiedDeclaration(@PathVariable("id") long declarationId,
@@ -159,7 +150,7 @@ public class HourDeclarationController {
      * @param declarationId id of declaration to be deleted
      * @return an informative message about status of request
      */
-    @DeleteMapping("/declaration/{id}/reject")
+    @DeleteMapping("/{id}/reject")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     Mono<Void> deleteDeclaredHour(@PathVariable("id") long declarationId,
@@ -178,7 +169,7 @@ public class HourDeclarationController {
 
             // Verify that the declaration exists and has not been approved yet
             if (hourDeclaration.isEmpty()) {
-                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Given declaration does not exists."));
             } else if (hourDeclaration.get().isApproved()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -189,7 +180,7 @@ public class HourDeclarationController {
             hourDeclarationRepository.delete(hourDeclaration.get());
 
             // Add a notification to the student's notification pool
-            return notificationService.notify(hourDeclaration.get().getDeclarationId(),
+            return notificationService.notify(hourDeclaration.get().getStudentId(),
                     String.format("Your declaration with id %s has been rejected.", declarationId),
                     headers.getFirst(HttpHeaders.AUTHORIZATION));
         });
@@ -201,7 +192,7 @@ public class HourDeclarationController {
      * @param declarationId id of declaration to be deleted
      * @return an informative message about status of request
      */
-    @PutMapping("/declaration/{id}/approve")
+    @PutMapping("/{id}/approve")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     Mono<Void> approveDeclaredHour(@PathVariable("id") long declarationId,
@@ -218,7 +209,7 @@ public class HourDeclarationController {
                     .findById(declarationId);
 
             if (hourDeclaration.isEmpty()) {
-                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Given declaration does not exists."));
             } else if (hourDeclaration.get().isApproved()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -230,7 +221,7 @@ public class HourDeclarationController {
             hourDeclarationRepository.save(hourDeclaration.get());
 
             // Add a notification to the student's notification pool
-            return notificationService.notify(hourDeclaration.get().getDeclarationId(),
+            return notificationService.notify(hourDeclaration.get().getStudentId(),
                     String.format("Your declaration with id %s has been approved.", declarationId),
                     headers.getFirst(HttpHeaders.AUTHORIZATION));
         });
@@ -242,7 +233,7 @@ public class HourDeclarationController {
      *
      * @return all stored unapproved declarations
      */
-    @GetMapping("/declaration/unapproved")
+    @GetMapping("/unapproved")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     Mono<List<HourDeclaration>> getAllUnapprovedDeclarations(@RequestHeader HttpHeaders headers) {
@@ -271,7 +262,7 @@ public class HourDeclarationController {
      * @param studentId id of the desired student
      * @return all declared hours associated with a student
      */
-    @GetMapping("/declaration/student/{id}")
+    @GetMapping("/student/{id}")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     Mono<List<HourDeclaration>> getAllDeclarationsByStudent(@PathVariable("id") long studentId,
@@ -295,86 +286,4 @@ public class HourDeclarationController {
             return Mono.just(result);
         });
     }
-
-    /**
-     * Retrieves the total amount of hours declared by a student for a particular course.
-     *
-     * @param headers           headers of the request.
-     * @param statisticsRequest request containing the student id and course id.
-     * @return total amount of hours declared by a student for a particular course.
-     */
-    @GetMapping("/declaration/statistics/total-hours")
-    @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    Mono<String> getTotalHours(@RequestHeader HttpHeaders headers,
-                               @RequestBody StatisticsRequest statisticsRequest) {
-        AsyncValidator head = AsyncValidator.Builder.newBuilder()
-                .addValidators(
-                        new AsyncAuthValidator(gatewayConfig, jwtUtils),
-                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
-                                Set.of(Roles.ADMIN, Roles.LECTURER, Roles.TA))
-                ).build();
-
-        return head.validate(headers, "").flatMap(valid -> {
-            Optional<Double> totalHours = statisticsService.getTotalHoursPerStudentPerCourse(
-                    statisticsRequest.getStudentId(), statisticsRequest.getCourseId());
-
-            // Check if the student has declared hours for the course
-            if (totalHours.isEmpty()) {
-                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "No statistics found for the specified student and course."));
-            }
-
-            // Return the response as json
-            JsonObject result = new JsonObject();
-            result.addProperty("totalHours", totalHours.get());
-            return Mono.just(result.toString());
-        });
-    }
-
-    /**
-     * Retrieves the total amount of hours declared by listed students for listed courses.
-     *
-     * @param headers                    headers of the request.
-     * @param userHoursStatisticsRequest requests containing student ids, course ids,
-     *                                   minimum hours and amount of results.
-     * @return total amount of hours declared by students for specified courses.
-     */
-    @PostMapping("/statistics/total-user-hours")
-    @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody
-    Mono<String> getTotalHoursPerStudentPerCourse(@RequestHeader HttpHeaders headers,
-                                                  @RequestBody UserHoursStatisticsRequest
-                                                          userHoursStatisticsRequest) {
-        AsyncValidator head = AsyncValidator.Builder.newBuilder()
-                .addValidators(
-                        new AsyncAuthValidator(gatewayConfig, jwtUtils),
-                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
-                                Set.of(Roles.ADMIN, Roles.LECTURER))
-                ).build();
-
-        return head.validate(headers, "").flatMap(valid -> {
-            // Convert statistics to json object
-            JsonObject jsonObject = new JsonObject();
-
-            // Fetch the declaration statistics
-            statisticsService.getTotalHoursPerStudentPerCourse(
-                            userHoursStatisticsRequest.getStudentIds(),
-                            userHoursStatisticsRequest.getCourseIds(),
-                            userHoursStatisticsRequest.getMinHours(),
-                            userHoursStatisticsRequest.getAmount())
-                    .forEach(t -> jsonObject.addProperty(t.getStudentId().toString(),
-                            t.getTotalHours()));
-
-            // Check if at least one of the students declared hours for any of the courses
-            if (jsonObject.size() == 0) {
-                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "No statistics found for the specified course and students."));
-            }
-
-            // Return the response object
-            return Mono.just(jsonObject.toString());
-        });
-    }
-
 }

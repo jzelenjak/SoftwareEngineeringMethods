@@ -14,16 +14,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Stream;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
-import nl.tudelft.sem.hour.management.dto.StatisticsRequest;
-import nl.tudelft.sem.hour.management.dto.StudentHoursTuple;
-import nl.tudelft.sem.hour.management.dto.UserHoursStatisticsRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
 import nl.tudelft.sem.hour.management.services.NotificationService;
@@ -31,9 +24,6 @@ import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +32,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -200,7 +189,9 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testRejectDeclaration() throws Exception {
-        when(notificationService.notify(Mockito.anyLong(), Mockito.any(), Mockito.any()))
+        when(notificationService.notify(1234L,
+                "Your declaration with id 1 has been rejected.",
+                ""))
                 .thenReturn(Mono.empty());
 
         MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/1/reject")
@@ -224,12 +215,14 @@ public class HourDeclarationControllerTest {
                 .andReturn();
 
         mockMvc.perform(asyncDispatch(mvcResult))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
     }
 
     @Test
     void testRejectDeclarationNotificationFail() throws Exception {
-        when(notificationService.notify(Mockito.anyLong(), Mockito.any(), Mockito.any()))
+        when(notificationService.notify(1234L,
+                "Your declaration with id 1 has been rejected.",
+                ""))
                 .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.CONFLICT,
                         "Failed to register notification")));
 
@@ -253,7 +246,9 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testApproveDeclaration() throws Exception {
-        when(notificationService.notify(Mockito.anyLong(), Mockito.any(), Mockito.any()))
+        when(notificationService.notify(1234L,
+                "Your declaration with id 1 has been approved.",
+                ""))
                 .thenReturn(Mono.empty());
 
         MvcResult mvcResult = mockMvc.perform(put("/api/hour-management/declaration/1/approve")
@@ -278,13 +273,15 @@ public class HourDeclarationControllerTest {
                 .andReturn();
 
         mockMvc.perform(asyncDispatch(mvcResult))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
     }
 
 
     @Test
     void testApproveDeclarationNotificationFail() throws Exception {
-        when(notificationService.notify(Mockito.anyLong(), Mockito.any(), Mockito.any()))
+        when(notificationService.notify(1234L,
+                "Your declaration with id 1 has been approved.",
+                ""))
                 .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.CONFLICT,
                         "Failed to register notification")));
 
@@ -356,96 +353,5 @@ public class HourDeclarationControllerTest {
 
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void testGetTotalHours() throws Exception {
-        hourDeclarationRepository.save(hourDeclarationSameStudent);
-
-        Optional<Double> expectedTotalHours =
-                hourDeclarationRepository.aggregateHoursFor(1234L, 5678L);
-
-        StatisticsRequest statisticsRequest = new StatisticsRequest(1234L, 5678L);
-
-        MvcResult mvcResult = mockMvc.perform(
-                        get("/api/hour-management/declaration/statistics/total-hours")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(statisticsRequest))
-                                .header(authorization, ""))
-                .andReturn();
-
-        assertThat(expectedTotalHours.isEmpty()).isFalse();
-
-        mockMvc.perform(asyncDispatch(mvcResult))
-                .andExpect(status().isOk())
-                .andExpect(content()
-                        .json(String.format(Locale.ROOT,
-                                "{\"totalHours\": %f}", expectedTotalHours.get())));
-    }
-
-    @Test
-    void testGetTotalHoursNotFound() throws Exception {
-        StatisticsRequest statisticsRequest = new StatisticsRequest(9999L, 5678L);
-
-        MvcResult mvcResult = mockMvc.perform(
-                        get("/api/hour-management/declaration/statistics/total-hours")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(statisticsRequest))
-                                .header(authorization, ""))
-                .andReturn();
-
-        mockMvc.perform(asyncDispatch(mvcResult))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void testGetTotalHoursPerStudentPerCourse() throws Exception {
-        Collection<StudentHoursTuple> expectedTotalHours = hourDeclarationRepository
-                        .findByCourseIdSetAndStudentIdSet(Set.of(12345L), Set.of(567812L), 1.0);
-
-        UserHoursStatisticsRequest userHoursStatisticsRequest
-                = new UserHoursStatisticsRequest(1, 1.0, Set.of(12345L), Set.of(567812L));
-
-        MvcResult mvcResult = mockMvc.perform(
-                        post("/api/hour-management/statistics/total-user-hours")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(
-                                        userHoursStatisticsRequest))
-                                .header(authorization, ""))
-                .andReturn();
-
-        assertThat(expectedTotalHours.isEmpty()).isFalse();
-
-        mockMvc.perform(asyncDispatch(mvcResult))
-                .andExpect(status().isOk())
-                .andExpect(content()
-                        .json(String.format(Locale.ROOT,
-                                "{\"12345\": %f}", hourDeclarationRequestNew.getDeclaredHours())));
-    }
-
-    // User parameterized test to avoid code duplication
-    @ParameterizedTest
-    @MethodSource("provideRequestsForGetTotalHoursPerStudentPerCourse")
-    void testGetTotalHoursPerStudentPerCourse(
-            UserHoursStatisticsRequest userHoursStatisticsRequest) throws Exception {
-        MvcResult mvcResult = mockMvc.perform(
-                        post("/api/hour-management/statistics/total-user-hours")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(
-                                        userHoursStatisticsRequest))
-                                .header(authorization, ""))
-                .andReturn();
-
-        mockMvc.perform(asyncDispatch(mvcResult))
-                .andExpect(status().isNotFound());
-    }
-
-    private static Stream<Arguments> provideRequestsForGetTotalHoursPerStudentPerCourse() {
-        return Stream.of(
-                Arguments.of(new UserHoursStatisticsRequest(1, 1.0, Set.of(12345L), Set.of())),
-                Arguments.of(new UserHoursStatisticsRequest(1, 1.0, Set.of(), Set.of(567812L))),
-                Arguments.of(new UserHoursStatisticsRequest(1, 9999.0, Set.of(), Set.of(12345L))),
-                Arguments.of(new UserHoursStatisticsRequest(0, 1.0, Set.of(), Set.of(12345L)))
-        );
     }
 }
