@@ -272,7 +272,7 @@ Endpoint for getting a TA's rating for a course. The header of the request shoul
 | ------------- | ------------------------------------------------------------ |
 | 200 OK        | Successful completion                                        |
 | 403 FORBIDDEN | User is not permitted to access the endpoint                 |
-| 403 FORBIDDEN | The specified application is not approved                    |
+| 403 FORBIDDEN | The specified application is not approved or not rated yet   |
 | 404 NOT FOUND | The specified position does not exist                        |
 
 ---
@@ -292,5 +292,5 @@ Endpoint for getting a TA's rating for a course. The header of the request shoul
 | ------------- | ------------------------------------------------------------ |
 | 200 OK        | Successful completion                                        |
 | 403 FORBIDDEN | User is not permitted to access the endpoint                 |
-| 403 FORBIDDEN | The specified application is not approved                    |
+| 403 FORBIDDEN | The specified application is not approved or not rated yet   |
 | 404 NOT FOUND | The specified application does not exist                     |
