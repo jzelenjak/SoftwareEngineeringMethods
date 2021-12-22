@@ -49,10 +49,13 @@ public class AuthService implements UserDetailsService {
      * @param userId   the user ID of the new user.
      * @param password the password of the new user.
      * @return true if the registration has been successful,
-     *         false otherwise (if the user with the same username is already in the database).
+     *         false otherwise (if the user with the same username/userid already exists).
      */
     public boolean registerUser(String username, long userId, String password) {
-        if (this.userDataRepository.findByUsername(username).isPresent()) {
+        // Check if user with given name or userId already exists.
+        boolean usernameCheck = this.userDataRepository.findByUsername(username).isPresent();
+        boolean userIdCheck = this.userDataRepository.findByUserId(userId).isPresent();
+        if (usernameCheck || userIdCheck) {
             return false;
         }
         this.userDataRepository

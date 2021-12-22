@@ -11,13 +11,9 @@ import javax.persistence.Id;
 
 
 /**
- * A class for storing user data.
- * Username (netID) is used to log in or register a user
- * (it is the identifier in authentication microservice).
- * UserId is mostly used by other microservices to identify the users,
- * also it is used as "Subject" in JWT token.
+ * A class for storing notifications.
  */
-@Entity(name = "notification")
+@Entity(name = "notifications")
 public class Notification {
     @Id
     @Column(name = "notificationId", unique = true, nullable = false, updatable = false)
@@ -161,7 +157,7 @@ public class Notification {
      * <i>Example:</i>
      * <pre>
      *  {
-     *      "message" : "Hey there, you are hired!,
+     *      "message" : "Hey there, you are hired!",
      *      "notificationDate" : "17:54 10-12-2021 Europe/Berlin"
      *  }
      * </pre>
