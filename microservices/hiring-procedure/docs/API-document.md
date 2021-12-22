@@ -46,6 +46,7 @@ Endpoint for withdrawing applications. The body of the request should contain th
 POST /api/hiring-procedure/reject?applicationId=<...>
 ```
 
+Endpoint for rejecting an application that is associated to the provided ID. The body of the request should contain the JWT of the user's session. Only users with the **admin** or **lecturer** role are permitted to access this endpoint.
 Endpoint for rejecting an application that is associated to the provided ID. The body of the request should contain the JWT of the user's session. Only users with the **admin** or **teaches** role are permitted to access this endpoint.
 
 | Query parameter | Value                               |
@@ -89,6 +90,7 @@ Endpoint for hiring a candidate TA for a specific course. The body of the reques
 GET  /api/hiring-procedure/get-all-applications?courseId=<...>
 ```
 
+Endpoint for retrieving all candidate TAs for a specific course. The body of the request should contain the JWT of the user's session. Only users with **lecturer** or **admin** permissions have access.
 Endpoint for retrieving all candidate TAs for a specific course. The body of the request should contain the JWT of the user's session. Only users with **teaches** or **admin** permissions have access.
 
 | Query parameter | Value                                               |
@@ -107,6 +109,7 @@ Endpoint for retrieving all candidate TAs for a specific course. The body of the
 GET  /api/hiring-procedure/get-applications?userId=<...>
 ```
 
+Endpoint for retrieving all applications of a specific user. The body of the request should contain the JWT of the user's session. Only users with **lecturer** or **admin** permissions have access. The same applies for users that have the **same** ID as the ID that is specified in the request.
 Endpoint for retrieving all applications of a specific user. The body of the request should contain the JWT of the user's session. Only users with **teaches** or **admin** permissions have access. The same applies for users that have the **same** ID as the ID that is specified in the request.
 
 | Query parameter | Value                                             |
