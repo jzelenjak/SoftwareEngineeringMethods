@@ -433,9 +433,10 @@ public class ApplicationController {
                         "Body was not configured accordingly. Please see documentation"));
             }
             rating = ratingJsonObject.getAsDouble();
-            if (rating < 0.0 || rating > 10.0)
+            if (rating < 0.0 || rating > 10.0) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Rating should be between 0 and 10."));
+            }
             try {
                 applicationService.setRating(applicationId, rating);
             } catch (Exception e) {
