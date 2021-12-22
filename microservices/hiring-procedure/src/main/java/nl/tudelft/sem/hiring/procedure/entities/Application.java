@@ -41,6 +41,9 @@ public class Application {
     @Column(name = "max_hours")
     private int maxHours = 200;
 
+    @Column(name = "rating")
+    private double rating = -1.0;
+
     @Column(name = "submission_date", columnDefinition = "TIMESTAMP")
     private LocalDateTime submissionDate;
 
