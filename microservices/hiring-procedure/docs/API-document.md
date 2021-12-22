@@ -224,3 +224,73 @@ Endpoint for getting the maximum allowed contractual hours for an application. T
 | 200 OK        | Successful completion                                        |
 | 403 FORBIDDEN | User is not permitted to access the endpoint                 |
 | 404 NOT FOUND | The specified application does not exist                     |
+---
+
+## Rate
+
+```
+POST  /api/hiring-procedure/rate?applicationId=<...>
+```
+
+Endpoint for rating a TA. The header of the request should contain the JWT of the user's session. Only lecturers and admins are allowed to use this endpoint.
+
+| Query parameter | Value                                                       |
+| --------------- | ----------------------------------------------------------- |
+| applicationId   | The ID of the application that will be rated                |
+
+**Expected body format**:
+
+```json
+{
+	"rating" : 8.7
+}
+```
+
+| Response code   | Reason                                                       |
+| --------------- | ------------------------------------------------------------ |
+| 200 OK          | Successful completion                                        |
+| 400 BAD REQUEST | Body is not according to guideline                           |
+| 403 FORBIDDEN   | User is not permitted to access the endpoint                 |
+| 403 FORBIDDEN   | The specified application is not approved                    |
+| 404 NOT FOUND   | The specified application does not exist                     |
+
+---
+
+## Get Rating
+
+```
+GET  /api/hiring-procedure/get-rating?courseId=<...>
+```
+
+Endpoint for getting a TA's rating for a course. The header of the request should contain the JWT of the user's session. Only TAs are allowed to use this endpoint.
+
+| Query parameter | Value                                                       |
+| --------------- | ----------------------------------------------------------- |
+| courseId        | The ID of the course associated to the TA position          |
+
+| Response code | Reason                                                       |
+| ------------- | ------------------------------------------------------------ |
+| 200 OK        | Successful completion                                        |
+| 403 FORBIDDEN | User is not permitted to access the endpoint                 |
+| 403 FORBIDDEN | The specified application is not approved                    |
+| 404 NOT FOUND | The specified position does not exist                        |
+
+---
+
+```
+GET  /api/hiring-procedure/get-rating?userId=<...>&courseId=<...>
+```
+
+Endpoint for getting a TA's rating for a course. The header of the request should contain the JWT of the user's session. Only lecturers and admins are allowed to use this endpoint.
+
+| Query parameter | Value                                                       |
+| --------------- | ----------------------------------------------------------- |
+| userId          | The ID of the user associated to the TA position            |
+| courseId        | The ID of the course associated to the TA position          |
+
+| Response code | Reason                                                       |
+| ------------- | ------------------------------------------------------------ |
+| 200 OK        | Successful completion                                        |
+| 403 FORBIDDEN | User is not permitted to access the endpoint                 |
+| 403 FORBIDDEN | The specified application is not approved                    |
+| 404 NOT FOUND | The specified application does not exist                     |
