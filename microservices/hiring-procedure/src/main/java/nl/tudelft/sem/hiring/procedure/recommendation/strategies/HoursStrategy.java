@@ -26,16 +26,21 @@ public class HoursStrategy implements RecommendationStrategy {
 
     private final transient ApplicationRepository repo;
 
+    private final transient String authorization;
+
     /**
      * Instantiates a new HoursStrategy object.
      *
-     * @param repo          the TA application repository
-     * @param gatewayConfig the gateway configuration
+     * @param repo          the TA application repository.
+     * @param gatewayConfig the gateway configuration.
+     * @param authorization the authorization token of the caller.
      */
-    public HoursStrategy(ApplicationRepository repo, GatewayConfig gatewayConfig) {
+    public HoursStrategy(ApplicationRepository repo, GatewayConfig gatewayConfig,
+                         String authorization) {
         this.repo = repo;
         this.webClient = WebClient.create();
         this.gatewayConfig = gatewayConfig;
+        this.authorization = authorization;
     }
 
     /**
@@ -47,8 +52,8 @@ public class HoursStrategy implements RecommendationStrategy {
      * @param amount   the maximum number of recommendations to return
      * @param minHours the minimum number of worked hours (used for filtering)
      * @return the list of recommendations for candidate TAs based on the number of
-     *          hours worked as a TA for a given course (wrapped in the mono).
-     *          The size of the list is at most `amount`.
+     *         hours worked as a TA for a given course (wrapped in the mono).
+     *         The size of the list is at most `amount`.
      */
     @Override
     public Mono<List<Recommendation>> recommend(long courseId, int amount, double minHours) {
@@ -56,17 +61,18 @@ public class HoursStrategy implements RecommendationStrategy {
 
         if (applicants.isEmpty()) {
             return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "No applicants found"));
+                    "No applicants found"));
         }
 
         return this.webClient
-            .get()
-            .uri(buildUriWithCourseId(gatewayConfig.getHost(), gatewayConfig.getPort(),
-                courseId, "api", "courses", "get-all-editions"))
-            .exchange()
-            .flatMap(response ->
-                processMono(response, body ->
-                    processMonoBodyFromCourses(body, amount, minHours, applicants)));
+                .get()
+                .uri(buildUriWithCourseId(gatewayConfig.getHost(), gatewayConfig.getPort(),
+                        courseId, "api", "courses", "get-all-editions"))
+                .header(HttpHeaders.AUTHORIZATION, authorization)
+                .exchange()
+                .flatMap(response ->
+                        processMono(response, body ->
+                                processMonoBodyFromCourses(body, amount, minHours, applicants)));
     }
 
     /**
@@ -78,8 +84,8 @@ public class HoursStrategy implements RecommendationStrategy {
      * @param minHours the minimum number of worked hours (used for filtering)
      * @param userIds  the list of applicants' user IDs
      * @return the list of recommendations for candidate TAs based on the number of
-     *          hours worked as a TA for a given course (wrapped in the mono).
-     *          The size of the list is at most `amount`.
+     *         hours worked as a TA for a given course (wrapped in the mono).
+     *         The size of the list is at most `amount`.
      */
     private Mono<List<Recommendation>> processMonoBodyFromCourses(String body,
                                                                   int amount, double minHours,
@@ -95,19 +101,20 @@ public class HoursStrategy implements RecommendationStrategy {
             objectNode.set("courseIds", mapper.valueToTree(courseIds));
 
             return this.webClient
-                .post()
-                .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
-                    "api", "hour-management", "statistics", "total-user-hours"))
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .body(Mono.just(objectNode.toString()), String.class)
-                .exchange()
-                .flatMap(response ->
-                    processMono(response, this::processMonoBodyFromHours));
+                    .post()
+                    .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
+                            "api", "hour-management", "statistics", "total-user-hours"))
+                    .header(HttpHeaders.AUTHORIZATION, authorization)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .body(Mono.just(objectNode.toString()), String.class)
+                    .exchange()
+                    .flatMap(response ->
+                            processMono(response, this::processMonoBodyFromHours));
         } catch (Exception e) {
             // related to JSON processing (e.g. bad format, missing/incorrect fields)
             return Mono
-                .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "An error has occurred. Please try again later!"));
+                    .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                            "An error has occurred. Please try again later!"));
         }
     }
 
@@ -116,16 +123,16 @@ public class HoursStrategy implements RecommendationStrategy {
      *
      * @param body the mono body received from Hours Microservice
      * @return the list of recommendations for candidate TAs based on the number of
-     *      hours worked as a TA for a given course (wrapped in the mono).
-     *      The size of the list is at most `amount`.
+     *         hours worked as a TA for a given course (wrapped in the mono).
+     *         The size of the list is at most `amount`.
      */
     private Mono<List<Recommendation>> processMonoBodyFromHours(String body) {
         try {
             return recommendationsToMono(convertJsonToRecommendationList(body));
         } catch (JsonProcessingException e) {
             return Mono
-                .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "An error has occurred. Please try again later!"));
+                    .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                            "An error has occurred. Please try again later!"));
         }
     }
 }

@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -41,8 +43,19 @@ class GradeStrategyTest {
 
     private transient ObjectMapper mapper;
 
-    private static final transient String POST = "POST";
+    private static final transient String jwtToken = "mySecretToken";
 
+    /**
+     * A helper method used to verify simple recorded requests.
+     *
+     * @param request the request to be verified.
+     * @param method  the expected method.
+     */
+    private void verifyRecordedRequest(RecordedRequest request, HttpMethod method) {
+        Assertions.assertThat(request).isNotNull();
+        Assertions.assertThat(request.getMethod()).isEqualTo(method.name());
+        Assertions.assertThat(request.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo(jwtToken);
+    }
 
     @BeforeEach
     void setup() throws IOException {
@@ -54,7 +67,7 @@ class GradeStrategyTest {
         Mockito.when(gatewayConfig.getHost()).thenReturn(url.host());
         Mockito.when(gatewayConfig.getPort()).thenReturn(url.port());
 
-        strategy = new GradeStrategy(repo, gatewayConfig);
+        strategy = new GradeStrategy(repo, gatewayConfig, jwtToken);
         mapper = new ObjectMapper();
     }
 
@@ -77,22 +90,21 @@ class GradeStrategyTest {
 
         // Act and assert the result
         Assertions
-            .assertThat(this.strategy.recommend(27L, 10, 0.0).block())
-            .isEqualTo(List.of(new Recommendation(88L, 9.1),
-                new Recommendation(86L, 8.2),
-                new Recommendation(81L, 7.5)));
+                .assertThat(this.strategy.recommend(27L, 10, 0.0).block())
+                .isEqualTo(List.of(new Recommendation(88L, 9.1),
+                        new Recommendation(86L, 8.2),
+                        new Recommendation(81L, 7.5)));
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(POST);
+        verifyRecordedRequest(request, HttpMethod.POST);
     }
 
     @Test
     void testRecommendNoApplicantsFound() throws InterruptedException {
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(42L, 17, 0.0).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(42L, 17, 0.0).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         Assertions.assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS)).isNull();
     }
@@ -108,12 +120,11 @@ class GradeStrategyTest {
 
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(29L, 10, 0.0).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(29L, 10, 0.0).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(POST);
+        verifyRecordedRequest(request, HttpMethod.POST);
     }
 
     @Test
@@ -127,12 +138,11 @@ class GradeStrategyTest {
 
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(23L, 10, 0.0).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(23L, 10, 0.0).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(POST);
+        verifyRecordedRequest(request, HttpMethod.POST);
     }
 
     @Test
@@ -148,17 +158,16 @@ class GradeStrategyTest {
 
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(8L, 10, 0.0).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(8L, 10, 0.0).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(POST);
+        verifyRecordedRequest(request, HttpMethod.POST);
     }
 
     @Test
     void testRecommendCannotMakeAnyRecommendations()
-        throws JsonProcessingException, InterruptedException {
+            throws JsonProcessingException, InterruptedException {
         // Prepare the repository and mockWebServer
 
         // Applicants No48, No49; Course with courseId 56789
@@ -170,11 +179,10 @@ class GradeStrategyTest {
 
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(56789L, 10, 9.5).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(56789L, 10, 9.5).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(POST);
+        verifyRecordedRequest(request, HttpMethod.POST);
     }
 }

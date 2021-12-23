@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -47,8 +49,19 @@ public class TimesSelectedStrategyTest {
     private static final transient String ONE_LF = "1\n";
     private static final transient String TWO_LF = "2\n";
     private static final transient String GET_ALL_EDITIONS = "/api/courses/get-all-editions";
-    private static final transient String GET = "GET";
+    private static final transient String jwtToken = "mySecretToken";
 
+    /**
+     * A helper method used to verify simple recorded requests.
+     *
+     * @param request the request to be verified.
+     * @param method  the expected method.
+     */
+    private void verifyRecordedRequest(RecordedRequest request, HttpMethod method) {
+        Assertions.assertThat(request).isNotNull();
+        Assertions.assertThat(request.getMethod()).isEqualTo(method.name());
+        Assertions.assertThat(request.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo(jwtToken);
+    }
 
     void configureGateway(String path) {
         HttpUrl url = mockWebServer.url(path);
@@ -56,14 +69,13 @@ public class TimesSelectedStrategyTest {
         Mockito.when(gatewayConfig.getPort()).thenReturn(url.port());
     }
 
-
     @BeforeEach
     void setup() throws IOException {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
 
         gatewayConfig = Mockito.mock(GatewayConfig.class);
-        strategy = new TimesSelectedStrategy(repo, gatewayConfig);
+        strategy = new TimesSelectedStrategy(repo, gatewayConfig, jwtToken);
         mapper = new ObjectMapper();
     }
 
@@ -111,8 +123,7 @@ public class TimesSelectedStrategyTest {
                 new Recommendation(43L, 1)));
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(request, HttpMethod.GET);
     }
 
     @Test
@@ -139,8 +150,7 @@ public class TimesSelectedStrategyTest {
             .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(request, HttpMethod.GET);
     }
 
     @Test
@@ -167,8 +177,7 @@ public class TimesSelectedStrategyTest {
             .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(request, HttpMethod.GET);
     }
 
     @Test
@@ -192,8 +201,7 @@ public class TimesSelectedStrategyTest {
             .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(request, HttpMethod.GET);
     }
 
     @Test
@@ -230,8 +238,7 @@ public class TimesSelectedStrategyTest {
             .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(request, HttpMethod.GET);
     }
 
     /**

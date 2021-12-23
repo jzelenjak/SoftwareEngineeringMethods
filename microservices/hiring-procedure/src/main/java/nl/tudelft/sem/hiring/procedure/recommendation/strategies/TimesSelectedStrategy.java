@@ -6,6 +6,7 @@ import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,16 +25,21 @@ public class TimesSelectedStrategy implements RecommendationStrategy {
 
     private final transient ApplicationRepository repo;
 
+    private final transient String authorization;
+
     /**
      * Instantiates a new TimesSelectedStrategy object.
      *
-     * @param repo          the TA application repository
-     * @param gatewayConfig the gateway configuration
+     * @param repo          the TA application repository.
+     * @param gatewayConfig the gateway configuration.
+     * @param authorization the authorization token of the caller.
      */
-    public TimesSelectedStrategy(ApplicationRepository repo, GatewayConfig gatewayConfig) {
+    public TimesSelectedStrategy(ApplicationRepository repo, GatewayConfig gatewayConfig,
+                                 String authorization) {
         this.repo = repo;
         this.webClient = WebClient.create();
         this.gatewayConfig = gatewayConfig;
+        this.authorization = authorization;
     }
 
     /**
@@ -45,24 +51,25 @@ public class TimesSelectedStrategy implements RecommendationStrategy {
      * @param amount   the maximum number of recommendations to return
      * @param minTimes the minimum number of times selected (used for filtering)
      * @return the list of recommendations for candidate TAs based on the number of
-     *          times selected for a TA position for one course (wrapped in the mono).
-     *          The size of the list is at most `amount`.
+     *         times selected for a TA position for one course (wrapped in the mono).
+     *         The size of the list is at most `amount`.
      */
     @Override
     public Mono<List<Recommendation>> recommend(long courseId, int amount, double minTimes) {
 
         if (this.repo.findAllApplicantsByCourseId(courseId).isEmpty()) {
             return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "Could not find any applicants"));
+                    "Could not find any applicants"));
         }
         return
-            this.webClient
-                .get()
-                .uri(buildUriWithCourseId(gatewayConfig.getHost(), gatewayConfig.getPort(),
-                    courseId, "api", "courses", "get-all-editions"))
-                .exchange()
-                .flatMap(response -> processMono(response,
-                    body -> processMonoBody(body, courseId, amount, minTimes)));
+                this.webClient
+                        .get()
+                        .uri(buildUriWithCourseId(gatewayConfig.getHost(), gatewayConfig.getPort(),
+                                courseId, "api", "courses", "get-all-editions"))
+                        .header(HttpHeaders.AUTHORIZATION, authorization)
+                        .exchange()
+                        .flatMap(response -> processMono(response,
+                                body -> processMonoBody(body, courseId, amount, minTimes)));
     }
 
     /**
@@ -73,8 +80,8 @@ public class TimesSelectedStrategy implements RecommendationStrategy {
      * @param amount   the maximum number of recommendations to return
      * @param minTimes the minimum number of times selected (used for filtering)
      * @return the list of recommendations for candidate TAs based on the number of
-     *          times selected for a TA position for one course (wrapped in the mono).
-     *          The size of the list is at most 'amount'.
+     *         times selected for a TA position for one course (wrapped in the mono).
+     *         The size of the list is at most 'amount'.
      */
     private Mono<List<Recommendation>> processMonoBody(String body, long courseId,
                                                        int amount, double minTimes) {
@@ -84,8 +91,8 @@ public class TimesSelectedStrategy implements RecommendationStrategy {
         } catch (Exception e) {
             // related to JSON processing (e.g. bad format, missing/incorrect fields)
             return Mono
-                .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "An error has occurred. Please try again later!"));
+                    .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                            "An error has occurred. Please try again later!"));
         }
     }
 
@@ -100,16 +107,16 @@ public class TimesSelectedStrategy implements RecommendationStrategy {
      * @param amount    the maximum number of recommendations to return
      * @param minTimes  the minimum number of times selected (used for filtering)
      * @return the list of recommendations for candidate TAs based on the number of
-     *          times selected for a TA position for one course.
-     *          The size of the list is at most 'amount'.
+     *         times selected for a TA position for one course.
+     *         The size of the list is at most 'amount'.
      */
     public List<Recommendation> recommendFromRepo(long courseId, List<Long> courseIds,
                                                   int amount, double minTimes) {
         return this.repo
-            .findTopByTimesSelected(courseId, courseIds,
-                (long) minTimes, PageRequest.of(0, amount))
-            .stream()
-            .map(a -> new Recommendation((Long) a[0], ((Long) a[1]).doubleValue()))
-            .collect(Collectors.toList());
+                .findTopByTimesSelected(courseId, courseIds,
+                        (long) minTimes, PageRequest.of(0, amount))
+                .stream()
+                .map(a -> new Recommendation((Long) a[0], ((Long) a[1]).doubleValue()))
+                .collect(Collectors.toList());
     }
 }

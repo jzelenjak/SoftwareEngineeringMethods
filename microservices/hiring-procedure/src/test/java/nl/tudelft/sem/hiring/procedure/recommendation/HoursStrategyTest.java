@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -45,9 +47,8 @@ public class HoursStrategyTest {
     private static final transient String COURSE_IDS = "courseIds";
     private static final transient String GET_ALL_EDITIONS = "/api/courses/get-all-editions";
     private static final transient String GET_HOURS_STATS = "/api/hour-management"
-        + "/statistics/total-user-hours";
-    private static final transient String GET = "GET";
-    private static final transient String POST = "POST";
+            + "/statistics/total-user-hours";
+    private static final transient String jwtToken = "mySecretToken";
 
     /**
      * A helper method that is used to handle the sequence of responses.
@@ -60,7 +61,7 @@ public class HoursStrategyTest {
      * @param jsonFromHours   (possibly empty) json response body from Hour Management microservice
      * @param codeFromHours   the status code from Hour Management microservice
      * @return the created dispatcher that will receive a request, check its URL's
-     *          endpoint and return corresponding response.
+     *         endpoint and return corresponding response.
      */
     private Dispatcher dispatcher(String jsonFromCourses, String jsonFromHours, int codeFromHours) {
         return new Dispatcher() {
@@ -80,6 +81,18 @@ public class HoursStrategyTest {
         };
     }
 
+    /**
+     * A helper method used to verify simple recorded requests.
+     *
+     * @param request the request to be verified.
+     * @param method  the expected method.
+     */
+    private void verifyRecordedRequest(RecordedRequest request, HttpMethod method) {
+        Assertions.assertThat(request).isNotNull();
+        Assertions.assertThat(request.getMethod()).isEqualTo(method.name());
+        Assertions.assertThat(request.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo(jwtToken);
+    }
+
     @BeforeEach
     void setup() throws IOException {
         mockWebServer = new MockWebServer();
@@ -90,7 +103,7 @@ public class HoursStrategyTest {
         Mockito.when(gatewayConfig.getHost()).thenReturn(url.host());
         Mockito.when(gatewayConfig.getPort()).thenReturn(url.port());
 
-        strategy = new HoursStrategy(repo, gatewayConfig);
+        strategy = new HoursStrategy(repo, gatewayConfig, jwtToken);
         mapper = new ObjectMapper();
     }
 
@@ -109,32 +122,30 @@ public class HoursStrategyTest {
         this.repo.save(new Application(38L, 6666L, time));
 
         String jsonFromCourses = mapper.createObjectNode()
-            .set(COURSE_IDS, mapper.valueToTree(List.of(6666L, 6665L))).toString();
+                .set(COURSE_IDS, mapper.valueToTree(List.of(6666L, 6665L))).toString();
         String jsonFromHours = mapper
-            .writeValueAsString(Map.of(36L, 101.0, 38L, 135.0));
+                .writeValueAsString(Map.of(36L, 101.0, 38L, 135.0));
 
         mockWebServer.setDispatcher(dispatcher(jsonFromCourses, jsonFromHours, 200));
 
         // Act and assert the result
         Assertions
-            .assertThat(this.strategy.recommend(6666L, 2, 0.0).block())
-            .isEqualTo(List.of(new Recommendation(38L, 135.0),
-                new Recommendation(36L, 101.0)));
+                .assertThat(this.strategy.recommend(6666L, 2, 0.0).block())
+                .isEqualTo(List.of(new Recommendation(38L, 135.0),
+                        new Recommendation(36L, 101.0)));
 
         RecordedRequest requestCourses = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(requestCourses).isNotNull();
-        Assertions.assertThat(requestCourses.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(requestCourses, HttpMethod.GET);
         RecordedRequest requestHours = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(requestHours).isNotNull();
-        Assertions.assertThat(requestHours.getMethod()).isEqualTo(POST);
+        verifyRecordedRequest(requestHours, HttpMethod.POST);
     }
 
     @Test
     void testRecommendNoApplicantsFound() throws InterruptedException {
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(69L, 42, 0.0).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(69L, 42, 0.0).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         Assertions.assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS)).isNull();
         Assertions.assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS)).isNull();
@@ -153,12 +164,11 @@ public class HoursStrategyTest {
 
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(29L, 6, 0.0).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(29L, 6, 0.0).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(request, HttpMethod.GET);
         Assertions.assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS)).isNull();
     }
 
@@ -174,12 +184,11 @@ public class HoursStrategyTest {
 
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(666L, 7, 0.0).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(666L, 7, 0.0).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(request, HttpMethod.GET);
         Assertions.assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS)).isNull();
     }
 
@@ -191,18 +200,17 @@ public class HoursStrategyTest {
         this.repo.save(new Application(112L, 666L, time));
 
         String json = mapper.createObjectNode()
-            .set("courseIDs", mapper.valueToTree(List.of(666L, 665L))).toString();
+                .set("courseIDs", mapper.valueToTree(List.of(666L, 665L))).toString();
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(json));
 
 
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(666L, 9, 0.0).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(666L, 9, 0.0).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(request, HttpMethod.GET);
         Assertions.assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS)).isNull();
     }
 
@@ -219,12 +227,11 @@ public class HoursStrategyTest {
 
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(555L, 3, 0.0).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(555L, 3, 0.0).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(request).isNotNull();
-        Assertions.assertThat(request.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(request, HttpMethod.GET);
         Assertions.assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS)).isNull();
     }
 
@@ -236,21 +243,19 @@ public class HoursStrategyTest {
         this.repo.save(new Application(5432L, 532L, time));
 
         String json = mapper.createObjectNode()
-            .set(COURSE_IDS, mapper.valueToTree(List.of(532L, 531L))).toString();
+                .set(COURSE_IDS, mapper.valueToTree(List.of(532L, 531L))).toString();
 
         mockWebServer.setDispatcher(dispatcher(json, null, 500));
 
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(532L, 1, 0.0).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(532L, 1, 0.0).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest requestCourses = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(requestCourses).isNotNull();
-        Assertions.assertThat(requestCourses.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(requestCourses, HttpMethod.GET);
         RecordedRequest requestHours = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(requestHours).isNotNull();
-        Assertions.assertThat(requestHours.getMethod()).isEqualTo(POST);
+        verifyRecordedRequest(requestHours, HttpMethod.POST);
     }
 
     @Test
@@ -261,21 +266,19 @@ public class HoursStrategyTest {
         this.repo.save(new Application(80L, 8080L, time));
 
         String jsonFromCourses = mapper.createObjectNode()
-            .set(COURSE_IDS, mapper.valueToTree(List.of(8080L, 8088L))).toString();
+                .set(COURSE_IDS, mapper.valueToTree(List.of(8080L, 8088L))).toString();
 
         mockWebServer.setDispatcher(dispatcher(jsonFromCourses, "", 200));
 
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(8080L, 42, 0.0).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(8080L, 42, 0.0).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest requestCourses = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(requestCourses).isNotNull();
-        Assertions.assertThat(requestCourses.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(requestCourses, HttpMethod.GET);
         RecordedRequest requestHours = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(requestHours).isNotNull();
-        Assertions.assertThat(requestHours.getMethod()).isEqualTo(POST);
+        verifyRecordedRequest(requestHours, HttpMethod.POST);
     }
 
     @Test
@@ -286,48 +289,44 @@ public class HoursStrategyTest {
         this.repo.save(new Application(88L, 8088L, time));
 
         String jsonFromCourses = mapper.createObjectNode()
-            .set(COURSE_IDS, mapper.valueToTree(List.of(8088L, 8080L))).toString();
+                .set(COURSE_IDS, mapper.valueToTree(List.of(8088L, 8080L))).toString();
         String jsonFromHours = mapper.createObjectNode().put("88", "FAIL").toString();
 
         mockWebServer.setDispatcher(dispatcher(jsonFromCourses, jsonFromHours, 200));
 
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(8088L, 69, 0.0).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(8088L, 69, 0.0).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest requestCourses = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(requestCourses).isNotNull();
-        Assertions.assertThat(requestCourses.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(requestCourses, HttpMethod.GET);
         RecordedRequest requestHours = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(requestHours).isNotNull();
-        Assertions.assertThat(requestHours.getMethod()).isEqualTo(POST);
+        verifyRecordedRequest(requestHours, HttpMethod.POST);
     }
 
     @Test
     void testRecommendCannotMakeAnyRecommendations()
-        throws InterruptedException, JsonProcessingException {
+            throws InterruptedException, JsonProcessingException {
         // Prepare the repository, mockWebServer and gatewayConfig
 
         // Applicant No81; Course with courseId 443 (same code as 80)
         this.repo.save(new Application(81L, 443L, time));
 
         String jsonFromCourses = mapper.createObjectNode()
-            .set(COURSE_IDS, mapper.valueToTree(List.of(443L, 80L))).toString();
+                .set(COURSE_IDS, mapper.valueToTree(List.of(443L, 80L))).toString();
         String jsonFromHours = mapper.writeValueAsString(Map.of());
 
         mockWebServer.setDispatcher(dispatcher(jsonFromCourses, jsonFromHours, 200));
 
         // Act and assert the result
         Assertions
-            .assertThatThrownBy(() -> this.strategy.recommend(443L, 3, 200.0).block())
-            .isInstanceOf(ResponseStatusException.class);
+                .assertThatThrownBy(() -> this.strategy.recommend(443L, 3, 200.0).block())
+                .isInstanceOf(ResponseStatusException.class);
 
         RecordedRequest requestCourses = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(requestCourses).isNotNull();
-        Assertions.assertThat(requestCourses.getMethod()).isEqualTo(GET);
+        verifyRecordedRequest(requestCourses, HttpMethod.GET);
         RecordedRequest requestHours = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(requestHours).isNotNull();
-        Assertions.assertThat(requestHours.getMethod()).isEqualTo(POST);
+        verifyRecordedRequest(requestHours, HttpMethod.POST);
     }
 }

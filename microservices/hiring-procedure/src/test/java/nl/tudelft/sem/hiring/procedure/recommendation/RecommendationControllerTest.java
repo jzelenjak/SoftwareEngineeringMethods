@@ -1,6 +1,5 @@
 package nl.tudelft.sem.hiring.procedure.recommendation;
 
-import static io.netty.handler.codec.http.HttpHeaders.Values.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -239,7 +238,7 @@ public class RecommendationControllerTest {
 
         MvcResult mvcResult = mockMvc.perform(post(RECOMMEND_URL)
             .header(HttpHeaders.AUTHORIZATION, "jwt")
-            .contentType(APPLICATION_JSON).content(json)).andReturn();
+            .contentType(MediaType.APPLICATION_JSON).content(json)).andReturn();
         mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isBadRequest());
     }
 
@@ -249,7 +248,7 @@ public class RecommendationControllerTest {
 
         MvcResult mvcResult = mockMvc.perform(post(RECOMMEND_URL)
             .header(HttpHeaders.AUTHORIZATION, "JWT")
-            .contentType(APPLICATION_JSON).content("fasfasdf")).andReturn();
+            .contentType(MediaType.APPLICATION_JSON).content("fasfasdf")).andReturn();
         mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isBadRequest());
     }
 
@@ -262,7 +261,7 @@ public class RecommendationControllerTest {
 
         MvcResult mvcResult = this.mockMvc.perform(post(RECOMMEND_URL)
             .header(HttpHeaders.AUTHORIZATION, "JWT")
-            .contentType(APPLICATION_JSON).content(json)).andReturn();
+            .contentType(MediaType.APPLICATION_JSON).content(json)).andReturn();
         mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isBadRequest());
     }
 
@@ -272,7 +271,7 @@ public class RecommendationControllerTest {
 
         MvcResult mvcResult = this.mockMvc.perform(post(RECOMMEND_URL)
             .header(HttpHeaders.AUTHORIZATION, "someValidJWT")
-            .contentType(APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
             .content(buildRequestBody(4242442L, 5, 42.69, "GREEDY")))
             .andReturn();
         mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isBadRequest());
