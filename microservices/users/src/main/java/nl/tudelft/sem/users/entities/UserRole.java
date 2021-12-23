@@ -5,7 +5,6 @@ package nl.tudelft.sem.users.entities;
  */
 public enum UserRole {
     STUDENT,
-    TA,
     LECTURER,
     ADMIN
 }

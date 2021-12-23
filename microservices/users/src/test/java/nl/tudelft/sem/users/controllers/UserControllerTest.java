@@ -37,6 +37,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
@@ -70,7 +71,6 @@ class UserControllerTest {
     private static final transient String USERID = "userId";
     private static final transient String USERNAME = "username";
     private static final transient String ROLE = "role";
-    private static final transient String BEARER = "Bearer ";
     private static final transient String UTF8 = "uft-8";
 
 
@@ -82,6 +82,8 @@ class UserControllerTest {
     private final transient String username = "S.Bar@student.tudelft.nl";
     private final transient String firstName = "Sasha";
     private final transient String lastName = "Bar";
+    private final transient String jwt = "Bearer someValidJwt";
+
 
     /**
      * Helper methods.
@@ -109,7 +111,6 @@ class UserControllerTest {
     }
 
 
-
     /**
      * Helper methods for configuring MockMVC.
      */
@@ -120,37 +121,45 @@ class UserControllerTest {
     }
 
     private ResultActions mockMvcGetByUsername(String username) throws Exception {
-        return mockMvc.perform(get("/api/users/by_username").queryParam("username", username));
+        return mockMvc.perform(get("/api/users/by_username").header(HttpHeaders.AUTHORIZATION, jwt)
+                                    .queryParam("username", username));
     }
 
     private ResultActions mockMvcGetByUserId(String userId) throws Exception {
-        return mockMvc.perform(get("/api/users/by_userid").queryParam("userId", userId));
+        return mockMvc.perform(get("/api/users/by_userid").header(HttpHeaders.AUTHORIZATION, jwt)
+                                    .queryParam("userId", userId));
     }
 
     private ResultActions mockMvcGetByRole(String role) throws Exception {
-        return mockMvc.perform(get("/api/users/by_role").queryParam("role", role));
+        return mockMvc.perform(get("/api/users/by_role").header(HttpHeaders.AUTHORIZATION, jwt)
+                                    .queryParam("role", role));
     }
 
     private ResultActions mockMvcChangeRole(String json) throws Exception {
         return mockMvc.perform(put(CHANGE_ROLE_API).contentType(MediaType.APPLICATION_JSON)
-                .content(json).header(HttpHeaders.AUTHORIZATION, "jwtToken")
+                .content(json).header(HttpHeaders.AUTHORIZATION, jwt)
                 .characterEncoding(UTF8));
     }
 
     private ResultActions mockMvcDeleteByUserId(String userId) throws Exception {
-        return mockMvc.perform(delete(DELETE_API).queryParam("userId", userId)
-                .header(HttpHeaders.AUTHORIZATION, "jwtToken"));
+        return mockMvc.perform(delete(DELETE_API).header(HttpHeaders.AUTHORIZATION, jwt)
+                                    .queryParam("userId", userId));
     }
 
     private void assertRecordedRequestNull() throws InterruptedException {
         Assertions.assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS)).isNull();
     }
 
-    private void assertRecordedRequestNotNull(String method) throws InterruptedException {
-        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-        Assertions.assertThat(recordedRequest).isNotNull();
-        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo(method);
+    private void assertRecordedRequestWithJwt(RecordedRequest recordedRequest, HttpMethod method) {
+        assertRecordedRequestNoJwt(recordedRequest, method);
+        Assertions.assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo(jwt);
     }
+
+    private void assertRecordedRequestNoJwt(RecordedRequest recordedRequest, HttpMethod method) {
+        Assertions.assertThat(recordedRequest).isNotNull();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo(method.name());
+    }
+
 
     @BeforeEach
     void setup() throws IOException {
@@ -163,12 +172,13 @@ class UserControllerTest {
         mockWebServer.shutdown();
     }
 
+
     /**
      * Tests for registerUser method.
      */
 
     @Test
-    void registerUserAlreadyExistsLocallyTest() throws Exception {
+    void testRegisterUserAlreadyExistsLocally() throws Exception {
         configureGateway(REGISTER_API);
         userRepository.save(new User(username, firstName, lastName, UserRole.STUDENT));
 
@@ -179,30 +189,29 @@ class UserControllerTest {
     }
 
     @Test
-    void registerUserAlreadyExistsFailureInAuthTest() throws Exception {
+    void testRegisterUserAlreadyExistsFailureInAuth() throws Exception {
         configureGateway("/api/auth/register");
         mockWebServer.enqueue(new MockResponse().setResponseCode(409));
-
 
         MvcResult mvcResult = mockMvcRegister(createJson(USERNAME, username, "firstName", firstName,
                 "lastName", lastName, "password", "123")).andReturn();
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isConflict())
                 .andExpect(content().string(""));
-
-        assertRecordedRequestNotNull("POST");
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertRecordedRequestNoJwt(recordedRequest, HttpMethod.POST);
     }
 
     @Test
-    void registerUserSuccessTest() throws Exception {
+    void testRegisterUserSuccessful() throws Exception {
         configureGateway("/api/auth/register");
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
-
 
         MvcResult mvcRes = mockMvcRegister(createJson(USERNAME, username,
                 "firstName", firstName, "lastName", lastName, "password", "1234")).andReturn();
         mockMvc.perform(asyncDispatch(mvcRes)).andExpect(status().isOk());
-        assertRecordedRequestNotNull("POST");
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertRecordedRequestNoJwt(recordedRequest, HttpMethod.POST);
     }
 
 
@@ -210,16 +219,22 @@ class UserControllerTest {
      * Tests for getByUsername method.
      */
 
+    @Test
+    void testGetByUsernameStudentsMustBeForbidden() throws Exception {
+        configureJwsMock(UserRole.STUDENT.name());
+        mockMvcGetByUsername(username).andExpect(status().isForbidden());
+    }
 
     @Test
-    void getByUsernameNotFoundTest() throws Exception {
+    void testGetByUsernameNotFound() throws Exception {
+        configureJwsMock(UserRole.LECTURER.name());
         mockMvcGetByUsername(username).andExpect(status().isNotFound());
     }
 
     @Test
-    void getByUsernameFoundTest() throws Exception {
+    void testGetByUsernameFound() throws Exception {
+        configureJwsMock(UserRole.ADMIN.name());
         User user = userRepository.save(new User(username, firstName, lastName, UserRole.STUDENT));
-
 
         String result = mockMvcGetByUsername(username).andExpect(status().isOk()).andReturn()
                 .getResponse().getContentAsString();
@@ -232,14 +247,21 @@ class UserControllerTest {
      * Tests for getByUserId method.
      */
 
-
     @Test
-    void getByUserIdNotFoundTest() throws Exception {
-        mockMvcGetByUserId(String.valueOf(456789)).andExpect(status().isNotFound());
+    void testGetByUserIdStudentsMustBeForbidden() throws Exception {
+        configureJwsMock(UserRole.STUDENT.name());
+        mockMvcGetByUserId(String.valueOf(4242442L)).andExpect(status().isForbidden());
     }
 
     @Test
-    void getByUserIdFoundTest() throws Exception {
+    void testGetByUserIdNotFound() throws Exception {
+        configureJwsMock(UserRole.LECTURER.name());
+        mockMvcGetByUserId(String.valueOf(4567899L)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetByUserIdFound() throws Exception {
+        configureJwsMock(UserRole.ADMIN.name());
         User user = userRepository.save(new User(username, firstName, lastName, UserRole.LECTURER));
         long userId = user.getUserId();
 
@@ -254,14 +276,22 @@ class UserControllerTest {
      * Tests for getByRole method.
      */
 
-
     @Test
-    void getByRoleNotFoundTest() throws Exception {
-        mockMvcGetByRole(UserRole.TA.name()).andExpect(status().isNotFound());
+    void testGetByRoleStudentsMustBeForbidden() throws Exception {
+        configureJwsMock(UserRole.STUDENT.name());
+        mockMvcGetByRole(UserRole.ADMIN.name()).andExpect(status().isForbidden());
     }
 
     @Test
-    void getByRoleFoundTest() throws Exception {
+    void testGetByRoleNotFound() throws Exception {
+        configureJwsMock(UserRole.LECTURER.name());
+        mockMvcGetByRole(UserRole.ADMIN.name()).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetByRoleFound() throws Exception {
+        configureJwsMock(UserRole.ADMIN.name());
+
         List<User> users = new ArrayList<>();
         users.add(userRepository.save(new User(username, firstName, lastName, UserRole.STUDENT)));
         users.add(userRepository.save(new User("...", firstName, lastName, UserRole.STUDENT)));
@@ -280,74 +310,85 @@ class UserControllerTest {
      * Tests for changeRole method.
      */
 
-
     @Test
-    void changeRoleInvalidOrExpiredTokenTest() throws Exception {
+    void testChangeRoleInvalidOrExpiredToken() throws Exception {
         configureGateway(CHANGE_ROLE_API);
         Mockito.when(jwtUtils.resolveToken(Mockito.any())).thenReturn("");
         Mockito.when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(null);
 
         String json = new ObjectMapper().createObjectNode().put(USERID, 5422341L)
-                .put(ROLE, UserRole.TA.name()).toString();
+                            .put(ROLE, UserRole.STUDENT.name()).toString();
 
-
-        mockMvcChangeRole(json).andExpect(status().isUnauthorized());
+        mockMvcChangeRole(json).andExpect(status().isForbidden());
         assertRecordedRequestNull();
     }
 
     @Test
-    void changeRoleTokenDoesNotStartWithBearerTest() throws Exception {
+    void testChangeRoleTokenDoesNotStartWithBearer() throws Exception {
         configureGateway(CHANGE_ROLE_API);
         Mockito.when(jwtUtils.resolveToken(Mockito.any())).thenReturn(null);
 
         String json = new ObjectMapper().createObjectNode().put(USERID, 3456774L)
-                .put(ROLE, UserRole.TA.name()).toString();
+                            .put(ROLE, UserRole.STUDENT.name()).toString();
 
         mockMvcChangeRole(json).andExpect(status().isUnauthorized());
         assertRecordedRequestNull();
     }
 
     @Test
-    void changeRoleUnauthorizedTest() throws Exception {
+    void testChangeRoleStudentsMustBeForbidden() throws Exception {
         configureGateway(CHANGE_ROLE_API);
-        configureJwsMock(UserRole.TA.name());
+        configureJwsMock(UserRole.STUDENT.name());
 
         String json = new ObjectMapper().createObjectNode().put(USERID, 2376889L)
-                .put(ROLE, UserRole.TA.name()).toString();
+                            .put(ROLE, UserRole.LECTURER.name()).toString();
 
-        mockMvcChangeRole(json).andExpect(status().isUnauthorized());
+        mockMvcChangeRole(json).andExpect(status().isForbidden());
         assertRecordedRequestNull();
     }
 
     @Test
-    void changeRoleFailureAtAuthTest() throws Exception {
+    void testChangeRoleLecturersMustBeForbidden() throws Exception {
+        configureGateway(CHANGE_ROLE_API);
+        configureJwsMock(UserRole.LECTURER.name());
+
+        String json = new ObjectMapper().createObjectNode().put(USERID, 2376889L)
+                            .put(ROLE, UserRole.LECTURER.name()).toString();
+
+        mockMvcChangeRole(json).andExpect(status().isForbidden());
+        assertRecordedRequestNull();
+    }
+
+    @Test
+    void testChangeRoleFailureAtAuth() throws Exception {
         configureGateway(CHANGE_ROLE_API);
         configureJwsMock(UserRole.ADMIN.name());
         mockWebServer.enqueue(new MockResponse().setResponseCode(403));
 
         User user = userRepository.save(new User(username, firstName, lastName, UserRole.STUDENT));
         String json = new ObjectMapper().createObjectNode().put(USERID, user.getUserId())
-                .put(ROLE, UserRole.TA.name()).toString();
+                            .put(ROLE, UserRole.LECTURER.name()).toString();
 
         MvcResult mvcResult = mockMvcChangeRole(json).andReturn();
         mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isForbidden());
-
-        assertRecordedRequestNotNull("PUT");
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertRecordedRequestWithJwt(recordedRequest, HttpMethod.PUT);
     }
 
     @Test
-    void changeRoleSuccessfulTest() throws Exception {
-        configureJwsMock(UserRole.LECTURER.name());
+    void testChangeRoleSuccessful() throws Exception {
         configureGateway(CHANGE_ROLE_API);
+        configureJwsMock(UserRole.ADMIN.name());
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
 
         User user = userRepository.save(new User(username, firstName, lastName, UserRole.STUDENT));
         String json = new ObjectMapper().createObjectNode().put(USERID, user.getUserId())
-                .put(ROLE, UserRole.TA.name()).toString();
+                            .put(ROLE, UserRole.ADMIN.name()).toString();
 
         MvcResult mvcResult = mockMvcChangeRole(json).andReturn();
         mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isOk());
-        assertRecordedRequestNotNull("PUT");
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertRecordedRequestWithJwt(recordedRequest, HttpMethod.PUT);
     }
 
 
@@ -355,42 +396,48 @@ class UserControllerTest {
      * Tests for deleteByUserId method.
      */
 
-
     @Test
-    void deleteByUserIdUnauthorizedTest() throws Exception {
+    void testDeleteByUserIdStudentsMustBeForbidden() throws Exception {
         configureGateway(DELETE_API);
         configureJwsMock(UserRole.STUDENT.name());
 
-        User user = userRepository.save(new User(username, firstName, lastName, UserRole.STUDENT));
-
-        mockMvcDeleteByUserId("" + user.getUserId()).andExpect(status().isUnauthorized());
+        mockMvcDeleteByUserId("123435").andExpect(status().isForbidden());
         assertRecordedRequestNull();
     }
 
     @Test
-    void deleteByUserIdFailureAtAuthTest() throws Exception {
+    void testDeleteByUserIdLecturersMustBeForbidden() throws Exception {
+        configureGateway(DELETE_API);
+        configureJwsMock(UserRole.LECTURER.name());
+
+        mockMvcDeleteByUserId("123435").andExpect(status().isForbidden());
+        assertRecordedRequestNull();
+    }
+
+    @Test
+    void testDeleteByUserIdFailureAtAuth() throws Exception {
         configureGateway(DELETE_API);
         configureJwsMock(UserRole.ADMIN.name());
         mockWebServer.enqueue(new MockResponse().setResponseCode(403));
-
         User user = userRepository.save(new User(username, firstName, lastName, UserRole.STUDENT));
 
         MvcResult mvcResult =  mockMvcDeleteByUserId("" + user.getUserId()).andReturn();
         mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isForbidden());
-        assertRecordedRequestNotNull("DELETE");
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertRecordedRequestWithJwt(recordedRequest, HttpMethod.DELETE);
     }
 
     @Test
-    void deleteByUserIdSuccessfulTest() throws Exception {
+    void testDeleteByUserIdSuccessful() throws Exception {
         configureGateway(DELETE_API);
         configureJwsMock(UserRole.ADMIN.name());
         mockWebServer.enqueue(new MockResponse().setResponseCode(200));
-
         User user = userRepository.save(new User(username, firstName, lastName, UserRole.STUDENT));
 
         MvcResult mvcResult = mockMvcDeleteByUserId("" + user.getUserId()).andReturn();
         mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isOk());
-        assertRecordedRequestNotNull("DELETE");
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertRecordedRequestWithJwt(recordedRequest, HttpMethod.DELETE);
     }
 
 
@@ -399,44 +446,39 @@ class UserControllerTest {
      */
 
     @Test
-    void notNumberTest() throws Exception {
+    void testNotNumber() throws Exception {
+        configureJwsMock(UserRole.ADMIN.name());
         mockMvcGetByUserId("nan").andExpect(status().isBadRequest());
     }
+
+    @Test
+    void testMissingValuesInJson() throws Exception {
+        mockMvcRegister(createJson("ID", "4432894")).andExpect(status().isBadRequest());
+    }
+
+
+    @Test
+    void testInvalidRole() throws Exception {
+        configureJwsMock(UserRole.LECTURER.name());
+        mockMvcGetByRole("MODERATOR").andExpect(status().isBadRequest());
+    }
+
 
     /**
      * Remaining tests for 100% coverage.
      */
+
     @Test
-    void gatewayConfigHostTest() {
+    void testGatewayConfigHost() {
         GatewayConfig config = new GatewayConfig();
         config.setHost("google.com");
         Assertions.assertThat(config.getHost()).isEqualTo("google.com");
     }
 
     @Test
-    void gatewayConfigPortTest() {
+    void testGatewayConfigPort() {
         GatewayConfig config = new GatewayConfig();
         config.setPort(8089);
         Assertions.assertThat(config.getPort()).isEqualTo(8089);
-    }
-
-    @Test
-    void missingValuesInJsonTest() throws Exception {
-        mockMvcRegister(createJson("ID", "4432894")).andExpect(status().isBadRequest());
-    }
-
-
-    @Test
-    void invalidRoleTest() throws Exception {
-        mockMvcGetByRole("MODERATOR").andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void invalidJwsRole() throws Exception {
-        configureJwsMock("MODERATOR");
-
-        String json = new ObjectMapper().createObjectNode().put(USERID, 34126654L)
-                .put(ROLE, UserRole.TA.name()).toString();
-        mockMvcChangeRole(json).andExpect(status().isBadRequest());
     }
 }

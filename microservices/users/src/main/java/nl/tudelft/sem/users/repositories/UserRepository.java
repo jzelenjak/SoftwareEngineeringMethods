@@ -13,10 +13,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface UserRepository extends CrudRepository<User, Long> {
     /**
-     * Finds a user by the username (netID).
+     * Finds a user by the username.
      *
-     * @param username the username (netID)
-     * @return the user who has the given username (netID)
+     * @param username the username
+     * @return the user who has the given username
      */
     Optional<User> findByUsername(String username);
 
@@ -24,7 +24,7 @@ public interface UserRepository extends CrudRepository<User, Long> {
     /**
      * Finds a user by the user id.
      *
-     * @param userId the user id (netID)
+     * @param userId the user id
      * @return the user who has the given user id
      */
     Optional<User> findByUserId(long userId);

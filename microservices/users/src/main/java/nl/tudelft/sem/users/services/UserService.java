@@ -2,7 +2,6 @@ package nl.tudelft.sem.users.services;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import nl.tudelft.sem.users.entities.User;
 import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.repositories.UserRepository;
@@ -18,8 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final transient UserRepository userRepository;
-    private final transient Set<UserRole> rolesAllowedToChange;
-    private final transient Set<UserRole> rolesForLecturersToChange;
 
     /**
      * Instantiates a new UserService object.
@@ -28,8 +25,6 @@ public class UserService {
      */
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.rolesAllowedToChange = Set.of(UserRole.LECTURER, UserRole.ADMIN);
-        this.rolesForLecturersToChange = Set.of(UserRole.STUDENT, UserRole.TA);
     }
 
 
@@ -40,23 +35,22 @@ public class UserService {
      *   switch statements on multiple variables, I could not fully incorporate the feedback.
      *   However, I tried to refactor the method a bit, and I think this is more clean.
      *
-     * @param netId         the netID (username) of the user
+     * @param username      the username of the user
      * @param firstName     the name of the user
      * @param lastName      the surname of the user
-     * @return true is a user has been successfully registered;
-     *         false if a user with the same netID already exists
-     * @throws DataIntegrityViolationException if netID already exists
-     *          and if any of the netID, first name and last name are blank or null
+     * @return the user ID for the new user, if the operation has been successful
+     * @throws DataIntegrityViolationException if the username already exists
+     *          and if any of the username, first name or last name are blank or null
      */
-    public long registerUser(String netId, String firstName, String lastName)
+    public long registerUser(String username, String firstName, String lastName)
             throws DataIntegrityViolationException {
 
-        if (nullOrBlank(netId)) {
-            throw new DataIntegrityViolationException("Please specify the netID!");
+        if (nullOrBlank(username)) {
+            throw new DataIntegrityViolationException("Please specify the username!");
         }
 
-        if (this.userRepository.findByUsername(netId).isPresent()) {
-            String msg = String.format("User with netID %s already exist", netId);
+        if (this.userRepository.findByUsername(username).isPresent()) {
+            String msg = String.format("User with username %s already exist", username);
             throw new DataIntegrityViolationException(msg);
         }
 
@@ -65,26 +59,28 @@ public class UserService {
         }
 
         return this.userRepository
-            .save(new User(netId, firstName, lastName, UserRole.STUDENT)).getUserId();
+            .save(new User(username, firstName, lastName, UserRole.STUDENT)).getUserId();
     }
 
 
     /**
-     * Gets the user by his/her netID.
+     * Gets the user by his/her username.
+     * Only allowed for lecturers and admins which is checked in UserController.
      *
-     * @param netId         the netID
-     * @return the user with the provided netID if found
+     * @param username         the username of the user
+     * @return the user with the provided username if found
      */
-    public Optional<User> getUserByNetId(String netId) {
-        return this.userRepository.findByUsername(netId);
+    public Optional<User> getUserByUsername(String username) {
+        return this.userRepository.findByUsername(username);
     }
 
 
     /**
-     * Gets the user by his/her userID.
+     * Gets the user by his/her user ID.
+     * Only allowed for lecturers and admins which is checked in UserController.
      *
-     * @param userId        the userID
-     * @return the user with the provided userID if found
+     * @param userId        the user ID
+     * @return the user with the provided user ID if found
      */
     public Optional<User> getUserByUserId(long userId) {
         return this.userRepository.findByUserId(userId);
@@ -93,6 +89,7 @@ public class UserService {
 
     /**
      * Gets users by their role.
+     * Only allowed for lecturers and admins which is checked in UserController.
      *
      * @param role          the role of a user
      * @return the users who have the given role
@@ -103,84 +100,38 @@ public class UserService {
 
 
     /**
-     * Changes the role of a user to another role if the requester has permissions to do that.
+     * Changes the role of a user to another role.
+     * Only allowed for admins which is checked in UserController.
      *
      * @param userId        the user ID of the user
      * @param newRole       the new role of the user
-     * @param requesterRole the role of the requester
-     * @return true if the operation has been successful,
-     *         false if the requester does not have the required permissions
+     * @return true if the operation has been successful, false if the user does not exist
      */
-    public boolean changeRole(long userId, UserRole newRole, UserRole requesterRole) {
-        if (!isAllowedToChangeRole(userId, newRole, requesterRole)) {
+    public boolean changeRole(long userId, UserRole newRole) {
+        Optional<User> optionalUser = this.userRepository.findByUserId(userId);
+        if (optionalUser.isEmpty()) {
             return false;
         }
 
-        // The presence of the user has already been checked in isAllowedToChangeRole method
-        User user = this.userRepository.findByUserId(userId).get();
-
+        User user = optionalUser.get();
         user.setRole(newRole);
         this.userRepository.save(user);
         return true;
     }
 
     /**
-     * A helper method that checks if the requester is allowed to change
-     *      the role of a user with user ID userId.
-     * Regarding TA's feedback on many if statements: unfortunately since Java doesn't allow
-     *   switch statements on multiple variables, I could not fully incorporate the feedback.
-     *   However, I tried to refactor the method a bit, and I think this is more clean.
-     *
-     * @param userId            the user ID of the user
-     * @param newRole           the new role of the user
-     * @param requesterRole     the role of the requester
-     * @return whether the requester has enough permissions to change the role of the user
-     */
-    public boolean isAllowedToChangeRole(long userId, UserRole newRole, UserRole requesterRole) {
-        // Only admins and lecturers can change permissions
-        if (!this.rolesAllowedToChange.contains(requesterRole)) {
-            return false;
-        }
-
-        Optional<User> user = this.userRepository.findByUserId(userId);
-        if (user.isEmpty()) {
-            return false;
-        }
-
-        // Lecturer can only change a student's role to TA or a TA's role to student
-        if (requesterRole.equals(UserRole.LECTURER)) {
-            return (rolesForLecturersToChange.contains(user.get().getRole())
-                        && rolesForLecturersToChange.contains(newRole));
-        }
-        return true;
-    }
-
-
-    /**
-     * Deletes the user by their username (netID).
+     * Deletes the user by their username.
+     * Only allowed for admins which is checked in UserController.
      *
      * @param userId        the user ID of the user
-     * @param requesterRole the role of the requester
-     * @return true if the operation has been successful,
-     *         false if the requester does not have the required permissions (is not an admin)
+     * @return true if the operation has been successful, false if the user does not exist
      */
-    public boolean deleteUserByUserId(long userId, UserRole requesterRole) {
-        if (!isAllowedToDelete(requesterRole)) {
+    public boolean deleteUserByUserId(long userId) {
+        if (this.userRepository.findByUserId(userId).isEmpty()) {
             return false;
         }
-
         this.userRepository.deleteByUserId(userId);
         return true;
-    }
-
-    /**
-     * A helper method that checks if the requester is allowed to delete a user.
-     *
-     * @param requesterRole the role of the requester
-     * @return whether the requester has enough permissions to delete a user.
-     */
-    public boolean isAllowedToDelete(UserRole requesterRole) {
-        return requesterRole.equals(UserRole.ADMIN);
     }
 
     /**

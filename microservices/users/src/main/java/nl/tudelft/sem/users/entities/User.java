@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @Table(name = "users")
 @Entity
 @SequenceGenerator(name = "uid_gen", sequenceName = "uid_seq",
-        initialValue = 3001001)
+        initialValue = 3001001, allocationSize = 7)
 @DynamicUpdate
 @EnableTransactionManagement
 public class User {
@@ -30,7 +30,6 @@ public class User {
 
     @Column(name = "username", unique = true)
     @NotNull @NotBlank
-    // NetID of the user
     private String username;
 
     @Column(name = "first_name")
