@@ -347,17 +347,7 @@ public class ApplicationController {
     public Mono<Integer> getMaxHours(@RequestParam(required = false) Long userId,
                            @RequestParam long courseId,
                            @RequestHeader HttpHeaders headers) {
-        AsyncValidator.Builder builder = AsyncValidator.Builder.newBuilder();
-        builder.addValidator(new AsyncAuthValidator(jwtUtils));
-        if (userId != null) {
-            builder.addValidator(new AsyncRoleValidator(jwtUtils,
-                    Set.of(Roles.LECTURER, Roles.ADMIN)));
-
-        } else {
-            builder.addValidator(new AsyncRoleValidator(jwtUtils,
-                    Set.of(Roles.TA)));
-        }
-        AsyncValidator head = builder.build();
+        AsyncValidator head = buildVariableValidator(userId);
         return head.validate(headers, "").flatMap(value -> {
             Long finalUserId = userId;
             if (userId == null) {
@@ -407,16 +397,110 @@ public class ApplicationController {
     }
 
     /**
+     * Endpoint for getting the rating of a TA for a course.
+     *
+     * @param userId The ID of the user that is associated to the requested application
+     * @param courseId The ID of the course that the TA is working on
+     * @param headers The headers of the request. Should contain the JWT.
+     * @return The rating of the TA, or errors if anything goes wrong. Check docs
+     */
+    @GetMapping("get-rating")
+    public Mono<Double> getRating(@RequestParam(required = false) Long userId,
+                                  @RequestParam long courseId,
+                                  @RequestHeader HttpHeaders headers) {
+        AsyncValidator head = buildVariableValidator(userId);
+
+        return head.validate(headers, "").flatMap(value -> {
+            Long finalUserId = userId;
+            if (userId == null) {
+                finalUserId = getUserIdFromToken(headers);
+            }
+            try {
+                return Mono.just(applicationService.getRating(finalUserId, courseId));
+            } catch (Exception e) {
+                if (e.getClass().equals(NoSuchElementException.class)) {
+                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "There is no submission that is associated to that "
+                                    + "userId and courseId"));
+                }
+                if (e.getMessage().equals("Application is not approved.")) {
+                    return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                            "The respective application has not been approved"));
+                }
+                return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "The respective TA has no rating for this course"));
+            }
+        });
+    }
+
+    /**
+     * Endpoint for updating the value of the maximum allowed hours for an application.
+     *
+     * @param applicationId The id of the application for which to update the value.
+     * @param headers The headers of the request. Should contain the JWT.
+     * @param body The body of the request. Should contain the specified maxHours.
+     * @return 200 OK if request goes through, or errors if anything goes wrong.
+     */
+    @PostMapping("rate")
+    public Mono<Void> setRating(@RequestParam long applicationId,
+                                  @RequestHeader HttpHeaders headers, @RequestBody String body) {
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+                .addValidators(new AsyncAuthValidator(jwtUtils),
+                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN))
+                ).build();
+
+        return head.validate(headers, "").flatMap(value -> {
+            double rating;
+            Gson gson = new Gson();
+            JsonElement ratingJsonObject = gson.fromJson(body, JsonObject.class).get("rating");
+            if (ratingJsonObject == null) {
+                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Body was not configured accordingly. Please see documentation"));
+            }
+            rating = ratingJsonObject.getAsDouble();
+            if (rating < 0.0 || rating > 10.0) {
+                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Rating should be between 0 and 10."));
+            }
+            try {
+                applicationService.setRating(applicationId, rating);
+            } catch (Exception e) {
+                if (e.getClass().equals(NoSuchElementException.class)) {
+                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "There is no submission that is associated to that "
+                                    + "userId and courseId"));
+                }
+                return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "The respective application has not been approved"));
+            }
+            return Mono.empty();
+        });
+    }
+
+    /**
      * Checks if the JWT is valid. If it is, returns the userId.
      *
      * @param authJwt The authentication header received from the client
      * @return The userId
-     * @throws InstanceNotFoundException when the JWT is invalid
      */
     private long getUserIdFromToken(HttpHeaders authJwt) {
         String resolvedToken = jwtUtils.resolveToken(authJwt.getFirst("Authorization"));
         Jws<Claims> userClaims = jwtUtils.validateAndParseClaims(resolvedToken);
         return jwtUtils.getUserId(userClaims);
+    }
+
+    private AsyncValidator buildVariableValidator(Long userId) {
+        AsyncValidator.Builder builder = AsyncValidator.Builder.newBuilder();
+        builder.addValidator(new AsyncAuthValidator(jwtUtils));
+        if (userId != null) {
+            builder.addValidator(new AsyncRoleValidator(jwtUtils,
+                    Set.of(Roles.LECTURER, Roles.ADMIN)));
+
+        } else {
+            builder.addValidator(new AsyncRoleValidator(jwtUtils,
+                    Set.of(Roles.TA)));
+        }
+        return builder.build();
     }
 
 }

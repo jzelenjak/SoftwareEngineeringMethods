@@ -245,4 +245,85 @@ public class ApplicationServiceTest {
                         application1.getCourseId()));
     }
 
+    @Test
+    public void testSetRatingPass() {
+        application1.setStatus(ApplicationStatus.ACCEPTED);
+        when(applicationRepository.findById(application1.getApplicationId()))
+                .thenReturn(Optional.of(application1));
+
+        applicationService.setRating(application1.getApplicationId(), 7.5);
+
+        assertEquals(application1.getRating(), 7.5);
+        verify(applicationRepository).save(application1);
+    }
+
+    @Test
+    public void testSetRatingNotApproved() {
+        application1.setStatus(ApplicationStatus.REJECTED);
+        when(applicationRepository.findById(application1.getApplicationId()))
+                .thenReturn(Optional.of(application1));
+
+        assertThrows(IllegalStateException.class,
+                () -> applicationService.setRating(application1.getApplicationId(), 7.5));
+    }
+
+    @Test
+    public void testSetRatingNoApplication() {
+        application1.setStatus(ApplicationStatus.REJECTED);
+        when(applicationRepository.findById(application1.getApplicationId()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class,
+                () -> applicationService.setRating(application1.getApplicationId(), 7.5));
+    }
+
+    @Test
+    public void testGetRatingPass() {
+        application1.setStatus(ApplicationStatus.ACCEPTED);
+        application1.setRating(7.5);
+        when(applicationRepository
+                .findAllByUserIdAndAndCourseId(application1.getUserId(),
+                        application1.getCourseId()))
+                .thenReturn(List.of(application1));
+
+        assertEquals(applicationService
+                        .getRating(application1.getUserId(), application1.getCourseId()),
+                7.5);
+    }
+
+    @Test
+    public void testGetRatingNotApproved() {
+        application1.setStatus(ApplicationStatus.REJECTED);
+        when(applicationRepository
+                .findAllByUserIdAndAndCourseId(application1.getUserId(),
+                        application1.getCourseId()))
+                .thenReturn(List.of(application1));
+
+        assertThrows(IllegalStateException.class, () -> applicationService
+                        .getRating(application1.getUserId(), application1.getCourseId()));
+    }
+
+    @Test
+    public void testGetRatingNotRated() {
+        application1.setStatus(ApplicationStatus.ACCEPTED);
+        when(applicationRepository
+                .findAllByUserIdAndAndCourseId(application1.getUserId(),
+                        application1.getCourseId()))
+                .thenReturn(List.of(application1));
+
+        assertThrows(IllegalStateException.class, () -> applicationService
+                .getRating(application1.getUserId(), application1.getCourseId()));
+    }
+
+    @Test
+    public void testGetRatingNoApplication() {
+        when(applicationRepository
+                .findAllByUserIdAndAndCourseId(application1.getUserId(),
+                        application1.getCourseId()))
+                .thenReturn(List.of());
+
+        assertThrows(NoSuchElementException.class, () -> applicationService
+                .getRating(application1.getUserId(), application1.getCourseId()));
+    }
+
 }
