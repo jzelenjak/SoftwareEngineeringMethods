@@ -297,6 +297,8 @@ Endpoint for getting a TA's rating for a course. The header of the request shoul
 | 404 NOT FOUND | The specified application does not exist                     |
 ---
 
+## Get a student's applications
+
 ```
 GET /api/hiring-procedure/get-student?userId=<..>
 ```
