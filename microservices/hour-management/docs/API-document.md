@@ -139,10 +139,11 @@ Endpoint used to declare hours. Only **admins** and **TAs** are permitted to dec
 }
 ```
 
-| Response code | Reason                                       |
-| ------------- | -------------------------------------------- |
-| 200 OK        | Successful completion                        |
-| 403 FORBIDDEN | User is not permitted to access the endpoint |
+| Response code   | Reason                                                             |
+| --------------- | ------------------------------------------------------------------ |
+| 200 OK          | Successful completion                                              |
+| 403 FORBIDDEN   | User is not permitted to access the endpoint                       |
+| 400 BAD REQUEST | Declaration is not within valid course time or contract is invalid |
 
 ---
 
