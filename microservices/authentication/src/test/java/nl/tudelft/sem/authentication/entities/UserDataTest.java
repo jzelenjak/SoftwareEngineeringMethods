@@ -72,8 +72,8 @@ class UserDataTest {
     @Test
     void testSetRole() {
         UserData user = new UserData();
-        user.setRole(UserRole.TA);
-        Assertions.assertEquals(UserRole.TA, user.getRole());
+        user.setRole(UserRole.LECTURER);
+        Assertions.assertEquals(UserRole.LECTURER, user.getRole());
     }
 
     @Test
@@ -144,7 +144,7 @@ class UserDataTest {
 
     @Test
     void testEqualsEqual() {
-        UserData otherUserData = new UserData(username, password2, UserRole.TA, userId);
+        UserData otherUserData = new UserData(username, password2, UserRole.LECTURER, userId);
         Assertions.assertEquals(userData, otherUserData);
     }
 
@@ -156,7 +156,7 @@ class UserDataTest {
 
     @Test
     void testHashCodeSame() {
-        UserData otherUserData = new UserData(username, password2, UserRole.TA, userId);
+        UserData otherUserData = new UserData(username, password2, UserRole.ADMIN, userId);
         Assertions.assertEquals(userData.hashCode(), otherUserData.hashCode());
     }
 

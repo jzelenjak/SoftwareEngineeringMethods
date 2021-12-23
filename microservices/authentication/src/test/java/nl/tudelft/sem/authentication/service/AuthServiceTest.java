@@ -84,7 +84,7 @@ class AuthServiceTest {
     @Test
     void testRegisterUserAlreadyExistsByUsername() {
         this.userDataRepository
-                .save(new UserData("Andy", encode("amogus"), UserRole.TA, 3957639L));
+                .save(new UserData("Andy", encode("amogus"), UserRole.STUDENT, 3957639L));
 
         Assertions.assertFalse(this.authService.registerUser("Andy", 4957639L, "password2"),
                 "The user must not have been registered");
@@ -95,7 +95,7 @@ class AuthServiceTest {
     @Test
     void testRegisterUserAlreadyExistsByUserId() {
         this.userDataRepository
-                .save(new UserData("Jegor", encode("amogus"), UserRole.TA, 8105739L));
+                .save(new UserData("Jegor", encode("amogus"), UserRole.STUDENT, 8105739L));
 
         Assertions.assertFalse(this.authService.registerUser("andy", 8105739L, "password2"),
                 "The user must not have been registered");
@@ -127,7 +127,7 @@ class AuthServiceTest {
 
     @Test
     void testLoadUserByUsernameFound() {
-        UserData user = new UserData("GNU", encode("GNU/LINUX"), UserRole.TA, 3452341L);
+        UserData user = new UserData("GNU", encode("GNU/LINUX"), UserRole.STUDENT, 3452341L);
         this.userDataRepository.save(user);
 
         Assertions.assertEquals(user, this.authService.loadUserByUsername("GNU"),
@@ -145,7 +145,8 @@ class AuthServiceTest {
 
     @Test
     void testLoadUserByUserIdFound() {
-        UserData user = new UserData("gosha", encode("myfirendamogus"), UserRole.TA, 5327639L);
+        UserData user = new UserData("gosha", encode("myfirendamogus"),
+                UserRole.STUDENT, 5327639L);
         this.userDataRepository.save(user);
 
         Assertions.assertEquals(user, this.authService.loadUserByUserId(5327639L),
@@ -158,7 +159,7 @@ class AuthServiceTest {
     void testChangePasswordSuccess() {
         String username = "red_kinda_sus_ngl";
         this.userDataRepository
-                .save(new UserData(username, encode("sus"), UserRole.TA, 3425101L));
+                .save(new UserData(username, encode("sus"), UserRole.STUDENT, 3425101L));
 
         this.authService.changePassword(username, "ngl");
 
@@ -167,7 +168,7 @@ class AuthServiceTest {
         Assertions.assertTrue(this.passwordEncoder.matches("ngl",
                 this.userDataRepository.findByUsername(username).get().getPassword()),
                 "The new password must be hashed (encoded)");
-        Assertions.assertEquals(UserRole.TA, this.userDataRepository.findByUsername(username)
+        Assertions.assertEquals(UserRole.STUDENT, this.userDataRepository.findByUsername(username)
                 .get().getRole(), "The role of the user must not have been changed");
         this.userDataRepository.deleteById(username);
     }
