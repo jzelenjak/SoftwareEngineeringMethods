@@ -1,6 +1,7 @@
 package nl.tudelft.sem.courses.integrationtests;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -226,7 +227,7 @@ public class CourseControllerTest {
         List<CourseResponse> courses = objectMapper.readValue(content,
                 new TypeReference<List<CourseResponse>>(){});
         //now we delete the course
-        mockMvc.perform(post("/api/courses/delete/" + courses.get(0).getCourseId())
+        mockMvc.perform(delete("/api/courses/delete/" + courses.get(0).getCourseId())
                 .header(authorizationHeader, ""))
                 .andExpect(status().isOk());
 
@@ -234,14 +235,14 @@ public class CourseControllerTest {
 
     @Test
     void deletingAnonExistentCourse() throws Exception {
-        mockMvc.perform(post("/api/courses/delete/1")
+        mockMvc.perform(delete("/api/courses/delete/1")
                 .header(authorizationHeader, ""))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void noAuthorizationForDeletingCourses() throws Exception {
-        mockMvc.perform(post("/api/courses/delete/1"))
+        mockMvc.perform(delete("/api/courses/delete/1"))
                 .andExpect(status().isForbidden());
     }
 

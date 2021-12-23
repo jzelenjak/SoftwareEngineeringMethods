@@ -13,6 +13,7 @@ import nl.tudelft.sem.courses.services.CourseService;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,16 +53,16 @@ public class CourseController {
      * @return returns a http success or bad request
      */
     @PostMapping("/create")
-    public boolean createNewCourse(@RequestBody CourseRequest request,
+    public Course createNewCourse(@RequestBody CourseRequest request,
                                    @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
         if (checkIfLecturer(webtoken)) {
-            String result = courseService.addNewCourses(request);
-            if (result.contains("Failed")) {
+            Course result = courseService.addNewCourses(request);
+            if (result == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Failed to create new course");
             }
-            return true;
+            return result;
         }
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
@@ -136,7 +137,7 @@ public class CourseController {
      * @param id -  Id of the course we want to delete
      * @return returns a http success or bad request
      */
-    @PostMapping("/delete/{id}")
+    @DeleteMapping("/delete/{id}")
     public boolean deleteCourse(@PathVariable long id,
                                 @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
@@ -209,7 +210,8 @@ public class CourseController {
      * @return list of course ids
      */
     @GetMapping("/get/lecturer/courses/{lecturerId}")
-    public List<Long> getCoursesOfLecturer(@PathVariable long lecturerId, @RequestHeader HttpHeaders httpHeaders) {
+    public List<Long> getCoursesOfLecturer(@PathVariable long lecturerId,
+                                           @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
         if (checkIfLecturer(webtoken) || checkIfStudent(webtoken)) {
             List<Long> courseIds = courseService.getCourseIdForLecturer(lecturerId);
@@ -248,16 +250,16 @@ public class CourseController {
     }
 
     /**
-     * Checks if the lecturer is assigned to a course
+     * Checks if the lecturer is assigned to a course.
      *
      * @param lecturerid - the id of the lecturer
      * @param courseid - the id of the course
      * @return true if lecturer teaches course otherwise false
      */
     @GetMapping("/get/teaches/{lecturerid}/{courseid}")
-    public Boolean doesLecturerTeachesCourse(@PathVariable("lecturerid") long lecturerid,
-                                             @PathVariable("courseid") long courseid,
-                                             @RequestHeader HttpHeaders httpHeaders) {
+    public Boolean doesLecturerTeachCourse(@PathVariable("lecturerid") long lecturerid,
+                                           @PathVariable("courseid") long courseid,
+                                           @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
         if (checkIfLecturer(webtoken) || checkIfStudent(webtoken)) {
             Boolean result = courseService.lecturerTeachesCourse(lecturerid, courseid);

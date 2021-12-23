@@ -79,8 +79,8 @@ public class Grade {
             return false;
         }
         Grade grade1 = (Grade) o;
-        return id == grade1.id||
-                Float.compare(grade1.gradeValue, gradeValue) == 0
+        return id == grade1.id
+                || Float.compare(grade1.gradeValue, gradeValue) == 0
                 && course.equals(grade1.course)
                 && userId == grade1.userId;
     }

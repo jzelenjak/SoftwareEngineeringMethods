@@ -3,7 +3,6 @@ package nl.tudelft.sem.courses.services;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.entities.Course;
@@ -32,7 +31,9 @@ public class CourseService {
      * @param courseRepository - A repository object for courses
      * @param gradeRepository -  A repository object for grades
      */
-    public CourseService(CourseRepository courseRepository, GradeRepository gradeRepository, TeachesRepository teachesRepository) {
+    public CourseService(CourseRepository courseRepository,
+                         GradeRepository gradeRepository,
+                         TeachesRepository teachesRepository) {
         this.courseRepository = courseRepository;
         this.gradeRepository = gradeRepository;
         this.teachesRepository = teachesRepository;
@@ -43,28 +44,34 @@ public class CourseService {
      * The request must be through the controller.
      *
      * @param request - The request
-     * @return String - returns successful string.
+     * @return long - returns positive number upon successful completion,
+     *      otherwise returns -1
      */
-    public String addNewCourses(CourseRequest request)  {
+    public Course addNewCourses(CourseRequest request)  {
         List<Course> courses = courseRepository.findAllByCourseCode(request.getCourseCode());
 
-
-        if (courses.isEmpty()) {
-            Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
-                    request.getFinishDate(), request.getNumStudents());
-            courseRepository.save(newCourse);
-
-            return "Success. Added course";
-        } else {
-            Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
-                    request.getFinishDate(), request.getNumStudents());
-            if (courses.contains(newCourse)) {
-                return "Failed";
-            } else {
+        try {
+            if (courses.isEmpty()) {
+                Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
+                        request.getFinishDate(), request.getNumStudents());
                 courseRepository.save(newCourse);
-                return "Success. Added course";
+                courseRepository.flush();
+                return newCourse;
+            } else {
+                Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
+                        request.getFinishDate(), request.getNumStudents());
+                if (courses.contains(newCourse)) {
+                    return null;
+                } else {
+                    courseRepository.save(newCourse);
+                    courseRepository.flush();
+                    return newCourse;
+                }
             }
+        } catch (Exception e) {
+            return null;
         }
+
     }
 
     /**
@@ -156,7 +163,7 @@ public class CourseService {
         //checking if a grade already exists for this user
         Grade existingGrade = getGrade(request.getUserId(), request.getCourseId());
 
-        if (existingGrade != null && existingGrade.getGradeValue() <= request.getGrade()) {
+        if (existingGrade != null && existingGrade.getGradeValue() >= request.getGrade()) {
             return false;
         }
 
@@ -185,7 +192,8 @@ public class CourseService {
         if (list == null || list.isEmpty()) {
             return null;
         }
-        List<Long> result = list.stream().map(teaches -> teaches.getCourseId()).collect(Collectors.toList());
+        List<Long> result = list.stream().map(teaches -> teaches.getCourseId())
+                .collect(Collectors.toList());
 
         return result;
     }
@@ -198,7 +206,8 @@ public class CourseService {
      * @return true if lecturer teaches course otherwise false
      */
     public Boolean lecturerTeachesCourse(long lecturerId, long courseId) {
-        Optional<Teaches> teachesCourse = teachesRepository.findById(new TeachesPk(courseId, lecturerId));
+        Optional<Teaches> teachesCourse = teachesRepository
+                .findById(new TeachesPk(courseId, lecturerId));
         if (teachesCourse.isEmpty()) {
             return false;
         } else {
@@ -207,7 +216,7 @@ public class CourseService {
     }
 
     /**
-     * assigns a lecturer to a course.
+     * Assigns a lecturer to a course.
      * This is done by creating a teach entity
      *
      * @param lecturerId - lecturer's id
