@@ -25,7 +25,7 @@ public interface HourDeclarationRepository extends JpaRepository<HourDeclaration
 
     @Query("SELECT new nl.tudelft.sem.hour"
             + ".management.dto.StudentHoursTuple(studentId, SUM(declaredHours)) "
-            + "FROM HóourDeclaration "
+            + "FROM HourDeclaration "
             + "WHERE courseId IN :courseIds AND studentId IN :studentIds AND approved = 'true' "
             + "GROUP BY studentId "
             + "HAVING SUM(declaredHours) >= :minHours "

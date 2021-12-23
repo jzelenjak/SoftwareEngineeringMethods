@@ -182,7 +182,7 @@ public class HourDeclarationControllerTest {
                 .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE));
 
         MvcResult mvcResult = mockMvc.perform(post(declarationPath)
-                        .contentType("application/json")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(hourDeclarationRequestNew))
                         .header(authorization, ""))
                 .andReturn();
@@ -214,7 +214,7 @@ public class HourDeclarationControllerTest {
     @Test
     void testPostDeclarationInvalid() throws Exception {
         mockMvc.perform(post(declarationPath)
-                        .contentType("application/json")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content("")
                         .header(authorization, ""))
                 .andExpect(status().isBadRequest());
@@ -226,7 +226,7 @@ public class HourDeclarationControllerTest {
                 .setResponseCode(404));
 
         MvcResult mvcResult = mockMvc.perform(post(declarationPath)
-                        .contentType("application/json")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(hourDeclarationRequestNew))
                         .header(authorization, ""))
                 .andReturn();

@@ -100,7 +100,8 @@ public class HourDeclarationController {
         return head.validate(headers, hourDeclarationRequest.toJson()).flatMap((valid) -> {
             HourDeclaration hourDeclaration = new HourDeclaration(hourDeclarationRequest);
             long declarationId = hourDeclarationRepository.save(hourDeclaration).getDeclarationId();
-            return createInfoResponse(String.format("Declaration with id %s has been successfully saved.",
+            return createInfoResponse(
+                    String.format("Declaration with id %s has been successfully saved.",
                     declarationId));
         });
     }
