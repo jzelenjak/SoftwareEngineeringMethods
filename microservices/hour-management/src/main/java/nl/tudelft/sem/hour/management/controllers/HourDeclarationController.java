@@ -1,20 +1,13 @@
 package nl.tudelft.sem.hour.management.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.Data;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
-import nl.tudelft.sem.hour.management.dto.StatisticsRequest;
-import nl.tudelft.sem.hour.management.dto.StudentHoursTuple;
-import nl.tudelft.sem.hour.management.dto.UserHoursStatisticsRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
 import nl.tudelft.sem.hour.management.services.NotificationService;
@@ -99,14 +92,15 @@ public class HourDeclarationController {
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
                         new AsyncRoleValidator(gatewayConfig, jwtUtils,
-                                Set.of(Roles.ADMIN, Roles.TA))
+                                Set.of(Roles.ADMIN, Roles.STUDENT)),
+                        new AsyncCourseTimeValidator(gatewayConfig),
+                        new AsyncHiringValidator(gatewayConfig)
                 ).build();
-
 
         return head.validate(headers, hourDeclarationRequest.toJson()).flatMap((valid) -> {
             HourDeclaration hourDeclaration = new HourDeclaration(hourDeclarationRequest);
             long declarationId = hourDeclarationRepository.save(hourDeclaration).getDeclarationId();
-            return Mono.just(String.format("Declaration with id %s has been successfully saved.",
+            return createInfoResponse(String.format("Declaration with id %s has been successfully saved.",
                     declarationId));
         });
     }
@@ -286,4 +280,17 @@ public class HourDeclarationController {
             return Mono.just(result);
         });
     }
+
+    /**
+     * Creates an informative response in JSON format.
+     *
+     * @param message is the message to return.
+     * @return a JSON response with the given message.
+     */
+    private Mono<String> createInfoResponse(String message) {
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("message", message);
+        return Mono.just(jsonObject.toString());
+    }
+
 }

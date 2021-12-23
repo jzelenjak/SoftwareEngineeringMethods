@@ -3,6 +3,7 @@ package nl.tudelft.sem.hour.management.validation;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -12,9 +13,10 @@ import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.server.ResponseStatusException;
@@ -32,23 +34,23 @@ public class AsyncHiringValidatorTest {
     private static final String contract = String.format(Locale.ROOT,
             "{\"studentId\": %d, \"courseId\": %d, \"maxHours\": %f}", 1, 1, 15.0);
 
-    private static MockWebServer mockWebServer;
+    private transient MockWebServer mockWebServer;
 
-    private static GatewayConfig gatewayConfig;
+    private transient GatewayConfig gatewayConfig;
 
-    @BeforeAll
-    static void setup() throws IOException {
+    @BeforeEach
+    private void setupEach() throws IOException {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
 
         HttpUrl url = mockWebServer.url("");
-        gatewayConfig = new GatewayConfig();
-        gatewayConfig.setHost(url.host());
-        gatewayConfig.setPort(url.port());
+        gatewayConfig = Mockito.mock(GatewayConfig.class);
+        when(gatewayConfig.getHost()).thenReturn(url.host());
+        when(gatewayConfig.getPort()).thenReturn(url.port());
     }
 
-    @AfterAll
-    static void tearDown() throws IOException {
+    @AfterEach
+    void tearDown() throws IOException {
         mockWebServer.shutdown();
     }
 

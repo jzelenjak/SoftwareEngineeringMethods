@@ -57,7 +57,7 @@ public class StatisticsController {
                         new AsyncRoleValidator(gatewayConfig, jwtUtils,
                                 Set.of(AsyncRoleValidator.Roles.ADMIN,
                                         AsyncRoleValidator.Roles.LECTURER,
-                                        AsyncRoleValidator.Roles.TA))
+                                        AsyncRoleValidator.Roles.STUDENT))
                 ).build();
 
         return head.validate(headers, "").flatMap(valid -> {

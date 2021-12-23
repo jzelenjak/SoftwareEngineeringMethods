@@ -16,7 +16,6 @@ public class AsyncRoleValidator extends AsyncBaseValidator {
     public enum Roles {
         STUDENT,
         LECTURER,
-        TA,
         ADMIN
     }
 
