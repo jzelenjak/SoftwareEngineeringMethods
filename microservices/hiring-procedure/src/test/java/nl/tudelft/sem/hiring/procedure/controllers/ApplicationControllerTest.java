@@ -15,6 +15,7 @@ import com.google.gson.JsonObject;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -31,6 +32,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -76,6 +78,7 @@ public class ApplicationControllerTest {
     private static final String COURSE_ID_PARAM = "courseId=";
     private static final String COURSE_ID_STR = "courseId";
     private static final String USER_ID_PARAM = "userId=";
+    private static final String NUMBER_OF_STUDENTS = "numberOfStudents";
     private static final String USER_ID_STR = "userId";
     private static final String APPLICATION_ID_PARAM = "applicationId";
     private static final String PARAM_STARTER = "?";
@@ -89,6 +92,9 @@ public class ApplicationControllerTest {
     private static final String JWT = "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoic3R1ZGVudCIsIklz"
             + "c3VlciI6Iklzc3VlciIsIlVzZXJuYW1lIjoibXRvYWRlciIsImV4cCI6MTYzODYzNDYyMiwiaWF0Ijo"
             + "xNjM4NjM0NjIyfQ.atOFZMwAy3ERmNLmCtrxTGd1eKo1nHeTGAoM9-tXZys";
+
+    private transient Application application
+            = new Application(userId, courseId, LocalDateTime.now());
 
     @BeforeEach
     private void setupEach() throws IOException {
@@ -126,13 +132,13 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void controllerNoEndpointTest() throws Exception {
+    public void testControllerNoEndpoint() throws Exception {
         mockMvc.perform(get("/api/hiring-procedure/non-existing"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    public void applyEndpointTestPass() throws Exception {
+    public void testApplyEndpointPass() throws Exception {
         // Set mocks
         when(jwtUtils.getUserId(claims)).thenReturn(userId);
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
@@ -161,7 +167,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointUserNotStudent() throws Exception {
+    public void testApplyEndpointUserNotStudent() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
@@ -175,13 +181,14 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointDeadlinePassed() throws Exception {
+    public void testApplyEndpointDeadlinePassed() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         // Register listener
         JsonObject json = new JsonObject();
-        json.addProperty(START_TIME, ZonedDateTime.now().plusWeeks(1).toString());
+        json.addProperty(START_TIME, ZonedDateTime.now()
+                .plusWeeks(1).toString());
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setBody(json.toString()));
@@ -202,7 +209,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointUserApplied() throws Exception {
+    public void testApplyEndpointUserApplied() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
         when(jwtUtils.getUserId(claims)).thenReturn(userId);
@@ -231,7 +238,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointCourseNotFound() throws Exception {
+    public void testApplyEndpointCourseNotFound() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
@@ -255,7 +262,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointInvalidToken() throws Exception {
+    public void testApplyEndpointInvalidToken() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
@@ -271,7 +278,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getAllEndpointPass() throws Exception {
+    public void testGetAllEndpointPass() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
@@ -285,7 +292,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getAllEndpointNotLecturer() throws Exception {
+    public void testGetAllEndpointNotLecturer() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
@@ -299,7 +306,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getAllEndpointInvalidToken() throws Exception {
+    public void testGetAllEndpointInvalidToken() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
@@ -314,7 +321,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getApplicationsEndpointPass() throws Exception {
+    public void testGetApplicationsEndpointPass() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
@@ -329,7 +336,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getApplicationsEndpointNotLecturer() throws Exception {
+    public void testGetApplicationsEndpointNotLecturer() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
@@ -344,7 +351,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getApplicationsEndpointInvalidToken() throws Exception {
+    public void testGetApplicationsEndpointInvalidToken() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
@@ -360,10 +367,12 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointTestPass() throws Exception {
+    public void testHireEndpointPass() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(applicationService.checkCandidate(userId, courseId)).thenReturn(true);
+        when(applicationService.getApplication(userId, courseId))
+                .thenReturn(Optional.of(application));
 
         // Register listener
         JsonObject json = new JsonObject();
@@ -377,9 +386,9 @@ public class ApplicationControllerTest {
         enqueueZeroInitCourseInfo();
 
         // Perform the call
-        MvcResult result = mockMvc.perform(post(HIRE_API
-                        + PARAM_STARTER + USER_ID_PARAM + userId
-                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+        MvcResult result = mockMvc.perform(post(HIRE_API)
+                        .param("userId", String.valueOf(userId))
+                        .param("course" + "Id", String.valueOf(courseId))
                         .header(HttpHeaders.AUTHORIZATION, JWT))
                 .andReturn();
 
@@ -396,7 +405,47 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointInvalidToken() throws Exception {
+    public void testHireEndpointApplicationNotFoundFailed() throws Exception {
+        // Set mocks
+        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
+        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        when(applicationService.checkCandidate(userId, courseId)).thenReturn(true);
+
+        // Register listener and setup url
+        HttpUrl url = mockWebServer.url(BASE_URL);
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
+        JsonObject json = new JsonObject();
+        json.addProperty(START_TIME, courseStartNextYear.toString());
+        json.addProperty(NUMBER_OF_STUDENTS, 0);
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(json.toString()));
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200));
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(HIRE_API)
+                        .param("userId", String.valueOf(userId))
+                        .param("course" + "Id", String.valueOf(courseId))
+                        .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
+
+        // Extra checks
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest);
+        assertEquals(GET_METHOD, recordedRequest.getMethod());
+        recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest);
+        assertEquals(GET_METHOD, recordedRequest.getMethod());
+    }
+
+    @Test
+    public void testHireEndpointInvalidToken() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
@@ -413,7 +462,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointNotLecturer() throws Exception {
+    public void testHireEndpointNotLecturer() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
@@ -429,7 +478,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointCourseNotFound() throws Exception {
+    public void testHireEndpointCourseNotFound() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
@@ -455,7 +504,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointUserNotFound() throws Exception {
+    public void testHireEndpointUserNotFound() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
@@ -488,7 +537,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointNotViable() throws Exception {
+    public void testHireEndpointNotViable() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(applicationService.checkCandidate(userId, courseId)).thenReturn(false);
@@ -496,7 +545,7 @@ public class ApplicationControllerTest {
         // Register listener
         JsonObject json = new JsonObject();
         json.addProperty(START_TIME, courseStartNextYear.toString());
-        json.addProperty("numberOfStudents", 0);
+        json.addProperty(NUMBER_OF_STUDENTS, 0);
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setBody(json.toString()));
@@ -649,6 +698,7 @@ public class ApplicationControllerTest {
         verify(applicationService, times(1)).rejectApplication(applicationId);
     }
 
+
     @Test
     void testRejectNonExisting() throws Exception {
         // Application info
@@ -707,7 +757,9 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    void getOwnContractTest() throws Exception {
+    void testGetOwnContractSuccess() throws Exception {
+        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
+        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         // Perform the call
@@ -721,7 +773,9 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    void getContractTest() throws Exception {
+    void testGetContractSuccess() throws Exception {
+        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
+        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
         // Perform the call

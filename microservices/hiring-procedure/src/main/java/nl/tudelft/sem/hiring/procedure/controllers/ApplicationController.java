@@ -19,6 +19,7 @@ import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
 import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
 import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
+import nl.tudelft.sem.hiring.procedure.services.NotificationService;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncAuthValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncCourseExistsValidator;
@@ -53,6 +54,7 @@ public class ApplicationController {
     private static final String INVALID_TOKEN = "Provided token is not valid";
 
     private ApplicationService applicationService;
+    private final NotificationService notificationService;
     private CourseInfoResponseCache courseInfoCache;
     private WebClient webClient;
     private GatewayConfig gatewayConfig;
@@ -61,16 +63,19 @@ public class ApplicationController {
     /**
      * Constructor for the Application Controller.
      *
-     * @param applicationService Specifies the ApplicationService.
-     * @param courseInfoCache    course information cache.
-     * @param jwtUtils           JWT utility library.
-     * @param gatewayConfig      is the gateway configuration.
+     * @param applicationService      Specifies the ApplicationService.
+     * @param notificationService     the notification service.
+     * @param courseInfoCache         the course info response cache.
+     * @param jwtUtils                the jwt utils.
+     * @param gatewayConfig           the gateway config.
      */
     @Autowired
     public ApplicationController(ApplicationService applicationService,
+                                 NotificationService notificationService,
                                  CourseInfoResponseCache courseInfoCache, JwtUtils jwtUtils,
                                  GatewayConfig gatewayConfig) {
         this.applicationService = applicationService;
+        this.notificationService = notificationService;
         this.courseInfoCache = courseInfoCache;
         this.webClient = WebClient.create();
         this.jwtUtils = jwtUtils;
@@ -176,8 +181,22 @@ public class ApplicationController {
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "User is not a viable candidate"));
             }
+            Optional<Application> optionalApplication =
+                    applicationService.getApplication(userId, courseId);
+            if (optionalApplication.isEmpty()) {
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, String.format(
+                        "Application with userId %s and courseId %s has not been found.",
+                                userId, courseId)));
+            }
+            Application application = optionalApplication.get();
             // Register hiring
             applicationService.hire(userId, courseId);
+
+            // Send notification request
+            notificationService.notify(userId,
+                    String.format("Your application with id %s has been approved.",
+                            application.getApplicationId()),
+                    authHeader.getFirst(HttpHeaders.AUTHORIZATION));
             return Mono.empty();
         });
     }
@@ -216,6 +235,12 @@ public class ApplicationController {
 
             // Change the status of the application to rejected
             applicationService.rejectApplication(applicationId);
+
+            // Send notification request
+            notificationService.notify(application.getUserId(),
+                    String.format("Your application with id %s has been rejected.",
+                            application.getApplicationId()),
+                    headers.getFirst(HttpHeaders.AUTHORIZATION));
             return Mono.empty();
         });
     }
