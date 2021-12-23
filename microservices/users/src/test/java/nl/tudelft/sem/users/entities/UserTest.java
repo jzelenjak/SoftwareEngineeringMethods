@@ -99,7 +99,7 @@ class UserTest {
 
         Assertions
                 .assertThatThrownBy(() ->
-                        this.repo.save(new User(netId, "amogus", "sus", UserRole.CANDIDATE_TA)))
+                        this.repo.save(new User(netId, "amogus", "sus", UserRole.STUDENT)))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 

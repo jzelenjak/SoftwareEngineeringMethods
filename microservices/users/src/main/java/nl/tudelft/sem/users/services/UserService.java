@@ -2,6 +2,7 @@ package nl.tudelft.sem.users.services;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import nl.tudelft.sem.users.entities.User;
 import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.repositories.UserRepository;
@@ -17,7 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final transient UserRepository userRepository;
-
+    private final transient Set<UserRole> rolesAllowedToChange;
+    private final transient Set<UserRole> rolesForLecturersToChange;
 
     /**
      * Instantiates a new UserService object.
@@ -26,12 +28,17 @@ public class UserService {
      */
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
+        this.rolesAllowedToChange = Set.of(UserRole.LECTURER, UserRole.ADMIN);
+        this.rolesForLecturersToChange = Set.of(UserRole.STUDENT, UserRole.TA);
     }
 
 
     /**
      * Registers a new user if (s)he does not already exist and if the provided data are valid.
-     * The role is initially set to STUDENT for all users.
+     *      The role is initially set to STUDENT for all users.
+     * Regarding TA's feedback on many if statements: unfortunately since Java doesn't allow
+     *   switch statements on multiple variables, I could not fully incorporate the feedback.
+     *   However, I tried to refactor the method a bit, and I think this is more clean.
      *
      * @param netId         the netID (username) of the user
      * @param firstName     the name of the user
@@ -39,12 +46,12 @@ public class UserService {
      * @return true is a user has been successfully registered;
      *         false if a user with the same netID already exists
      * @throws DataIntegrityViolationException if netID already exists
-     *          and if any of the netID, first name and last name are blank, empty or null
+     *          and if any of the netID, first name and last name are blank or null
      */
     public long registerUser(String netId, String firstName, String lastName)
             throws DataIntegrityViolationException {
 
-        if (netId == null || netId.isBlank()) {
+        if (nullOrBlank(netId)) {
             throw new DataIntegrityViolationException("Please specify the netID!");
         }
 
@@ -53,17 +60,12 @@ public class UserService {
             throw new DataIntegrityViolationException(msg);
         }
 
-        if (firstName == null || firstName.isBlank()) {
-            throw new DataIntegrityViolationException("Please specify the first name!");
+        if (nullOrBlank(firstName) || nullOrBlank(lastName)) {
+            throw new DataIntegrityViolationException("Please specify the first and last name!");
         }
 
-        if (lastName == null || lastName.isBlank()) {
-            throw new DataIntegrityViolationException("Please specify the last name!");
-        }
-
-        User user = this.userRepository
-                .save(new User(netId, firstName, lastName, UserRole.STUDENT));
-        return user.getUserId();
+        return this.userRepository
+            .save(new User(netId, firstName, lastName, UserRole.STUDENT)).getUserId();
     }
 
 
@@ -124,7 +126,10 @@ public class UserService {
 
     /**
      * A helper method that checks if the requester is allowed to change
-     *                          the role of a user with user ID userId.
+     *      the role of a user with user ID userId.
+     * Regarding TA's feedback on many if statements: unfortunately since Java doesn't allow
+     *   switch statements on multiple variables, I could not fully incorporate the feedback.
+     *   However, I tried to refactor the method a bit, and I think this is more clean.
      *
      * @param userId            the user ID of the user
      * @param newRole           the new role of the user
@@ -133,30 +138,21 @@ public class UserService {
      */
     public boolean isAllowedToChangeRole(long userId, UserRole newRole, UserRole requesterRole) {
         // Only admins and lecturers can change permissions
-        if (!requesterRole.equals(UserRole.ADMIN) && !requesterRole.equals(UserRole.LECTURER)) {
+        if (!this.rolesAllowedToChange.contains(requesterRole)) {
             return false;
         }
 
-        // Only an admin can make someone an admin
-        if (newRole.equals(UserRole.ADMIN) && !requesterRole.equals(UserRole.ADMIN)) {
+        Optional<User> user = this.userRepository.findByUserId(userId);
+        if (user.isEmpty()) {
             return false;
         }
 
-        // Only an admin can make someone a lecturer
-        if (newRole.equals(UserRole.LECTURER) && !requesterRole.equals(UserRole.ADMIN)) {
-            return false;
+        // Lecturer can only change a student's role to TA or a TA's role to student
+        if (requesterRole.equals(UserRole.LECTURER)) {
+            return (rolesForLecturersToChange.contains(user.get().getRole())
+                        && rolesForLecturersToChange.contains(newRole));
         }
-
-        // Both lecturers and admins can make someone else a TA, CANDIDATE_TA or STUDENT
-
-        Optional<User> optionalUser = this.userRepository.findByUserId(userId);
-        if (optionalUser.isEmpty()) {
-            return false;
-        }
-        User user = optionalUser.get();
-
-        // Only an admin can downgrade another admin
-        return !user.getRole().equals(UserRole.ADMIN) || requesterRole.equals(UserRole.ADMIN);
+        return true;
     }
 
 
@@ -185,5 +181,15 @@ public class UserService {
      */
     public boolean isAllowedToDelete(UserRole requesterRole) {
         return requesterRole.equals(UserRole.ADMIN);
+    }
+
+    /**
+     * A helper method that checks whether a string is null or blank.
+     *
+     * @param str   the string to check
+     * @return true if the string is null or blank, false otherwise
+     */
+    private boolean nullOrBlank(String str) {
+        return str == null || str.isBlank();
     }
 }
