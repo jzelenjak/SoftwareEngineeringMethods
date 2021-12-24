@@ -7,10 +7,7 @@ import nl.tudelft.sem.users.entities.User;
 import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.repositories.UserRepository;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -25,89 +22,89 @@ class UserServiceTest {
     @Autowired
     private transient UserService userService;
 
-    private final transient String netId = "amogus@student.tudelft.nl";
+    private final transient String username = "amogus@student.tudelft.nl";
 
     /**
      * Tests for registerUser method.
      */
 
     @Test
-    void registerUserNetIdNullTest() {
+    void testRegisterUserUsernameNull() {
         Assertions
-                .assertThatThrownBy(() ->
-                        this.userService.registerUser(null, "Amogus", "Amogusson"))
-                .isInstanceOf(DataIntegrityViolationException.class);
+            .assertThatThrownBy(() ->
+                    this.userService.registerUser(null, "Amogus", "Amogusson"))
+            .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
-    void registerUserNetIdBlankTest() {
+    void testRegisterUserUsernameBlank() {
         Assertions
-                .assertThatThrownBy(() ->
-                        userService.registerUser("    ", "Amogus", "Amogussen"))
-                .isInstanceOf(DataIntegrityViolationException.class);
+            .assertThatThrownBy(() ->
+                    userService.registerUser("    ", "Amogus", "Amogussen"))
+            .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
-    void registerUserNetIdAlreadyExistsTest() {
-        this.userRepository.save(new User(netId, "a", "mogus", UserRole.TA));
+    void testRegisterUserUsernameAlreadyExists() {
+        this.userRepository.save(new User(username, "a", "mogus", UserRole.STUDENT));
 
         Assertions
-                .assertThatThrownBy(() -> userService.registerUser(netId, "amo", "gus"))
-                .isInstanceOf(DataIntegrityViolationException.class);
+            .assertThatThrownBy(() -> userService.registerUser(username, "amo", "gus"))
+            .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
-    void registerUserFirstNameNullTest() {
+    void testRegisterUserFirstNameNull() {
         Assertions
-                .assertThatThrownBy(() -> this.userService.registerUser(netId, null, "ogus"))
-                .isInstanceOf(DataIntegrityViolationException.class);
+            .assertThatThrownBy(() -> this.userService.registerUser(username, null, "ogus"))
+            .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
-    void registerUserFirstNameBlankTest() {
+    void testRegisterUserFirstNameBlank() {
         Assertions
-                .assertThatThrownBy(() -> this.userService.registerUser(netId, "", "ogus"))
-                .isInstanceOf(DataIntegrityViolationException.class);
+            .assertThatThrownBy(() -> this.userService.registerUser(username, "", "ogus"))
+            .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
-    void registerUserLastNameNullTest() {
+    void testRegisterUserLastNameNull() {
         Assertions
-                .assertThatThrownBy(() -> this.userService.registerUser(netId, "amog", null))
-                .isInstanceOf(DataIntegrityViolationException.class);
+            .assertThatThrownBy(() -> this.userService.registerUser(username, "amog", null))
+            .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
-    void registerUserLastNameBlankTest() {
+    void testRegisterUserLastNameBlank() {
         Assertions
-                .assertThatThrownBy(() -> this.userService.registerUser(netId, "amog", " "))
-                .isInstanceOf(DataIntegrityViolationException.class);
+            .assertThatThrownBy(() -> this.userService.registerUser(username, "amog", " "))
+            .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
-    void registerUserSuccessfulTest() {
+    void testRegisterUserSuccessful() {
         long id = userService.registerUser("oh", "my", "God");
         Assertions.assertThat(id).isGreaterThan(0L);
     }
 
 
     /**
-     * Tests for getUserByNetId method.
+     * Tests for getUserByUsername method.
      */
 
 
     @Test
-    void getUserByNetIdFoundTest() {
-        String netId = "impostor@tudelft.nl";
-        User userFromRepo = userRepository.save(new User(netId, "i", "mpostor", UserRole.ADMIN));
-        Optional<User> userOptional = userService.getUserByNetId(netId);
+    void testGetUserByUsernameFound() {
+        String username = "impostor@tudelft.nl";
+        User userFromRepo = userRepository.save(new User(username, "i", "mpostor", UserRole.ADMIN));
+        Optional<User> userOptional = userService.getUserByUsername(username);
 
         Assertions.assertThat(userOptional).isPresent().get().isEqualTo(userFromRepo);
     }
 
     @Test
-    void getUserByNetIdNotFoundTest() {
-        Assertions.assertThat(userService.getUserByNetId("susimpostor@tudelft.nl")).isEmpty();
+    void testGetUserByUsernameNotFound() {
+        Assertions.assertThat(userService.getUserByUsername("susimpostor@tudelft.nl")).isEmpty();
     }
 
 
@@ -116,16 +113,16 @@ class UserServiceTest {
      */
 
     @Test
-    void getUserByUserIdFoundTest() {
-        User user = userRepository.save(new User("aaa", "bbb", "ccc", UserRole.STUDENT));
+    void testGetUserByUserIdFound() {
+        User user = userRepository.save(new User(username, "bbb", "ccc", UserRole.STUDENT));
         long userId = user.getUserId();
 
         Assertions
-                .assertThat(userService.getUserByUserId(userId)).isPresent().get().isEqualTo(user);
+            .assertThat(userService.getUserByUserId(userId)).isPresent().get().isEqualTo(user);
     }
 
     @Test
-    void getUserByUserIdNotFoundTest() {
+    void testGetUserByUserIdNotFound() {
         Optional<User> userOptional = userService.getUserByUserId(3412235L);
 
         Assertions.assertThat(userOptional).isEmpty();
@@ -137,7 +134,7 @@ class UserServiceTest {
      */
 
     @Test
-    void getUsersByRoleFoundTest() {
+    void testGetUsersByRoleFound() {
         List<User> usersFromRepo = new ArrayList<>();
         usersFromRepo.add(userRepository.save(new User("u1", "f1", "l1", UserRole.LECTURER)));
         usersFromRepo.add(userRepository.save(new User("u2", "f2", "l2", UserRole.LECTURER)));
@@ -145,11 +142,11 @@ class UserServiceTest {
         userRepository.save(new User("u4", "f4", "l4", UserRole.ADMIN));
 
         Assertions
-                .assertThat(userService.getUsersByRole(UserRole.LECTURER)).isEqualTo(usersFromRepo);
+            .assertThat(userService.getUsersByRole(UserRole.LECTURER)).isEqualTo(usersFromRepo);
     }
 
     @Test
-    void getUsersByRoleNotFoundTest() {
+    void testGetUsersByRoleNotFound() {
         Assertions.assertThat(userService.getUsersByRole(UserRole.ADMIN)).isEmpty();
     }
 
@@ -159,166 +156,41 @@ class UserServiceTest {
      */
 
     @Test
-    void changeRoleOnlyAdminsAndLecturersCanChangeRolesTest() {
-        User user = userRepository.save(new User(netId, "p", "y", UserRole.TA));
-        long userId = user.getUserId();
-
+    void testChangeRoleUserNotFound() {
         Assertions
-                .assertThat(userService.changeRole(userId, UserRole.STUDENT, UserRole.TA))
-                .isFalse();
-        Optional<User> savedUser = userService.getUserByUserId(userId);
-        Assertions.assertThat(savedUser).isPresent();
-        Assertions.assertThat(savedUser.get().getRole()).isEqualTo(UserRole.TA);
+            .assertThat(userService.changeRole(63452L, UserRole.STUDENT))
+            .isFalse();
     }
 
     @Test
-    void changeRoleOnlyAdminCanMakeOthersAnAdminFalseTest() {
-        User user = userRepository.save(new User(netId, "m", "s", UserRole.TA));
+    void testChangeRoleSuccessful() {
+        User user = userRepository.save(new User(username, "ngl", "blob", UserRole.STUDENT));
         long userId = user.getUserId();
 
         Assertions
-                .assertThat(userService.changeRole(userId, UserRole.ADMIN, UserRole.LECTURER))
-                .isFalse();
-        Optional<User> savedUser = userService.getUserByUserId(userId);
-        Assertions.assertThat(savedUser).isPresent();
-        Assertions.assertThat(savedUser.get().getRole()).isEqualTo(UserRole.TA);
-    }
-
-    @Test
-    void changeRoleOnlyAdminCanMakeOthersAnAdminTrueTest() {
-        User user = userRepository.save(new User(netId, "add", "ddd", UserRole.LECTURER));
-        long userId = user.getUserId();
-
-        Assertions
-                .assertThat(userService.changeRole(userId, UserRole.ADMIN, UserRole.ADMIN))
-                .isTrue();
-
-        Optional<User> savedUser = userService.getUserByUserId(user.getUserId());
-        Assertions.assertThat(savedUser).isPresent();
-        Assertions.assertThat(savedUser.get().getRole()).isEqualTo(UserRole.ADMIN);
-    }
-
-    @Test
-    void changeRoleOnlyAdminCanMakeOthersA_LecturerFalseTest() {
-        User user = userRepository.save(new User(netId, "mammm", "omgus", UserRole.TA));
-        long userId = user.getUserId();
-
-        Assertions
-                .assertThat(userService.changeRole(userId, UserRole.LECTURER, UserRole.LECTURER))
-                .isFalse();
-        Optional<User> savedUser = userService.getUserByUserId(userId);
-        Assertions.assertThat(savedUser).isPresent();
-        Assertions.assertThat(savedUser.get().getRole()).isEqualTo(UserRole.TA);
-    }
-
-    @Test
-    void changeRoleOnlyAdminCanMakeOthersA_LecturerTrueTest() {
-        User user = userRepository.save(new User(netId, "ammm", "ogggus", UserRole.TA));
-        long userId = user.getUserId();
-
-        Assertions
-                .assertThat(userService.changeRole(userId, UserRole.LECTURER, UserRole.ADMIN))
-                .isTrue();
-
+            .assertThat(userService.changeRole(userId, UserRole.LECTURER))
+            .isTrue();
         Optional<User> savedUser = userService.getUserByUserId(userId);
         Assertions.assertThat(savedUser).isPresent();
         Assertions.assertThat(savedUser.get().getRole()).isEqualTo(UserRole.LECTURER);
     }
 
-    @Test
-    void changeRoleOnlyAdminCanDowngradeAnotherAdminFalseTest() {
-        User user = userRepository.save(new User(netId, "amogu", "s", UserRole.ADMIN));
-        long userId = user.getUserId();
-
-        Assertions
-                .assertThat(userService.changeRole(userId, UserRole.STUDENT, UserRole.LECTURER))
-                .isFalse();
-        Optional<User> savedUser = userService.getUserByUserId(userId);
-        Assertions.assertThat(savedUser).isPresent();
-        Assertions.assertThat(savedUser.get().getRole()).isEqualTo(UserRole.ADMIN);
-    }
-
-    @Test
-    void changeRoleOnlyAdminCanDowngradeAnotherAdminTrueTest() {
-        User user = userRepository.save(new User(netId, "amoguu", "sss", UserRole.ADMIN));
-        long userId = user.getUserId();
-
-        Assertions
-                .assertThat(userService.changeRole(userId, UserRole.STUDENT, UserRole.ADMIN))
-                .isTrue();
-
-        Optional<User> savedUser = userService.getUserByUserId(userId);
-        Assertions.assertThat(savedUser).isPresent();
-        Assertions.assertThat(savedUser.get().getRole()).isEqualTo(UserRole.STUDENT);
-
-    }
-
-    @Test
-    void changeRoleUserNotFoundTest() {
-        Assertions
-                .assertThat(userService.changeRole(63452L, UserRole.STUDENT, UserRole.ADMIN))
-                .isFalse();
-    }
-
-    @Test
-    void changeRoleFromStudentToTaSuccessfulTest() {
-        User user = userRepository.save(new User(netId, "ngl", "blob", UserRole.STUDENT));
-        long userId = user.getUserId();
-
-        Assertions
-                .assertThat(userService.changeRole(userId, UserRole.TA, UserRole.LECTURER))
-                .isTrue();
-        Optional<User> savedUser = userService.getUserByUserId(userId);
-        Assertions.assertThat(savedUser).isPresent();
-        Assertions.assertThat(savedUser.get().getRole()).isEqualTo(UserRole.TA);
-    }
-
-    @Test
-    void changeRoleFromAdminToStudentFailureTest() {
-        User user = userRepository.save(new User(netId, "nglb", "ob", UserRole.ADMIN));
-        long userId = user.getUserId();
-
-        Assertions
-                .assertThat(userService.changeRole(userId, UserRole.STUDENT, UserRole.LECTURER))
-                .isFalse();
-        Optional<User> savedUser = userService.getUserByUserId(userId);
-        Assertions.assertThat(savedUser).isPresent();
-        Assertions.assertThat(savedUser.get().getRole()).isEqualTo(UserRole.ADMIN);
-    }
-
-    @Test
-    void changeRoleFromStudentToAdminFailureTest() {
-        User user = userRepository.save(new User(netId, "b", "lob", UserRole.STUDENT));
-        long userId = user.getUserId();
-
-        Assertions
-                .assertThat(userService.changeRole(userId, UserRole.ADMIN, UserRole.LECTURER))
-                .isFalse();
-        Optional<User> savedUser = userService.getUserByUserId(userId);
-        Assertions.assertThat(savedUser).isPresent();
-        Assertions.assertThat(savedUser.get().getRole()).isEqualTo(UserRole.STUDENT);
-    }
 
     /**
      * Tests for deleteUserByUserId method.
      */
 
-
     @Test
-    void deleteUserByUserIdNotAdminTest() {
-        User user = userRepository.save(new User("4@tudelft.nl", "bj", "lb", UserRole.STUDENT));
-        long userId = user.getUserId();
-
-        Assertions.assertThat(userService.deleteUserByUserId(userId, UserRole.LECTURER)).isFalse();
-        Assertions.assertThat(userService.getUserByUserId(userId)).isPresent();
+    void testDeleteUserByUserIdUserNotFound() {
+        Assertions.assertThat(userService.deleteUserByUserId(4242442L)).isFalse();
     }
 
     @Test
-    void deleteUserByUserIdSuccessfulTest() {
+    void testDeleteUserByUserIdSuccessful() {
         User user = userRepository.save(new User("blob@tudelft.nl", "b", "lob", UserRole.STUDENT));
         long userId = user.getUserId();
 
-        Assertions.assertThat(userService.deleteUserByUserId(userId, UserRole.ADMIN)).isTrue();
+        Assertions.assertThat(userService.deleteUserByUserId(userId)).isTrue();
         Assertions.assertThat(userService.getUserByUserId(userId)).isEmpty();
     }
 }
