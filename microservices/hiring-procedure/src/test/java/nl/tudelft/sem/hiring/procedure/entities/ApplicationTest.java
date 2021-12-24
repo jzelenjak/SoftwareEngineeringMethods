@@ -14,6 +14,8 @@ public class ApplicationTest {
         Application application = new Application(5211111, 1250, time);
         assertEquals(application.getUserId(), 5211111);
         assertEquals(application.getCourseId(), 1250);
+        assertEquals(application.getMaxHours(), 200);
+        assertEquals(application.getRating(), -1.0);
     }
 
     @Test
@@ -23,5 +25,7 @@ public class ApplicationTest {
         assertEquals(application.getUserId(), 5211111);
         assertEquals(application.getCourseId(), 1250);
         assertEquals(application.getApplicationId(), 1);
+        assertEquals(application.getMaxHours(), 200);
+        assertEquals(application.getRating(), -1.0);
     }
 }

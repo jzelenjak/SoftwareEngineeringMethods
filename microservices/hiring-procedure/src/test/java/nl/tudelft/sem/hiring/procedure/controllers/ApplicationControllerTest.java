@@ -2,6 +2,7 @@ package nl.tudelft.sem.hiring.procedure.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -14,7 +15,9 @@ import com.google.gson.JsonObject;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
@@ -29,6 +32,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -38,6 +42,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -73,15 +78,27 @@ public class ApplicationControllerTest {
     private static final String COURSE_ID_PARAM = "courseId=";
     private static final String COURSE_ID_STR = "courseId";
     private static final String USER_ID_PARAM = "userId=";
+    private static final String NUMBER_OF_STUDENTS = "numberOfStudents";
+    private static final String USER_ID_STR = "userId";
+    private static final String APPLICATION_ID_PARAM = "applicationId";
     private static final String PARAM_STARTER = "?";
     private static final String PARAM_CONTINUER = "&";
     private static final String APPLY_API = "/api/hiring-procedure/apply";
     private static final String HIRE_API = "/api/hiring-procedure/hire-TA";
+    private static final String GET_HOURS_API = "/api/hiring-procedure/get-max-hours";
+    private static final String SET_HOURS_API = "/api/hiring-procedure/set-max-hours";
+    private static final String GET_RATING_API = "/api/hiring-procedure/get-rating";
+    private static final String SET_RATING_API = "/api/hiring-procedure/rate";
     private static final String GET_APPLICATIONS_API = "/api/hiring-procedure/get-applications";
     private static final String GET_METHOD = "GET";
+    private static final String NOT_FOUND_ERROR = "Application not found.";
+    private static final String RATING_STRING = "rating";
     private static final String JWT = "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoic3R1ZGVudCIsIklz"
             + "c3VlciI6Iklzc3VlciIsIlVzZXJuYW1lIjoibXRvYWRlciIsImV4cCI6MTYzODYzNDYyMiwiaWF0Ijo"
             + "xNjM4NjM0NjIyfQ.atOFZMwAy3ERmNLmCtrxTGd1eKo1nHeTGAoM9-tXZys";
+
+    private transient Application application
+            = new Application(userId, courseId, LocalDateTime.now());
 
     @BeforeEach
     private void setupEach() throws IOException {
@@ -119,13 +136,13 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void controllerNoEndpointTest() throws Exception {
+    public void testControllerNoEndpoint() throws Exception {
         mockMvc.perform(get("/api/hiring-procedure/non-existing"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    public void applyEndpointTestPass() throws Exception {
+    public void testApplyEndpointPass() throws Exception {
         // Set mocks
         when(jwtUtils.getUserId(claims)).thenReturn(userId);
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
@@ -154,7 +171,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointUserNotStudent() throws Exception {
+    public void testApplyEndpointUserNotStudent() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
@@ -168,13 +185,14 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointDeadlinePassed() throws Exception {
+    public void testApplyEndpointDeadlinePassed() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         // Register listener
         JsonObject json = new JsonObject();
-        json.addProperty(START_TIME, ZonedDateTime.now().plusWeeks(1).toString());
+        json.addProperty(START_TIME, ZonedDateTime.now()
+                .plusWeeks(1).toString());
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setBody(json.toString()));
@@ -195,7 +213,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointUserApplied() throws Exception {
+    public void testApplyEndpointUserApplied() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
         when(jwtUtils.getUserId(claims)).thenReturn(userId);
@@ -224,7 +242,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointCourseNotFound() throws Exception {
+    public void testApplyEndpointCourseNotFound() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
@@ -248,7 +266,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void applyEndpointInvalidToken() throws Exception {
+    public void testApplyEndpointInvalidToken() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
@@ -264,7 +282,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getAllEndpointPass() throws Exception {
+    public void testGetAllEndpointPass() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
@@ -278,7 +296,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getAllEndpointNotLecturer() throws Exception {
+    public void testGetAllEndpointNotLecturer() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
@@ -292,7 +310,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getAllEndpointInvalidToken() throws Exception {
+    public void testGetAllEndpointInvalidToken() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
@@ -307,7 +325,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getApplicationsEndpointPass() throws Exception {
+    public void testGetApplicationsEndpointPass() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
@@ -322,7 +340,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getApplicationsEndpointNotLecturer() throws Exception {
+    public void testGetApplicationsEndpointNotLecturer() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
@@ -337,7 +355,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void getApplicationsEndpointInvalidToken() throws Exception {
+    public void testGetApplicationsEndpointInvalidToken() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
@@ -353,10 +371,12 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointTestPass() throws Exception {
+    public void testHireEndpointPass() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(applicationService.checkCandidate(userId, courseId)).thenReturn(true);
+        when(applicationService.getApplication(userId, courseId))
+                .thenReturn(Optional.of(application));
 
         // Register listener
         JsonObject json = new JsonObject();
@@ -370,9 +390,9 @@ public class ApplicationControllerTest {
         enqueueZeroInitCourseInfo();
 
         // Perform the call
-        MvcResult result = mockMvc.perform(post(HIRE_API
-                        + PARAM_STARTER + USER_ID_PARAM + userId
-                        + PARAM_CONTINUER + COURSE_ID_PARAM + courseId)
+        MvcResult result = mockMvc.perform(post(HIRE_API)
+                        .param("userId", String.valueOf(userId))
+                        .param("course" + "Id", String.valueOf(courseId))
                         .header(HttpHeaders.AUTHORIZATION, JWT))
                 .andReturn();
 
@@ -389,7 +409,47 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointInvalidToken() throws Exception {
+    public void testHireEndpointApplicationNotFoundFailed() throws Exception {
+        // Set mocks
+        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
+        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        when(applicationService.checkCandidate(userId, courseId)).thenReturn(true);
+
+        // Register listener and setup url
+        HttpUrl url = mockWebServer.url(BASE_URL);
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+        when(gatewayConfig.getHost()).thenReturn(url.host());
+        JsonObject json = new JsonObject();
+        json.addProperty(START_TIME, courseStartNextYear.toString());
+        json.addProperty(NUMBER_OF_STUDENTS, 0);
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(json.toString()));
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200));
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(HIRE_API)
+                        .param("userId", String.valueOf(userId))
+                        .param("course" + "Id", String.valueOf(courseId))
+                        .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
+
+        // Extra checks
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest);
+        assertEquals(GET_METHOD, recordedRequest.getMethod());
+        recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest);
+        assertEquals(GET_METHOD, recordedRequest.getMethod());
+    }
+
+    @Test
+    public void testHireEndpointInvalidToken() throws Exception {
         // Set mocks
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(null);
@@ -406,7 +466,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointNotLecturer() throws Exception {
+    public void testHireEndpointNotLecturer() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
@@ -422,7 +482,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointCourseNotFound() throws Exception {
+    public void testHireEndpointCourseNotFound() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
@@ -448,7 +508,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointUserNotFound() throws Exception {
+    public void testHireEndpointUserNotFound() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
@@ -481,7 +541,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    public void hireEndpointNotViable() throws Exception {
+    public void testHireEndpointNotViable() throws Exception {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(applicationService.checkCandidate(userId, courseId)).thenReturn(false);
@@ -489,7 +549,7 @@ public class ApplicationControllerTest {
         // Register listener
         JsonObject json = new JsonObject();
         json.addProperty(START_TIME, courseStartNextYear.toString());
-        json.addProperty("numberOfStudents", 0);
+        json.addProperty(NUMBER_OF_STUDENTS, 0);
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setBody(json.toString()));
@@ -630,7 +690,7 @@ public class ApplicationControllerTest {
         // Create request body and perform the call
         MvcResult result = mockMvc.perform(post("/api/hiring-procedure/reject")
                         .header(HttpHeaders.AUTHORIZATION, "")
-                        .queryParam("applicationId", String.valueOf(applicationId)))
+                        .queryParam(APPLICATION_ID_PARAM, String.valueOf(applicationId)))
                 .andReturn();
 
         // Await the call
@@ -641,6 +701,7 @@ public class ApplicationControllerTest {
         verify(applicationService, times(1)).getApplication(applicationId);
         verify(applicationService, times(1)).rejectApplication(applicationId);
     }
+
 
     @Test
     void testRejectNonExisting() throws Exception {
@@ -657,7 +718,7 @@ public class ApplicationControllerTest {
         // Create request body and perform the call
         MvcResult result = mockMvc.perform(post("/api/hiring-procedure/reject")
                         .header(HttpHeaders.AUTHORIZATION, "")
-                        .queryParam("applicationId", String.valueOf(applicationId)))
+                        .queryParam(APPLICATION_ID_PARAM, String.valueOf(applicationId)))
                 .andReturn();
 
         // Await the call
@@ -687,7 +748,7 @@ public class ApplicationControllerTest {
         // Create request body and perform the call
         MvcResult result = mockMvc.perform(post("/api/hiring-procedure/reject")
                         .header(HttpHeaders.AUTHORIZATION, "")
-                        .queryParam("applicationId", String.valueOf(applicationId)))
+                        .queryParam(APPLICATION_ID_PARAM, String.valueOf(applicationId)))
                 .andReturn();
 
         // Await the call
@@ -700,7 +761,9 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    void getOwnContractTest() throws Exception {
+    void testGetOwnContractSuccess() throws Exception {
+        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
+        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         // Perform the call
@@ -714,7 +777,9 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    void getContractTest() throws Exception {
+    void testGetContractSuccess() throws Exception {
+        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
+        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
         // Perform the call
@@ -727,4 +792,405 @@ public class ApplicationControllerTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void testGetMaxHoursLecturerPass() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_HOURS_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetMaxHoursTaPass() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.TA.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_HOURS_API)
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetMaxHoursLecturerNoApplication() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        when(applicationService.getMaxHours(userId, courseId))
+                .thenThrow(new NoSuchElementException(NOT_FOUND_ERROR));
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_HOURS_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetMaxHoursTaNoApplication() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.TA.name());
+        when(applicationService.getMaxHours(Mockito.anyLong(), Mockito.eq(courseId)))
+                .thenThrow(new NoSuchElementException(NOT_FOUND_ERROR));
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_HOURS_API)
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetMaxHoursLecturerNotPermitted() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_HOURS_API)
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetMaxHoursTaNotPermitted() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.TA.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_HOURS_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testSetMaxHoursPass() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        JsonObject json = new JsonObject();
+        json.addProperty("maxHours", 50);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_HOURS_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testSetMaxHoursBadBody() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        JsonObject json = new JsonObject();
+        json.addProperty("max_hours", 50);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_HOURS_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testSetMaxHoursStudent() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+
+        JsonObject json = new JsonObject();
+        json.addProperty("maxHours", 50);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_HOURS_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testSetMaxHoursNoApplication() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        doThrow(new NoSuchElementException(NOT_FOUND_ERROR))
+                .when(applicationService).setMaxHours(1, 50);
+
+        JsonObject json = new JsonObject();
+        json.addProperty("maxHours", 50);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_HOURS_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetRatingLecturerPass() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_RATING_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetRatingTaPass() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.TA.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_RATING_API)
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetRatingTaForbidden() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.TA.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_RATING_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetRatingLecturerForbidden() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_RATING_API)
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetRatingNoApplication() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        doThrow(new NoSuchElementException("No application was found."))
+                .when(applicationService).getRating(userId, courseId);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_RATING_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetRatingNotApproved() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        doThrow(new IllegalStateException("Application is not approved."))
+                .when(applicationService).getRating(userId, courseId);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_RATING_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden())
+                .andExpect(status().reason("The respective application has not been approved"));
+    }
+
+    @Test
+    void testGetRatingNotRated() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        doThrow(new IllegalStateException("Application is not yet rated."))
+                .when(applicationService).getRating(userId, courseId);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_RATING_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden())
+                .andExpect(status().reason("The respective TA has no rating for this course"));
+    }
+
+    @Test
+    void testSetRatingPass() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        JsonObject json = new JsonObject();
+        json.addProperty(RATING_STRING, 7.5);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_RATING_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testSetRatingBadBody() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        JsonObject json = new JsonObject();
+        json.addProperty("ratingValue", 7.5);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_RATING_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isBadRequest())
+                .andExpect(status()
+                        .reason("Body was not configured accordingly. Please see documentation"));
+    }
+
+    @Test
+    void testSetRatingStudent() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+
+        JsonObject json = new JsonObject();
+        json.addProperty(RATING_STRING, 7.5);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_RATING_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testSetRatingInvalidRating() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        JsonObject json = new JsonObject();
+        json.addProperty(RATING_STRING, 11);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_RATING_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isBadRequest())
+                .andExpect(status().reason("Rating should be between 0 and 10."));
+    }
+
+    @Test
+    void testSetRatingNotApproved() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        doThrow(new IllegalStateException("Application is not approved."))
+                .when(applicationService).setRating(1, 7.5);
+
+        JsonObject json = new JsonObject();
+        json.addProperty(RATING_STRING, 7.5);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_RATING_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden())
+                .andExpect(status().reason("The respective application has not been approved"));
+    }
+
+    @Test
+    void testSetRatingNoApplication() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        doThrow(new NoSuchElementException(NOT_FOUND_ERROR))
+                .when(applicationService).setRating(1, 7.5);
+
+        JsonObject json = new JsonObject();
+        json.addProperty(RATING_STRING, 7.5);
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(post(SET_RATING_API)
+                .queryParam(APPLICATION_ID_PARAM, String.valueOf(1))
+                .content(json.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
+    }
 }

@@ -14,11 +14,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 import nl.tudelft.sem.hour.management.dto.StatisticsRequest;
+import nl.tudelft.sem.hour.management.dto.StudentHoursTuple;
+import nl.tudelft.sem.hour.management.dto.UserHoursStatisticsRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
 import nl.tudelft.sem.hour.management.services.NotificationService;
@@ -26,6 +31,9 @@ import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -388,5 +396,56 @@ public class HourDeclarationControllerTest {
 
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetTotalHoursPerStudentPerCourse() throws Exception {
+        Collection<StudentHoursTuple> expectedTotalHours = hourDeclarationRepository
+                        .findByCourseIdSetAndStudentIdSet(Set.of(12345L), Set.of(567812L), 1.0);
+
+        UserHoursStatisticsRequest userHoursStatisticsRequest
+                = new UserHoursStatisticsRequest(1, 1.0, Set.of(12345L), Set.of(567812L));
+
+        MvcResult mvcResult = mockMvc.perform(
+                        post("/api/hour-management/statistics/total-user-hours")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(
+                                        userHoursStatisticsRequest))
+                                .header(authorization, ""))
+                .andReturn();
+
+        assertThat(expectedTotalHours.isEmpty()).isFalse();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content()
+                        .json(String.format(Locale.ROOT,
+                                "{\"12345\": %f}", hourDeclarationRequestNew.getDeclaredHours())));
+    }
+
+    // User parameterized test to avoid code duplication
+    @ParameterizedTest
+    @MethodSource("provideRequestsForGetTotalHoursPerStudentPerCourse")
+    void testGetTotalHoursPerStudentPerCourse(
+            UserHoursStatisticsRequest userHoursStatisticsRequest) throws Exception {
+        MvcResult mvcResult = mockMvc.perform(
+                        post("/api/hour-management/statistics/total-user-hours")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(
+                                        userHoursStatisticsRequest))
+                                .header(authorization, ""))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isNotFound());
+    }
+
+    private static Stream<Arguments> provideRequestsForGetTotalHoursPerStudentPerCourse() {
+        return Stream.of(
+                Arguments.of(new UserHoursStatisticsRequest(1, 1.0, Set.of(12345L), Set.of())),
+                Arguments.of(new UserHoursStatisticsRequest(1, 1.0, Set.of(), Set.of(567812L))),
+                Arguments.of(new UserHoursStatisticsRequest(1, 9999.0, Set.of(), Set.of(12345L))),
+                Arguments.of(new UserHoursStatisticsRequest(0, 1.0, Set.of(), Set.of(12345L)))
+        );
     }
 }
