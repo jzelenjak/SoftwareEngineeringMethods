@@ -79,7 +79,7 @@ public class AsyncCourseTimeValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
-        assertEquals("/api/courses/info?courseID=1", recordedRequest.getPath());
+        assertEquals("/api/courses/get/1", recordedRequest.getPath());
     }
 
     @Test
@@ -101,7 +101,7 @@ public class AsyncCourseTimeValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
-        assertEquals("/api/courses/info?courseID=12", recordedRequest.getPath());
+        assertEquals("/api/courses/get/12", recordedRequest.getPath());
     }
 
     @Test
@@ -127,7 +127,7 @@ public class AsyncCourseTimeValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
-        assertEquals("/api/courses/info?courseID=1", recordedRequest.getPath());
+        assertEquals("/api/courses/get/1", recordedRequest.getPath());
     }
 
     @Test
@@ -154,7 +154,7 @@ public class AsyncCourseTimeValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
-        assertEquals("/api/courses/info?courseID=1", recordedRequest.getPath());
+        assertEquals("/api/courses/get/1", recordedRequest.getPath());
     }
 
     private JsonObject configureCourseResponseBody(ZonedDateTime start, ZonedDateTime end) {
