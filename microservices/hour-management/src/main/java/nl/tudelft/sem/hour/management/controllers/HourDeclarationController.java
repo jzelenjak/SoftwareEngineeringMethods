@@ -117,25 +117,24 @@ public class HourDeclarationController {
     public @ResponseBody
     Mono<HourDeclaration> getSpecifiedDeclaration(@PathVariable("id") long declarationId,
                                                   @RequestHeader HttpHeaders headers) {
+        // Fetch the info for a single declaration
+        Optional<HourDeclaration> result = hourDeclarationRepository.findById(declarationId);
+        if (result.isEmpty()) {
+            return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    String.format("There are no declarations with id: %d in the system.",
+                            declarationId)));
+        }
+
+        // Construct validator chain, and return result only if the user is authorized
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
                         new AsyncRoleValidator(gatewayConfig, jwtUtils,
-                                Set.of(Roles.ADMIN, Roles.LECTURER))
+                                Set.of(Roles.ADMIN, Roles.LECTURER),
+                                result.get().getStudentId())
                 ).build();
 
-        return head.validate(headers, "").flatMap((valid) -> {
-            Optional<HourDeclaration> result = hourDeclarationRepository.findById(declarationId);
-
-            if (result.isEmpty()) {
-                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        String.format("There are no declarations with id: %d in the system.",
-                                declarationId)));
-            }
-
-            return Mono.just(result.get());
-        });
-
+        return head.validate(headers, "").flatMap(valid -> Mono.just(result.get()));
     }
 
 
@@ -266,7 +265,7 @@ public class HourDeclarationController {
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
                         new AsyncRoleValidator(gatewayConfig, jwtUtils,
-                                Set.of(Roles.ADMIN, Roles.LECTURER))
+                                Set.of(Roles.ADMIN, Roles.LECTURER), studentId)
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {

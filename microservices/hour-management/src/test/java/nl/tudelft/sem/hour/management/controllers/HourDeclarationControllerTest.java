@@ -285,6 +285,23 @@ public class HourDeclarationControllerTest {
     }
 
     @Test
+    void testGetSpecifiedDeclarationUserAccessesTheirOwnDeclarations() throws Exception {
+        Optional<HourDeclaration> expectedResponseBody = hourDeclarationRepository.findById(1L);
+
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(1234L);
+
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/1")
+                        .header(authorization, ""))
+                .andReturn();
+
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string(objectMapper.writeValueAsString(expectedResponseBody)));
+    }
+
+    @Test
     void testRejectDeclaration() throws Exception {
         when(notificationService.notify(1234L,
                 "Your declaration with id 1 has been rejected.",
@@ -450,6 +467,24 @@ public class HourDeclarationControllerTest {
 
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetAllDeclarationsByStudentUserAccessesTheirOwnDeclarations() throws Exception {
+        List<HourDeclaration> expectedResponseBody = hourDeclarationRepository
+                .findByStudentId(1234);
+
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(1234L);
+
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/student/1234")
+                        .header(authorization, ""))
+                .andReturn();
+
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string(objectMapper.writeValueAsString(expectedResponseBody)));
     }
 
     private JsonObject configureCourseResponseBody(ZonedDateTime start, ZonedDateTime end) {

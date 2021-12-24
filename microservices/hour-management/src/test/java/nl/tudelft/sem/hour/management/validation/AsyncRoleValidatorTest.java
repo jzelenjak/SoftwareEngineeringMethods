@@ -23,6 +23,9 @@ import reactor.core.publisher.Mono;
 
 @ExtendWith(SpringExtension.class)
 public class AsyncRoleValidatorTest {
+    private static final String bearerInvalid = "BEARER INVALIDINVALID";
+    private static final String invalid = "INVALID INVALID";
+
     private static GatewayConfig gatewayConfig;
 
     @MockBean
@@ -62,7 +65,7 @@ public class AsyncRoleValidatorTest {
         when(jwtUtils.getRole(jwsMock)).thenReturn("STUDENT");
 
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer VALIDVALIDVALID");
+        headers.add(HttpHeaders.AUTHORIZATION, "Bearer VALIDVALIDVALID");
         AsyncRoleValidator validator =
                 new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN, Roles.STUDENT));
 
@@ -73,14 +76,50 @@ public class AsyncRoleValidatorTest {
 
     @Test
     public void testValidateInvalidRole() {
-        when(jwtUtils.resolveToken("Bearer INVALIDINVALID")).thenReturn("INVALIDINVALID");
-        when(jwtUtils.validateAndParseClaims("INVALIDINVALID")).thenReturn(jwsMock);
+        when(jwtUtils.resolveToken(bearerInvalid)).thenReturn(invalid);
+        when(jwtUtils.validateAndParseClaims(invalid)).thenReturn(jwsMock);
         when(jwtUtils.getRole(jwsMock)).thenReturn("LECTURER");
 
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer INVALIDINVALID");
+        headers.add(HttpHeaders.AUTHORIZATION, bearerInvalid);
         AsyncRoleValidator validator =
                 new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN, Roles.STUDENT));
+
+        Mono<Boolean> result = validator.validate(headers, "");
+
+        assertThatExceptionOfType(ResponseStatusException.class).isThrownBy(result::block);
+    }
+
+    @Test
+    public void testValidateInvalidRoleValidUserId() {
+        when(jwtUtils.resolveToken(bearerInvalid)).thenReturn(invalid);
+        when(jwtUtils.validateAndParseClaims(invalid)).thenReturn(jwsMock);
+        when(jwtUtils.getRole(jwsMock)).thenReturn("LECTURER");
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(1234L);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.AUTHORIZATION, bearerInvalid);
+        AsyncRoleValidator validator =
+                new AsyncRoleValidator(gatewayConfig, jwtUtils,
+                        Set.of(Roles.ADMIN, Roles.STUDENT), 1234L);
+
+        Mono<Boolean> result = validator.validate(headers, "");
+
+        assertEquals(Boolean.TRUE, result.block());
+    }
+
+    @Test
+    public void testValidateInvalidRoleInvalidUserId() {
+        when(jwtUtils.resolveToken(bearerInvalid)).thenReturn(invalid);
+        when(jwtUtils.validateAndParseClaims(invalid)).thenReturn(jwsMock);
+        when(jwtUtils.getRole(jwsMock)).thenReturn("LECTURER");
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(1234L);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.AUTHORIZATION, bearerInvalid);
+        AsyncRoleValidator validator =
+                new AsyncRoleValidator(gatewayConfig, jwtUtils,
+                        Set.of(Roles.ADMIN, Roles.STUDENT), 5678L);
 
         Mono<Boolean> result = validator.validate(headers, "");
 
