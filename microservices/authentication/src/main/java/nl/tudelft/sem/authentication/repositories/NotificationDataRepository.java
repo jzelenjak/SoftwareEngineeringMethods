@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 
 /**
- * The repository for storing user data.
+ * The repository for storing notification data.
  */
 @Repository
 public interface NotificationDataRepository extends CrudRepository<Notification, Long> {

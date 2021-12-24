@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.time.ZonedDateTime;
+import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
@@ -17,16 +18,22 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @AutoConfigureMockMvc
 @ExtendWith(SpringExtension.class)
+@SpringBootTest(classes = CourseInfoResponseCache.class)
 public class AsyncCourseExistsValidatorTest {
     @MockBean
     private transient GatewayConfig gatewayConfigMock;
+
+    @Autowired
+    private transient CourseInfoResponseCache courseInfoCache;
 
     private static MockWebServer mockWebServer;
 
@@ -50,8 +57,7 @@ public class AsyncCourseExistsValidatorTest {
 
     @Test
     public void testConstructor() {
-        AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(
-            gatewayConfigMock, 42);
+        AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(courseInfoCache, 42);
         assertNotNull(validator);
     }
 
@@ -59,8 +65,8 @@ public class AsyncCourseExistsValidatorTest {
     public void testValidate() {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(
-            gatewayConfigMock, courseId);
+        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(courseInfoCache,
+                courseId);
 
         // Fetch the local zoned date time, and make it a valid time
         ZonedDateTime current = ZonedDateTime.now().plusYears(1);
@@ -80,8 +86,8 @@ public class AsyncCourseExistsValidatorTest {
 
         // Perform the validation
         Boolean result = validator.validate(null, requestBody)
-            .onErrorReturn(false)
-            .block();
+                .onErrorReturn(false)
+                .block();
         assertNotNull(result);
         assertTrue(result);
     }
@@ -90,8 +96,8 @@ public class AsyncCourseExistsValidatorTest {
     public void testNonExistentCourse() {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(
-            gatewayConfigMock, courseId);
+        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(courseInfoCache,
+                courseId);
 
         // Enqueue a response
         mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.value()));
@@ -103,8 +109,8 @@ public class AsyncCourseExistsValidatorTest {
 
         // Perform the validation
         Boolean result = validator.validate(null, requestBody)
-            .onErrorReturn(false)
-            .block();
+                .onErrorReturn(false)
+                .block();
         assertNotNull(result);
         assertFalse(result);
     }

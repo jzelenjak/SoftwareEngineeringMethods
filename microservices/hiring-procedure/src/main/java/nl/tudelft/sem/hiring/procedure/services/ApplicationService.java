@@ -2,6 +2,7 @@ package nl.tudelft.sem.hiring.procedure.services;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
 import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
@@ -150,5 +151,92 @@ public class ApplicationService {
                 applicationRepository.save(application);
             }
         }
+    }
+
+    /**
+     * Method for setting the maximum amount of allowed contractual hours for an application.
+     *
+     * @param applicationId The ID of the application for which to change the maximum allowed hours
+     * @param maxHours The amount to which to update
+     * @throws NoSuchElementException when an application with that associated id does not exist.
+     */
+    public void setMaxHours(long applicationId, int maxHours) throws NoSuchElementException {
+        Optional<Application> applicationOptional = applicationRepository.findById(applicationId);
+        if (applicationOptional.isPresent()) {
+            Application application = applicationOptional.get();
+            application.setMaxHours(maxHours);
+            applicationRepository.save(application);
+        } else {
+            throw new NoSuchElementException("Application with that id does not exist.");
+        }
+    }
+
+    /**
+     * Method for getting the maximum amount of allowed contractual hours for an application.
+     *
+     * @param userId The ID of the user for which to get the maximum allowed hours
+     * @param courseId The ID of the course for which to get the maximum allowed hours
+     * @return The maxHours of the application with those two parameters
+     * @throws NoSuchElementException when no applications with those parameters exist
+     */
+    public int getMaxHours(long userId, long courseId) throws NoSuchElementException {
+        List<Application> applications = applicationRepository
+                .findAllByUserIdAndAndCourseId(userId, courseId);
+        if (applications.size() != 0) {
+            Application application = applications.get(0);
+            return application.getMaxHours();
+        }
+        throw new NoSuchElementException("Application with those parameters does not exist.");
+    }
+
+
+    /**
+     * Method for setting the rating of an approved application.
+     *
+     * @param applicationId The ID of the application for which to set the rating
+     * @param rating The value of the rating
+     * @throws IllegalStateException if the application has not been approved
+     * @throws NoSuchElementException if an application with those parameters does not exist.
+     */
+    public void setRating(long applicationId, double rating)
+            throws IllegalStateException, NoSuchElementException {
+        Optional<Application> applicationOptional = applicationRepository.findById(applicationId);
+        if (applicationOptional.isPresent()) {
+            Application application = applicationOptional.get();
+            if (application.getStatus() != ApplicationStatus.ACCEPTED) {
+                throw new IllegalStateException("Application is not approved.");
+            }
+            application.setRating(rating);
+            applicationRepository.save(application);
+        } else {
+            throw new NoSuchElementException("Application with that id does not exist.");
+        }
+    }
+
+    /**
+     * Method for getting the rating of an approved application.
+     *
+     * @param userId The ID of the user for which to get the rating
+     * @param courseId The ID of the course for which to get the rating
+     * @return The rating of the TA
+     * @throws IllegalStateException if the application has not been approved
+     *                              or has not been rated yet.
+     * @throws NoSuchElementException if an application with those parameters does not exist.
+     */
+    public double getRating(long userId, long courseId)
+            throws IllegalStateException, NoSuchElementException {
+        List<Application> applications = applicationRepository
+                .findAllByUserIdAndAndCourseId(userId, courseId);
+        if (applications.size() != 0) {
+            Application application = applications.get(0);
+            if (application.getStatus() != ApplicationStatus.ACCEPTED) {
+                throw new IllegalStateException("Application is not approved.");
+            }
+            if (application.getRating() == -1.0) {
+                throw new IllegalStateException("Application is not yet rated.");
+            }
+            return application.getRating();
+        }
+        throw new NoSuchElementException("Application with those parameters does not exist.");
     }
 }

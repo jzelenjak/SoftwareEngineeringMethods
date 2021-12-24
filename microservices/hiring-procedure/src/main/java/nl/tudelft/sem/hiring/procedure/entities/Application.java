@@ -34,14 +34,15 @@ public class Application {
 
     /**
      * Specifies the status of the application.
-     *
-     * @value 0 - In progress
-     * @value 1 - Withdrawn
-     * @value 2 - Accepted
-     * @value 3 - Rejected
      */
     @Column(name = "status")
     private ApplicationStatus status;
+
+    @Column(name = "max_hours")
+    private int maxHours = 200;
+
+    @Column(name = "rating")
+    private double rating = -1.0;
 
     @Column(name = "submission_date", columnDefinition = "TIMESTAMP")
     private LocalDateTime submissionDate;

@@ -11,19 +11,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
+import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
-import nl.tudelft.sem.hour.management.dto.StatisticsRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
 import nl.tudelft.sem.hour.management.services.NotificationService;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator;
 import nl.tudelft.sem.jwt.JwtUtils;
+import okhttp3.HttpUrl;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -33,6 +42,8 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
@@ -66,6 +77,11 @@ public class HourDeclarationControllerTest {
     @MockBean
     private transient JwtUtils jwtUtils;
 
+    private transient MockWebServer mockWebServer;
+
+    @MockBean
+    private transient GatewayConfig gatewayConfig;
+
     @Mock
     private transient Jws<Claims> jwsMock;
 
@@ -86,7 +102,14 @@ public class HourDeclarationControllerTest {
             hourDeclarationRequestSameStudent, false, testDate);
 
     @BeforeEach
-    void init() {
+    void init() throws IOException {
+        mockWebServer = new MockWebServer();
+        mockWebServer.start();
+
+        HttpUrl url = mockWebServer.url("");
+        when(gatewayConfig.getHost()).thenReturn(url.host());
+        when(gatewayConfig.getPort()).thenReturn(url.port());
+
         hourDeclarationRepository.deleteAll();
 
         hourDeclarationRepository.save(hourDeclarationUnapproved);
@@ -95,6 +118,11 @@ public class HourDeclarationControllerTest {
         when(jwtUtils.resolveToken(Mockito.any())).thenReturn("");
         when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(jwsMock);
         when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.ADMIN.name());
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        mockWebServer.shutdown();
     }
 
     @Test
@@ -137,30 +165,96 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testPostDeclaration() throws Exception {
+        JsonObject responseBody = configureCourseResponseBody(
+                ZonedDateTime.now().minusWeeks(1L), ZonedDateTime.now().plusWeeks(1L));
+
+        String contract = String.format(Locale.ROOT,
+                "{\"studentId\": %d, \"courseId\": %d, \"maxHours\": %f}", 1, 1, 15.0);
+
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(responseBody.toString())
+                .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE));
+
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(contract)
+                .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE));
+
         MvcResult mvcResult = mockMvc.perform(post(declarationPath)
-                        .contentType("application/json")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content(objectMapper.writeValueAsString(hourDeclarationRequestNew))
                         .header(authorization, ""))
                 .andReturn();
 
+        // Expected response object
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("message", "Declaration with id 3 has been successfully saved.");
+
         // Wait for response
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Declaration with id 3 has been successfully saved."));
+                .andExpect(content().json(jsonObject.toString()));
 
         Optional<HourDeclaration> saved = hourDeclarationRepository.findById(3L);
 
         assertThat(saved.isEmpty()).isFalse();
         assertThat(saved.get().getStudentId()).isEqualTo(hourDeclarationRequestNew.getStudentId());
         assertThat(saved.get().getCourseId()).isEqualTo(hourDeclarationRequestNew.getCourseId());
+
+        RecordedRequest request = mockWebServer.takeRequest(10, TimeUnit.MILLISECONDS);
+        assertThat(request).isNotNull();
+        assertThat(request.getMethod()).isEqualTo(HttpMethod.GET.name());
+
+        request = mockWebServer.takeRequest(10, TimeUnit.MILLISECONDS);
+        assertThat(request).isNotNull();
+        assertThat(request.getMethod()).isEqualTo(HttpMethod.GET.name());
     }
 
     @Test
     void testPostDeclarationInvalid() throws Exception {
         mockMvc.perform(post(declarationPath)
-                        .contentType("application/json")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content("")
                         .header(authorization, ""))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testPostDeclarationInvalidCourseTime() throws Exception {
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(404));
+
+        MvcResult mvcResult = mockMvc.perform(post(declarationPath)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(objectMapper.writeValueAsString(hourDeclarationRequestNew))
+                        .header(authorization, ""))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testPostDeclarationInvalidContract() throws Exception {
+        JsonObject responseBody = configureCourseResponseBody(
+                ZonedDateTime.now().minusWeeks(1L), ZonedDateTime.now().plusWeeks(1L));
+
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(responseBody.toString())
+                .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE));
+
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(404));
+
+        MvcResult mvcResult = mockMvc.perform(post(declarationPath)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(hourDeclarationRequestNew))
+                        .header(authorization, ""))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
     }
 
@@ -191,8 +285,27 @@ public class HourDeclarationControllerTest {
     }
 
     @Test
+    void testGetSpecifiedDeclarationUserAccessesTheirOwnDeclarations() throws Exception {
+        Optional<HourDeclaration> expectedResponseBody = hourDeclarationRepository.findById(1L);
+
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(1234L);
+
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/1")
+                        .header(authorization, ""))
+                .andReturn();
+
+        // Wait for response
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string(objectMapper.writeValueAsString(expectedResponseBody)));
+    }
+
+    @Test
     void testRejectDeclaration() throws Exception {
-        when(notificationService.notify(Mockito.anyLong(), Mockito.any(), Mockito.any()))
+        when(notificationService.notify(1234L,
+                "Your declaration with id 1 has been rejected.",
+                ""))
                 .thenReturn(Mono.empty());
 
         MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/1/reject")
@@ -216,12 +329,14 @@ public class HourDeclarationControllerTest {
                 .andReturn();
 
         mockMvc.perform(asyncDispatch(mvcResult))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
     }
 
     @Test
     void testRejectDeclarationNotificationFail() throws Exception {
-        when(notificationService.notify(Mockito.anyLong(), Mockito.any(), Mockito.any()))
+        when(notificationService.notify(1234L,
+                "Your declaration with id 1 has been rejected.",
+                ""))
                 .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.CONFLICT,
                         "Failed to register notification")));
 
@@ -245,7 +360,9 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testApproveDeclaration() throws Exception {
-        when(notificationService.notify(Mockito.anyLong(), Mockito.any(), Mockito.any()))
+        when(notificationService.notify(1234L,
+                "Your declaration with id 1 has been approved.",
+                ""))
                 .thenReturn(Mono.empty());
 
         MvcResult mvcResult = mockMvc.perform(put("/api/hour-management/declaration/1/approve")
@@ -270,13 +387,15 @@ public class HourDeclarationControllerTest {
                 .andReturn();
 
         mockMvc.perform(asyncDispatch(mvcResult))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
     }
 
 
     @Test
     void testApproveDeclarationNotificationFail() throws Exception {
-        when(notificationService.notify(Mockito.anyLong(), Mockito.any(), Mockito.any()))
+        when(notificationService.notify(1234L,
+                "Your declaration with id 1 has been approved.",
+                ""))
                 .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.CONFLICT,
                         "Failed to register notification")));
 
@@ -351,42 +470,31 @@ public class HourDeclarationControllerTest {
     }
 
     @Test
-    void testGetTotalHours() throws Exception {
-        hourDeclarationRepository.save(hourDeclarationSameStudent);
+    void testGetAllDeclarationsByStudentUserAccessesTheirOwnDeclarations() throws Exception {
+        List<HourDeclaration> expectedResponseBody = hourDeclarationRepository
+                .findByStudentId(1234);
 
-        Optional<Double> expectedTotalHours =
-                hourDeclarationRepository.aggregateHoursFor(1234L, 5678L);
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(1234L);
 
-        StatisticsRequest statisticsRequest = new StatisticsRequest(1234L, 5678L);
-
-        MvcResult mvcResult = mockMvc.perform(
-                        get("/api/hour-management/declaration/statistics/total-hours")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(statisticsRequest))
-                                .header(authorization, ""))
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/student/1234")
+                        .header(authorization, ""))
                 .andReturn();
 
-        assertThat(expectedTotalHours.isEmpty()).isFalse();
-
+        // Wait for response
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andExpect(content()
-                        .json(String.format(Locale.ROOT,
-                                "{\"totalHours\": %f}", expectedTotalHours.get())));
+                .andExpect(content().string(objectMapper.writeValueAsString(expectedResponseBody)));
     }
 
-    @Test
-    void testGetTotalHoursNotFound() throws Exception {
-        StatisticsRequest statisticsRequest = new StatisticsRequest(9999L, 5678L);
+    private JsonObject configureCourseResponseBody(ZonedDateTime start, ZonedDateTime end) {
+        JsonObject jsonObject = new JsonObject();
 
-        MvcResult mvcResult = mockMvc.perform(
-                        get("/api/hour-management/declaration/statistics/total-hours")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(statisticsRequest))
-                                .header(authorization, ""))
-                .andReturn();
+        jsonObject.addProperty("courseId", 1L);
+        jsonObject.addProperty("courseCode", "CSE1234");
+        jsonObject.addProperty("startDate", start.toString());
+        jsonObject.addProperty("endDate", end.toString());
 
-        mockMvc.perform(asyncDispatch(mvcResult))
-                .andExpect(status().isNotFound());
+        return jsonObject;
     }
 }

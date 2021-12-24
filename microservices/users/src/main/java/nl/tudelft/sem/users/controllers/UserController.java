@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import nl.tudelft.sem.jwt.JwtUtils;
 import nl.tudelft.sem.users.config.GatewayConfig;
@@ -41,8 +42,6 @@ public class UserController {
 
     private final transient UserService userService;
 
-    private final transient ObjectMapper mapper;
-
     private final transient JwtUtils jwtUtils;
 
     private final transient WebClient webClient;
@@ -64,100 +63,95 @@ public class UserController {
     public UserController(UserService userService, JwtUtils jwtUtils, GatewayConfig gatewayConfig) {
         this.userService = userService;
         this.jwtUtils = jwtUtils;
-
-        this.mapper = new ObjectMapper();
         this.webClient = WebClient.create();
-
         this.gatewayConfig = gatewayConfig;
     }
 
 
     /**
-     * Registers a user if (s)he does not already exist in the database.
-     * Sends an HTTP request to the Authentication microservice to register the user
-     *   in its database as well and get the JWT token that is sent in the
-     *   'Authorization' header in the HTTP response.
+     * Registers a user if (s)he does not already exist in the database. Sends an HTTP request
+     *      to the Authentication microservice to register the user in its database.
      *
      * @param req   the HTTP request
-     * @return If there is no user with the same username (netID) already,
+     * @return If there is no user with the same username already,
      *              the user ID of a new registered user and 200 OK is sent back.
-     *           If the user with the provided netID already exists in the database,
+     *         If the user with the provided username already exists in the database,
      *              then 409 CONFLICT status is sent back.
      */
     @PostMapping("/register")
-    public Mono<ResponseEntity<String>> registerUser(HttpServletRequest req) {
-        JsonNode jsonNode = getJsonNode(req);
+    public Mono<ResponseEntity<String>> registerUser(HttpServletRequest req) throws IOException {
+        JsonNode jsonNode = new ObjectMapper().readTree(req.getInputStream());
         String username = parseJsonField(jsonNode, USERNAME);
         String firstName = parseJsonField(jsonNode, "firstName");
         String lastName = parseJsonField(jsonNode, "lastName");
         String password = parseJsonField(jsonNode, "password");
 
         long userId = attemptToRegister(username, firstName, lastName);
-
+        String json = new ObjectMapper().createObjectNode().put(USERNAME, username)
+                .put(USERID, userId).put("password", password).toString();
         return webClient
                 .post()
-                .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
-                        "api", "auth", "register"))
+                .uri(buildUri("api", "auth", "register"))
                 .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
-                .body(Mono
-                    .just(createJson(USERNAME, username, USERID, String.valueOf(userId),
-                            "password", password)), String.class)
+                .body(Mono.just(json), String.class)
                 .exchange()
-                .flatMap(response -> {
-                    if (response.statusCode().isError()) {
+                .flatMap(res -> {
+                    if (res.statusCode().isError()) {
                         // Fail the registration if the user could not be registered in Auth Server
-                        this.userService.deleteUserByUserId(userId, UserRole.ADMIN);
-                        return Mono
-                            .error(new ResponseStatusException(response.statusCode(),
-                                            "Registration failed!"));
+                        this.userService.deleteUserByUserId(userId);
+                        return Mono.error(new ResponseStatusException(res.statusCode(),
+                                                "Registration failed!"));
                     }
 
                     // Just forward the response from Auth Server and add the user ID in the body
-                    return Mono
-                        .just(ResponseEntity
-                                .status(HttpStatus.OK)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .body(createJson(USERID, String.valueOf(userId)))
-                        );
+                    String body = new ObjectMapper().createObjectNode()
+                                                    .put(USERID, userId).toString();
+                    return Mono.just(ResponseEntity.status(HttpStatus.OK)
+                            .contentType(MediaType.APPLICATION_JSON).body(body));
                 });
     }
 
 
     /**
-     * Gets a user by their username (netID).
+     * Gets a user by their username. Is only allowed for lecturers and admins.
      *
      * @param req   the HTTP request
      * @return the user with the given username if they exist.
-     *         If the user with the provided netID does not exist in the database,
+     *         If the user with the provided username does not exist in the database,
      *           then 404 NOT FOUND status is sent back.
      * @throws IOException when something goes wrong with servlets
      */
     @GetMapping("/by_username")
     public ResponseEntity<String> getByUsername(HttpServletRequest req) throws IOException {
-        String username = parseJsonField(getJsonNode(req), USERNAME);
-        return new ResponseEntity<>(mapper
-                        .writeValueAsString(getUserByUsername(username)), HttpStatus.OK);
+        String prefixedJwt = req.getHeader(HttpHeaders.AUTHORIZATION);
+        validate(prefixedJwt, Set.of(UserRole.LECTURER.name(), UserRole.ADMIN.name()));
+
+        String username = req.getParameter("username");
+        String json = new ObjectMapper().writeValueAsString(getUserByUsername(username));
+        return new ResponseEntity<>(json, HttpStatus.OK);
     }
 
 
     /**
-     * Gets a user by their user ID.
+     * Gets a user by their user ID. Is only allowed for lecturers and admins.
      *
      * @param req   the HTTP request
      * @return the user with the given user ID if they exist.
      *         If the user does not exist, then 404 NOT FOUND status is sent.
-     *         If the provided user ID is not a number, then 400 BAD REQUEST is sent back.
      * @throws IOException when something goes wrong with servlets
      */
     @GetMapping("/by_userid")
     public ResponseEntity<String> getByUserId(HttpServletRequest req) throws IOException {
-        long userId = parseUserId(parseJsonField(getJsonNode(req), USERID));
-        return new ResponseEntity<>(mapper
-                        .writeValueAsString(getUserByUserId(userId)), HttpStatus.OK);
+        String prefixedJwt = req.getHeader(HttpHeaders.AUTHORIZATION);
+        validate(prefixedJwt, Set.of(UserRole.LECTURER.name(), UserRole.ADMIN.name()));
+
+        long userId = parseUserId(req.getParameter("userId"));
+        String json = new ObjectMapper().writeValueAsString(getUserByUserId(userId));
+        return new ResponseEntity<>(json, HttpStatus.OK);
     }
 
     /**
-     * Gets users by the role.
+     * Gets users by the role. Is only allowed for lecturers and admins.
      *
      * @param req   the HTTP request
      * @return the users with the given role.
@@ -166,129 +160,96 @@ public class UserController {
      */
     @GetMapping("/by_role")
     public ResponseEntity<String> getByRole(HttpServletRequest req) throws IOException {
-        UserRole role = parseRole(parseJsonField(getJsonNode(req), ROLE).toUpperCase(Locale.ROOT));
+        String prefixedJwt = req.getHeader(HttpHeaders.AUTHORIZATION);
+        validate(prefixedJwt, Set.of(UserRole.LECTURER.name(), UserRole.ADMIN.name()));
 
+        UserRole role = parseRole(req.getParameter("role").toUpperCase(Locale.ROOT));
         List<User> users = this.userService.getUsersByRole(role);
         if (users.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    String.format("No users having role '%s' are found!", role));
+                String.format("No users having role '%s' are found!", role));
         }
-        return new ResponseEntity<>(mapper.writeValueAsString(users), HttpStatus.OK);
+        String json = new ObjectMapper().writeValueAsString(users);
+        return new ResponseEntity<>(json, HttpStatus.OK);
     }
 
 
     /**
-     * Changes the role of a user given their netID, if the requester has permissions for that.
-     *  If the request has been successful,
-     *      then 200 OK is sent back.
-     *  If the provided user ID is not a number or if the new role is invalid,
-     *      then 400 BAD REQUEST is sent back.
-     *  If the user does not exist,
-     *      then 404 NOT FOUND status is sent.
-     *  If the operation is not allowed (no privileges),
-     *      then 401 UNAUTHORIZED status is sent back.
+     * Changes the role of a user given their userId. Only allowed for admins.
+     *  If the request has been successful, then 200 OK is sent back.
+     *  If the user does not exist, then 404 NOT FOUND status is sent.
+     *  If the requester is not an admin, then 403 FORBIDDEN status is sent back.
      *
-     * @param req   the HTTP request
+     * @param req the HTTP request
+     * @return success message if the request has been successful
      */
     @PutMapping("/change_role")
-    public Mono<ResponseEntity<String>> changeRole(HttpServletRequest req) {
-        JsonNode jsonNode = getJsonNode(req);
+    public Mono<ResponseEntity<String>> changeRole(HttpServletRequest req) throws IOException {
+        String prefixedJwt = req.getHeader(HttpHeaders.AUTHORIZATION);
+        validate(prefixedJwt, Set.of(UserRole.ADMIN.name()));
 
+        JsonNode jsonNode = new ObjectMapper().readTree(req.getInputStream());
         long userId = parseUserId(parseJsonField(jsonNode, USERID));
-        UserRole newRole =
-                parseRole(parseJsonField(jsonNode, ROLE).toUpperCase(Locale.US));
-
-        String prefixedToken = req.getHeader(HttpHeaders.AUTHORIZATION);
-        Jws<Claims> claimsJws = parseAndValidateJwt(prefixedToken);
-        UserRole requesterRole = parseRole(claimsJws);
-
-        // If the requester is not allowed to change the role, send back 401 status
-        if (!this.userService.isAllowedToChangeRole(userId, newRole, requesterRole)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                            "Operation not allowed!");
-        }
+        UserRole newRole = parseRole(parseJsonField(jsonNode, ROLE).toUpperCase(Locale.US));
 
         String username = this.getUserByUserId(userId).getUsername();
+        String json = createJson(USERNAME, username, ROLE, newRole.name());
         return webClient
                 .put()
-                .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
-                            "api", "auth", "change_role"))
+                .uri(buildUri("api", "auth", "change_role"))
                 .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
-                .header(HttpHeaders.AUTHORIZATION, prefixedToken)
-                .body(Mono
-                        .just(createJson(USERNAME, username,
-                                    ROLE, newRole.name())), String.class)
+                .header(HttpHeaders.AUTHORIZATION, prefixedJwt)
+                .body(Mono.just(json), String.class)
                 .exchange()
-                .flatMap(response -> {
-                    if (response.statusCode().isError()) {
+                .flatMap(res -> {
+                    if (res.statusCode().isError()) {
                         // Do not do anything locally to provide consistency
-                        return Mono
-                                .error(new ResponseStatusException(response
-                                        .statusCode(), "Could not change role"));
+                        return Mono.error(new ResponseStatusException(res.statusCode(),
+                            "Could not change role"));
                     }
-                    // Since the operation is successful in Auth server,
-                    //      change the role locally as well
-                    this.userService.changeRole(userId, newRole, UserRole.ADMIN);
-                    return Mono
-                            .just(ResponseEntity
-                                .status(HttpStatus.OK)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .body(createJson("message",
-                                        "Changed the role successfully!")));
+                    // Since operation is successful in Auth server, change the role locally as well
+                    this.userService.changeRole(userId, newRole);
+                    return Mono.just(ResponseEntity.status(HttpStatus.OK)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(createJson("message", "Changed the role successfully!")));
                 });
     }
 
 
     /**
-     * Deletes a user by their user ID.
-     * If the request has been successful,
-     *      then 200 OK is sent back.
-     * If the provided user ID is not a number,
-     *      then 400 BAD REQUEST is sent back.
-     * If user with the provided user ID has not been found,
-     *      then 404 NOT FOUND is sent back.
-     * If the requester does not have enough permissions,
-     *      then 401 UNAUTHORIZED status is sent back.
+     * Deletes a user by their user ID. Only allowed for admins.
+     * If the request has been successful, then 200 OK is sent back.
+     * If user with the provided user ID has not been found, then 404 NOT FOUND is sent back.
+     * If the requester is not an admin, then 403 FORBIDDEN status is sent back.
      *
      * @param req   the HTTP request
+     * @return success message if the request has been successful
      */
     @DeleteMapping("/delete")
     public Mono<ResponseEntity<String>> deleteByUserId(HttpServletRequest req) {
-        String prefixedToken = req.getHeader(HttpHeaders.AUTHORIZATION);
-        Jws<Claims> claimsJws = parseAndValidateJwt(prefixedToken);
-        UserRole requesterRole = parseRole(claimsJws);
+        String prefixedJwt = req.getHeader(HttpHeaders.AUTHORIZATION);
+        validate(prefixedJwt, Set.of(UserRole.ADMIN.name()));
 
-        if (!this.userService.isAllowedToDelete(requesterRole)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Operation not allowed!");
-        }
-
-        long userId = parseUserId(parseJsonField(getJsonNode(req), USERID));
+        long userId = parseUserId(req.getParameter(USERID));
         String username = getUserByUserId(userId).getUsername();
-        return this.webClient
+        return webClient
                 .method(HttpMethod.DELETE)
-                .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
-                        "api", "auth", "delete"))
+                .uri(buildUri("api", "auth", "delete"))
                 .header(HttpHeaders.CONTENT_TYPE, String.valueOf(MediaType.APPLICATION_JSON))
-                .header(HttpHeaders.AUTHORIZATION, prefixedToken)
-                .body(
-                        Mono.just(createJson(USERNAME, username)), String.class)
+                .header(HttpHeaders.AUTHORIZATION, prefixedJwt)
+                .body(Mono.just(createJson(USERNAME, username)), String.class)
                 .exchange()
-                .flatMap(response -> {
-                    if (response.statusCode().isError()) {
+                .flatMap(res -> {
+                    if (res.statusCode().isError()) {
                         // Do not do anything locally to provide consistency
-                        return Mono
-                            .error(new ResponseStatusException(response
-                                    .statusCode(), "Could not delete the user!"));
+                        return Mono.error(new ResponseStatusException(res.statusCode(),
+                            "Could not delete the user!"));
                     }
-                    // Since the operation is successful in Auth server,
-                    //      delete the user locally as well
-                    this.userService.deleteUserByUserId(userId, requesterRole);
-                    return Mono
-                            .just(ResponseEntity
-                                .status(HttpStatus.OK)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .body(createJson("message",
-                                        "User deleted successfully!")));
+                    // Since operation is successful in Auth server, delete the user locally as well
+                    this.userService.deleteUserByUserId(userId);
+                    return Mono.just(ResponseEntity.status(HttpStatus.OK)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(createJson("message", "User deleted successfully!")));
                 });
     }
 
@@ -300,28 +261,23 @@ public class UserController {
     /**
      * A helper method to create a URI for HTTP request.
      *
-     * @param host      the host in the url
-     * @param port      the port in the url
      * @param path      the path in the url
-     * @return          the complete String url
+     * @return the complete String url
      */
-    private String buildUri(String host, int port, String... path) {
-        return UriComponentsBuilder.newInstance()
-                .scheme("http")
-                .host(host)
-                .port(port)
-                .pathSegment(path)
-                .toUriString();
+    private String buildUri(String... path) {
+        return UriComponentsBuilder.newInstance().scheme("http")
+                .host(gatewayConfig.getHost()).port(gatewayConfig.getPort())
+                .pathSegment(path).toUriString();
     }
 
     /**
-     * A helper method to create json string out of key-value pairs.
+     * A helper method to create json string out of String key-value pairs.
      *
      * @param kvPairs       list of key-values, must be an even number
      * @return the json string that can be used in the response body
      */
     private String createJson(String... kvPairs) {
-        ObjectNode node = mapper.createObjectNode();
+        ObjectNode node = new ObjectMapper().createObjectNode();
 
         for (int i = 0; i < kvPairs.length; i += 2) {
             node.put(kvPairs[i], kvPairs[i + 1]);
@@ -330,37 +286,19 @@ public class UserController {
     }
 
     /**
-     * A helper method to get jsonNode from HTTP request input stream
-     *   and handle potential exceptions.
-     *
-     * @param req   HTTP request.
-     * @return jsonNode if successful, otherwise ResponseStatusException is thrown.
-     */
-    private JsonNode getJsonNode(HttpServletRequest req) {
-        try {
-            return mapper.readTree(req.getInputStream());
-        } catch (IOException e) {
-            String reason = "Error with servlets while parsing the input";
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
-        }
-    }
-
-    /**
      * A helper method to extract the value from a JSON object field
      *   and handle potential exceptions.
      *
-     * @param jsonNode  jsonNode with JSON object.
-     * @param field     the field which value is to be extracted.
-     * @return the extracted value of the field if successful.
-     *         If not, ResponseStatusException is thrown.
+     * @param jsonNode  jsonNode with JSON.
+     * @param field     the field whose value is to be extracted.
+     * @return the extracted value if successful. If not, ResponseStatusException is thrown.
      */
     private String parseJsonField(JsonNode jsonNode, String field) {
         try {
             return jsonNode.get(field).asText();
         } catch (Exception e) {
-            String reason =
-                "Error while parsing JSON. The body is corrupted or required fields are missing";
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Error while parsing JSON. The body is corrupted or required fields are missing");
         }
     }
 
@@ -368,12 +306,13 @@ public class UserController {
      * A helper method to parse userID from string to long.
      *
      * @param userIdStr the user ID string
-     * @return the user ID long, or -1 if impossible to parse
+     * @return the user ID (long) if successful. If not, ResponseStatusException is thrown.
      */
     private long parseUserId(String userIdStr) {
         try {
             return Long.parseLong(userIdStr);
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
+            // NumberFormatException or NullPointerException
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Provided user ID is not a valid number");
         }
@@ -383,115 +322,91 @@ public class UserController {
      * A helper method to parse the user role from string to UserRole.
      *
      * @param roleStr   the user role string
-     * @return the user role UserRole, or null if the provided role has been invalid
+     * @return the user role (UserRole) if successful. If not, ResponseStatusException is thrown.
      */
     private UserRole parseRole(String roleStr) {
         try {
             return UserRole.valueOf(roleStr);
-        } catch (IllegalArgumentException e) {
-            String reason = String.format("Role must be one of the following: %s, %s, %s, %s, %s",
-                    "STUDENT", "CANDIDATE_TA", "TA", "LECTURER", "ADMIN");
+        } catch (Exception e) {
+            // Either IllegalArgumentException or NullPointerException
+            String reason = String.format("Role must be one of the following: %s, %s, %s",
+                    "STUDENT", "LECTURER", "ADMIN");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
         }
     }
 
     /**
-     * A helper method to parse the user role from Jws of Claims to UserRole.
+     * A helper method to validate the requester using JWT token.
      *
-     * @param  claimsJws   the parsed JWS claims
-     * @return the user role as UserRole is successful.
-     *         If not, ResponseStatusException is thrown.
+     * @param jwtPrefixed   the JWT token extracted from 'Authorization' header
+     * @param allowedRoles  the roles that the token can contain to perform the operation
      */
-    private UserRole parseRole(Jws<Claims> claimsJws) {
-        try {
-            String role = jwtUtils.getRole(claimsJws);
-            return UserRole.valueOf(role.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            String reason = String.format("Role must be one of the following: %s, %s, %s, %s, %s",
-                    "STUDENT", "CANDIDATE_TA", "TA", "LECTURER", "ADMIN");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
-        }
-    }
-
-
-    /**
-     * A helper method to check if a user with the given username (netID) exists.
-     *   If not, ResponseStatusException is thrown.
-     *   If yes, the User object is returned.
-     *
-     * @param netId     the netID of the user.
-     * @return          the User with the given netId if (s)he exists.
-     */
-    private User getUserByUsername(String netId) {
-        Optional<User> user = this.userService.getUserByNetId(netId);
-        if (user.isEmpty()) {
-            String reason = String.format("User with NetID %s not found!", netId);
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, reason);
-        }
-        return user.get();
-    }
-
-
-    /**
-     * A helper method to check if a user with the given user ID exists.
-     *   If not, ResponseStatusException is thrown.
-     *   If yes, the User object is returned.
-     *
-     * @param userId    the userId of the user.
-     * @return          the User with the given userId if (s)he exists.
-     */
-    private User getUserByUserId(long userId) {
-        Optional<User> user = this.userService.getUserByUserId(userId);
-        if (user.isEmpty()) {
-            String reason = String.format("User with user ID %s not found!", userId);
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, reason);
-        }
-        return user.get();
-    }
-
-
-    /**
-     * A helper method to parse and check the validity of a JWT token.
-     *
-     * @param       jwtPrefixed the prefixed JWT token.
-     *                          (after it has been extracted from 'Authorization' header.
-     * @return parsed JWS claims if successful.
-     *         If not, ResponseStatusException is thrown.
-     */
-    private Jws<Claims> parseAndValidateJwt(String jwtPrefixed) {
+    private void validate(String jwtPrefixed, Set<String> allowedRoles) {
         String jwt = jwtUtils.resolveToken(jwtPrefixed);
 
         if (jwt == null) {
-            String reason = "'Authorization' header must start with 'Bearer '";
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                        "'Authorization' header must start with 'Bearer '");
         }
 
         Jws<Claims> claimsJws = jwtUtils.validateAndParseClaims(jwt);
         if (claimsJws == null) {
-            String reason = "JWT token is invalid or has been expired";
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, reason);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "JWT token is invalid or has been expired");
         }
 
-        return claimsJws;
+        if (!allowedRoles.contains(jwtUtils.getRole(claimsJws).toUpperCase(Locale.ROOT))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Operation not allowed!");
+        }
+    }
+
+    /**
+     * A helper method to get a user with the given username if (s)he exists.
+     *
+     * @param username the username of the user.
+     * @return the User with the given username if (s)he exists.
+     *          If not, ResponseStatusException is thrown
+     */
+    private User getUserByUsername(String username) {
+        Optional<User> user = this.userService.getUserByUsername(username);
+        if (user.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                String.format("User with the username %s not found!", username));
+        }
+        return user.get();
+    }
+
+    /**
+     * A helper method to get a user with the given user ID if (s)he exists.
+     *
+     * @param userId the user ID of the user.
+     * @return the User with the given user ID if (s)he exists.
+     *         If not, ResponseStatusException is thrown
+     */
+    private User getUserByUserId(long userId) {
+        Optional<User> user = this.userService.getUserByUserId(userId);
+        if (user.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                String.format("User with user ID %s not found!", userId));
+        }
+        return user.get();
     }
 
 
     /**
      * A helper method to attempt to register a user and deal with exceptions.
      *
-     * @param netId     the netID of the user.
+     * @param username  the username of the user.
      * @param firstName the first name of the user.
      * @param lastName  the last name of the user.
-     * @return the created user ID if successful,
-     *         if not (user with the same netID already exists),
-     *           then ResponseStatusException is thrown.
+     * @return generated user ID for the new user if successful.
+     *         If not ResponseStatusException is thrown.
      */
-    private long attemptToRegister(String netId, String firstName, String lastName) {
+    private long attemptToRegister(String username, String firstName, String lastName) {
         try {
-            return this.userService.registerUser(netId, firstName, lastName);
+            return this.userService.registerUser(username, firstName, lastName);
         } catch (DataIntegrityViolationException e) {
-            String reason = String.format("User with NetID %s already exists!", netId);
-            throw new ResponseStatusException(HttpStatus.CONFLICT, reason);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
         }
     }
 }

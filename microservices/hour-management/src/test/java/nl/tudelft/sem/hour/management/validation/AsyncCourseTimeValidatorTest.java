@@ -14,13 +14,11 @@ import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -28,31 +26,27 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 @AutoConfigureMockMvc
-@SpringBootTest(classes = {GatewayConfig.class, AsyncCourseTimeValidator.class})
 public class AsyncCourseTimeValidatorTest {
     private static final String TOKEN = "Bearer VALIDVALID";
     private static final String COURSE_CODE = "CSE1234";
 
-    private static MockWebServer mockWebServer;
+    private transient MockWebServer mockWebServer;
 
-    @MockBean
     private transient GatewayConfig gatewayConfig;
 
-    @BeforeAll
-    static void setup() throws IOException {
+    @BeforeEach
+    private void setupEach() throws IOException {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
-    }
 
-    @BeforeEach
-    private void setupEach() {
         HttpUrl url = mockWebServer.url("/");
+        gatewayConfig = Mockito.mock(GatewayConfig.class);
         when(gatewayConfig.getHost()).thenReturn(url.host());
         when(gatewayConfig.getPort()).thenReturn(url.port());
     }
 
-    @AfterAll
-    static void tearDown() throws IOException {
+    @AfterEach
+    void tearDown() throws IOException {
         mockWebServer.shutdown();
     }
 
@@ -85,7 +79,7 @@ public class AsyncCourseTimeValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
-        assertEquals("/api/courses/info?courseID=1", recordedRequest.getPath());
+        assertEquals("/api/courses/get/1", recordedRequest.getPath());
     }
 
     @Test
@@ -107,7 +101,7 @@ public class AsyncCourseTimeValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
-        assertEquals("/api/courses/info?courseID=12", recordedRequest.getPath());
+        assertEquals("/api/courses/get/12", recordedRequest.getPath());
     }
 
     @Test
@@ -133,7 +127,7 @@ public class AsyncCourseTimeValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
-        assertEquals("/api/courses/info?courseID=1", recordedRequest.getPath());
+        assertEquals("/api/courses/get/1", recordedRequest.getPath());
     }
 
     @Test
@@ -160,7 +154,7 @@ public class AsyncCourseTimeValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
-        assertEquals("/api/courses/info?courseID=1", recordedRequest.getPath());
+        assertEquals("/api/courses/get/1", recordedRequest.getPath());
     }
 
     private JsonObject configureCourseResponseBody(ZonedDateTime start, ZonedDateTime end) {
