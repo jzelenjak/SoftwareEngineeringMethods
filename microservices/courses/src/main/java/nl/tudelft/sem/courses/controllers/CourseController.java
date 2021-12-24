@@ -56,7 +56,7 @@ public class CourseController {
     public Course createNewCourse(@RequestBody CourseRequest request,
                                    @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webtoken)) {
+        if (checkIfAdmin(webtoken)) {
             Course result = courseService.addNewCourses(request);
             if (result == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -141,10 +141,11 @@ public class CourseController {
     public boolean deleteCourse(@PathVariable long id,
                                 @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webtoken)) {
+        if (checkIfAdmin(webtoken)) {
             String result = courseService.deleteCourse(id);
             if (result.contains("Failed")) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Failed to delete course");
             }
             return true;
         }
@@ -232,7 +233,7 @@ public class CourseController {
      * @param courseid - the id of the course
      * @return if the operation was successful
      */
-    @PostMapping("/create/lecturer/{lecturerid}/{courseid}")
+    @PostMapping("/assign/lecturer/{lecturerid}/{courseid}")
     public Boolean addLecturerToCourse(@PathVariable("lecturerid") long lecturerid,
                                        @PathVariable("courseid") long courseid,
                                        @RequestHeader HttpHeaders httpHeaders) {

@@ -54,7 +54,7 @@ public class CourseControllerTest {
     private static final String getCoursePath = "/api/courses/get/courses/";
     private static final String courseCode = "CSE2216";
     private static final String createGradePath = "/api/courses/create/grade";
-    private static final String assignLecturerPath = "/api/courses/create/lecturer/1/1";
+    private static final String assignLecturerPath = "/api/courses/assign/lecturer/1/1";
     private static final ZonedDateTime date = ZonedDateTime.now();
     private static final CourseRequest courseRequest = new CourseRequest(courseCode,
             date, date, 1);
@@ -443,12 +443,12 @@ public class CourseControllerTest {
                 .contentType(jsonContentHeader))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/courses/create/lecturer/1/2")
+        mockMvc.perform(post("/api/courses/assign/lecturer/1/2")
                 .header(authorizationHeader, "")
                 .contentType(jsonContentHeader))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/courses/create/lecturer/1/3")
+        mockMvc.perform(post("/api/courses/assign/lecturer/1/3")
                 .header(authorizationHeader, "")
                 .contentType(jsonContentHeader))
                 .andExpect(status().isOk());
