@@ -1,7 +1,7 @@
 # Testing
 
 ## Testing naming convention
-We decided to use the following naming convention for the tests in the authentication microservice:
+We decided to use the following naming convention for the tests in the gateway microservice:
 ```test<MethodWeWantToTest><ConditionWeWantTest>()```\
 And for the classes it is in the format: ```<ClassWeWantToTest>Test.java```.
 
