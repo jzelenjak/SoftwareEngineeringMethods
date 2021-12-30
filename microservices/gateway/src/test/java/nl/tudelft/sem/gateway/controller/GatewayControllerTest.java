@@ -15,39 +15,40 @@ import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 @AutoConfigureMockMvc
 @SpringBootTest
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 public class GatewayControllerTest {
 
     @Autowired
     private transient MockMvc mockMvc;
 
-    private static MockWebServer mockWebServer;
+    private transient MockWebServer mockWebServer;
 
     @Autowired
     private transient DiscoveryRegistrarService discoveryRegistrarService;
 
-    private static final String contentType = "Content-Type";
-    private static final String jsonContentHeader = "application/json";
-
-    @BeforeAll
-    static void setup() throws IOException {
+    @BeforeEach
+    void setup() throws IOException {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
     }
 
-    @AfterAll
-    static void tearDown() throws IOException {
+    @AfterEach
+    void tearDown() throws IOException {
         mockWebServer.shutdown();
     }
 
@@ -73,18 +74,18 @@ public class GatewayControllerTest {
 
         // Enqueue request to mock server
         mockWebServer.enqueue(new MockResponse()
-                .addHeader(contentType, jsonContentHeader)
+                .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .setBody("Hello test!"));
 
         // Perform call to registered listener
-        MvcResult result = mockMvc.perform(get("/api/single-registration"))
+        MvcResult result = mockMvc.perform(get("/api/" + target))
                 .andReturn();
 
         // Wait for response
         mockMvc.perform(asyncDispatch(result))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Hello test!"))
-                .andExpect(content().contentType(jsonContentHeader));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
 
         // Perform additional verification
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
@@ -102,18 +103,18 @@ public class GatewayControllerTest {
         // Enqueue request to mock server
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(400)
-                .addHeader(contentType, jsonContentHeader)
+                .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .setBody("No! This is bad!"));
 
         // Perform call to registered listener
-        MvcResult result = mockMvc.perform(get("/api/single-registration"))
+        MvcResult result = mockMvc.perform(get("/api/" + target))
                 .andReturn();
 
         // Wait for response
         mockMvc.perform(asyncDispatch(result))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("No! This is bad!"))
-                .andExpect(content().contentType(jsonContentHeader));
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
 
         // Perform additional verification
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
