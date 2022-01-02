@@ -1,5 +1,7 @@
 package nl.tudelft.sem.courses.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.util.ArrayList;
@@ -7,6 +9,7 @@ import java.util.List;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
+import nl.tudelft.sem.courses.communication.MultiCourseRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.services.CourseService;
@@ -33,15 +36,20 @@ public class CourseController {
 
     private final transient JwtUtils jwtUtils;
 
+    private final transient ObjectMapper objectMapper;
+
     /**
      * Constructs the CourseController class.
      *
      * @param courseService is the course service used to perform business logic.
-     * @param jwtUtils is the JWT utility library used to decode JWT tokens.
+     * @param jwtUtils      is the JWT utility library used to decode JWT tokens.
+     * @param objectMapper  is the object mapper used to convert objects to JSON.
      */
-    public CourseController(CourseService courseService, JwtUtils jwtUtils) {
+    public CourseController(CourseService courseService, JwtUtils jwtUtils,
+                            ObjectMapper objectMapper) {
         this.courseService = courseService;
         this.jwtUtils = jwtUtils;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -54,8 +62,8 @@ public class CourseController {
     @PostMapping("/create")
     public boolean createNewCourse(@RequestBody CourseRequest request,
                                    @RequestHeader HttpHeaders httpHeaders) {
-        Jws<Claims> webtoken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webtoken)) {
+        Jws<Claims> webToken = isAuthorized(httpHeaders);
+        if (checkIfLecturer(webToken)) {
             String result = courseService.addNewCourses(request);
             if (result.contains("Failed")) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -75,9 +83,9 @@ public class CourseController {
     @GetMapping("/get/courses/{code}")
     public List<CourseResponse> getCoursesByCode(
             @PathVariable String code, @RequestHeader HttpHeaders httpHeaders) {
-        Jws<Claims> webtoken = isAuthorized(httpHeaders);
+        Jws<Claims> webToken = isAuthorized(httpHeaders);
 
-        if (checkIfStudent(webtoken) || checkIfLecturer(webtoken)) {
+        if (checkIfStudent(webToken) || checkIfLecturer(webToken)) {
             List<Course> courses = courseService.getCourses(code);
             if (courses != null && !courses.isEmpty()) {
                 List<CourseResponse> courseResponses = new ArrayList<>();
@@ -112,20 +120,45 @@ public class CourseController {
     @GetMapping("/get/{id}")
     public CourseResponse getCourseById(@PathVariable long id,
                                         @RequestHeader HttpHeaders httpHeaders) {
-        Jws<Claims> webtoken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webtoken) || checkIfStudent(webtoken)) {
+        Jws<Claims> webToken = isAuthorized(httpHeaders);
+        if (checkIfLecturer(webToken) || checkIfStudent(webToken)) {
             Course course = courseService.getCourse(id);
             if (course == null) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Could not find course with that ID");
             }
-            CourseResponse courseResponse = new CourseResponse(
+            return new CourseResponse(
                     course.getId(),
                     course.getCourseCode(),
                     course.getStartDate(),
                     course.getFinishDate(),
                     course.getNumStudents());
-            return courseResponse;
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
+    }
+
+    /**
+     * Gives back a list that contains information of multiple requested courses.
+     *
+     * @param body - JSON object that contains a list of course IDs
+     * @return - A map of CourseResponse objects (simplified course objects) in JSON format
+     */
+    @PostMapping("/get-multiple")
+    public String getMultipleCourses(@RequestBody MultiCourseRequest body,
+                                     @RequestHeader HttpHeaders httpHeaders) {
+        // Check if the user is authorized
+        Jws<Claims> webToken = isAuthorized(httpHeaders);
+        if (checkIfLecturer(webToken) || checkIfStudent(webToken)) {
+            // Retrieve a list of courses associated to the IDs
+            List<Course> courses = courseService.getMultipleCourses(body.getCourseIds());
+
+            // Compose JSON object with course information
+            ObjectNode json = objectMapper.createObjectNode();
+            courses.forEach(course -> json.set(String.valueOf(course.getId()),
+                    objectMapper.valueToTree(new CourseResponse(course))));
+
+            // Return the JSON object as string
+            return json.toString();
         }
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
@@ -139,8 +172,8 @@ public class CourseController {
     @PostMapping("/delete/{id}")
     public boolean deleteCourse(@PathVariable long id,
                                 @RequestHeader HttpHeaders httpHeaders) {
-        Jws<Claims> webtoken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webtoken)) {
+        Jws<Claims> webToken = isAuthorized(httpHeaders);
+        if (checkIfLecturer(webToken)) {
             String result = courseService.deleteCourse(id);
             if (result.contains("Failed")) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
@@ -161,8 +194,8 @@ public class CourseController {
     @PostMapping("/create/grade")
     public boolean addGrade(@RequestBody GradeRequest request,
                             @RequestHeader HttpHeaders httpHeaders) {
-        Jws<Claims> webtoken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webtoken)) {
+        Jws<Claims> webToken = isAuthorized(httpHeaders);
+        if (checkIfLecturer(webToken)) {
             if (request == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "No Request was provided");
@@ -189,8 +222,8 @@ public class CourseController {
     public float getGradeOfUser(@PathVariable("userid") long userid,
                                 @PathVariable("courseid") long courseId,
                                 @RequestHeader HttpHeaders httpHeaders) {
-        Jws<Claims> webtoken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webtoken) || checkIfStudent(webtoken)) {
+        Jws<Claims> webToken = isAuthorized(httpHeaders);
+        if (checkIfLecturer(webToken) || checkIfStudent(webToken)) {
             Grade grade = courseService.getGrade(userid, courseId);
             if (grade == null) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -220,15 +253,14 @@ public class CourseController {
         if (token == null) {
             return null;
         }
-        //a Json webtoken containing the parsed JWS claims
-        Jws<Claims> claimsJws = jwtUtils.validateAndParseClaims(token);
-        return claimsJws;
+        //a Json webToken containing the parsed JWS claims
+        return jwtUtils.validateAndParseClaims(token);
     }
 
     /**
-     * Method checks if the role in webtoken is student or TA.
+     * Method checks if the role in webToken is student or TA.
      *
-     * @param claimsJws - a webtoken
+     * @param claimsJws - a webToken
      * @return - true if student/ta else false
      */
     public boolean checkIfStudent(Jws<Claims> claimsJws) {
@@ -240,10 +272,10 @@ public class CourseController {
     }
 
     /**
-     * Method checks if role in webtoken is
+     * Method checks if role in webToken is
      * lecturer or a admin.
      *
-     * @param claimsJws - a webtoken
+     * @param claimsJws - a webToken
      * @return - true if lecturer/admin else false
      */
     public boolean checkIfLecturer(Jws<Claims> claimsJws) {

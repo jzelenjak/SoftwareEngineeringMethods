@@ -1,8 +1,6 @@
 package nl.tudelft.sem.courses.entities;
 
 
-
-import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -11,6 +9,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,6 +22,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode
 public class Grade {
 
 
@@ -67,27 +67,6 @@ public class Grade {
         this.course = course;
         this.userId = userId;
         this.gradeValue = gradeValue;
-    }
-
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Grade grade1 = (Grade) o;
-        return Float.compare(grade1.gradeValue, gradeValue) == 0
-                && course.equals(grade1.course)
-                && userId == grade1.userId
-                || id == grade1.id;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
     }
 
     @Override

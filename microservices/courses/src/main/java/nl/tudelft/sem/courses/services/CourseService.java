@@ -2,6 +2,7 @@ package nl.tudelft.sem.courses.services;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.entities.Course;
@@ -90,6 +91,16 @@ public class CourseService {
      */
     public List<Course> getCourses(String courseCode) {
         return courseRepository.findAllByCourseCode(courseCode);
+    }
+
+    /**
+     * Returns a list of courses associated to the given IDs.
+     *
+     * @param courseIds - Set of course IDs
+     * @return - List of courses associated to the given IDs
+     */
+    public List<Course> getMultipleCourses(Set<Long> courseIds) {
+        return courseRepository.findAllByIds(courseIds);
     }
 
     /**
