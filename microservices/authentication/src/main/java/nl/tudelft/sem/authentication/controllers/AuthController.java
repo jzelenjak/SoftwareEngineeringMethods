@@ -2,8 +2,6 @@ package nl.tudelft.sem.authentication.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
@@ -171,31 +169,10 @@ public class AuthController {
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public void changeRole(HttpServletRequest req) throws IOException {
-        // Get JWT from the requester.
-        String jwt = jwtTokenProvider.resolveToken(req);
-        Jws<Claims> claimsJws = jwtTokenProvider.validateAndParseToken(jwt);
-        String roleOfRequester = jwtTokenProvider.getRole(claimsJws);
-
         // Get username to change the role of from the request body.
         JsonNode jsonNode = objectMapper.readTree(req.getInputStream());
         String target = jsonNode.get(USERNAME).asText();
 
-        // Check if requester is a lecturer.
-        if (getRole(roleOfRequester) == UserRole.LECTURER) {
-            // Lecturer can only change a student's or a TA's role.
-            UserRole targetRole = this.authService.loadUserByUsername(target).getRole();
-            if (!checkValidRolesForLecturers(targetRole)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "You are not allowed to do that as a lecturer!");
-            }
-            // Lecturer can only change role back to student or TA.
-            String newRoleInput = jsonNode.get("role").asText();
-            UserRole newRole = getRole(newRoleInput);
-            if (!checkValidRolesForLecturers(newRole)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "You are not allowed to do that as a lecturer!");
-            }
-        }
         String newRoleInput = jsonNode.get("role").asText();
         UserRole newRole = getRole(newRoleInput);
         this.authService.changeRole(target, newRole);
@@ -231,8 +208,6 @@ public class AuthController {
                 return UserRole.STUDENT;
             case "LECTURER":
                 return UserRole.LECTURER;
-            case "TA":
-                return UserRole.TA;
             default:
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Please enter a valid role.");
@@ -283,18 +258,5 @@ public class AuthController {
         }
         json.append("]}");
         return json.toString();
-    }
-
-    /**
-     * Check valid roles for lecturers to change users to/from.
-     *
-     * @param role the role of the user we want to check.
-     * @return true if lecturers are allowed to change the role to/from.
-     */
-    public boolean checkValidRolesForLecturers(UserRole role) {
-        if (role == UserRole.TA || role == UserRole.STUDENT) {
-            return true;
-        }
-        return false;
     }
 }

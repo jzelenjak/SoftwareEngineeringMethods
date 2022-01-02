@@ -13,10 +13,6 @@ public enum UserRole {
      */
     LECTURER,
     /**
-     * TA role.
-     */
-    TA,
-    /**
      * Admin role.
      */
     ADMIN

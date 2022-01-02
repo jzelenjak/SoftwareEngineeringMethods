@@ -139,10 +139,11 @@ Endpoint used to declare hours. Only **admins** and **TAs** are permitted to dec
 }
 ```
 
-| Response code | Reason                                       |
-| ------------- | -------------------------------------------- |
-| 200 OK        | Successful completion                        |
-| 403 FORBIDDEN | User is not permitted to access the endpoint |
+| Response code   | Reason                                                             |
+| --------------- | ------------------------------------------------------------------ |
+| 200 OK          | Successful completion                                              |
+| 403 FORBIDDEN   | User is not permitted to access the endpoint                       |
+| 400 BAD REQUEST | Declaration is not within valid course time or contract is invalid |
 
 ---
 
@@ -159,7 +160,8 @@ The *id* used within the path is the ID of the declaration.
 | Response code   | Reason                                                   |
 | --------------- | -------------------------------------------------------- |
 | 200 OK          | Successful completion                                    |
-| 400 BAD REQUEST | Declaration does not exist, or has already been approved |
+| 400 BAD REQUEST | Declaration does not exist                               |
+| 404 NOT FOUND   | Declaration has already been approved                    |
 | 403 FORBIDDEN   | User is not permitted to access the endpoint             |
 
 ---
@@ -177,7 +179,8 @@ The *id* used within the path is the ID of the declaration.
 | Response code   | Reason                                                   |
 | --------------- | -------------------------------------------------------- |
 | 200 OK          | Successful completion                                    |
-| 400 BAD REQUEST | Declaration does not exist, or has already been approved |
+| 400 BAD REQUEST | Declaration does not exist                               |
+| 404 NOT FOUND   | Declaration has already been approved                    |
 | 403 FORBIDDEN   | User is not permitted to access the endpoint             |
 
 ---
@@ -185,7 +188,7 @@ The *id* used within the path is the ID of the declaration.
 ## Statistics
 
 ```
-GET  /api/hour-management/declaration/statistics/total-hours
+POST  /api/hour-management/declaration/statistics/total-hours
 ```
 
 Endpoint for retrieving the total amount of hours worked by a TA on a specific course. This endpoint is only accessible by **admins**, **lecturers**, and **TAs**. All requests towards this endpoint require the use of the following body used to request the desired data;
