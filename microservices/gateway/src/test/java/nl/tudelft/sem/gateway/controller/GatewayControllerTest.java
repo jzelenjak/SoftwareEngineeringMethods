@@ -33,6 +33,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 public class GatewayControllerTest {
 
+    private static final String API_PREFIX = "/api/";
+
     @Autowired
     private transient MockMvc mockMvc;
 
@@ -69,7 +71,7 @@ public class GatewayControllerTest {
     void testGatewayWithRegistrationValidResponse() throws Exception {
         // Register listener
         String target = "single-registration";
-        HttpUrl url = mockWebServer.url("/api/" + target);
+        HttpUrl url = mockWebServer.url(API_PREFIX + target);
         discoveryRegistrarService.addRegistration(target, new Registration(url.host(), url.port()));
 
         // Enqueue request to mock server
@@ -78,7 +80,7 @@ public class GatewayControllerTest {
                 .setBody("Hello test!"));
 
         // Perform call to registered listener
-        MvcResult result = mockMvc.perform(get("/api/" + target))
+        MvcResult result = mockMvc.perform(get(API_PREFIX + target))
                 .andReturn();
 
         // Wait for response
@@ -97,7 +99,7 @@ public class GatewayControllerTest {
     void testGatewayWithRegistrationInValidResponse() throws Exception {
         // Register listener
         String target = "single-invalid-response";
-        HttpUrl url = mockWebServer.url("/api/" + target);
+        HttpUrl url = mockWebServer.url(API_PREFIX + target);
         discoveryRegistrarService.addRegistration(target, new Registration(url.host(), url.port()));
 
         // Enqueue request to mock server
@@ -107,7 +109,7 @@ public class GatewayControllerTest {
                 .setBody("No! This is bad!"));
 
         // Perform call to registered listener
-        MvcResult result = mockMvc.perform(get("/api/" + target))
+        MvcResult result = mockMvc.perform(get(API_PREFIX + target))
                 .andReturn();
 
         // Wait for response
