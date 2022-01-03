@@ -606,7 +606,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void testToJsonSuccess() throws InterruptedException {
+    void testToJsonSuccess() {
         String message = "Hi there :)";
         Notification someNotification = new Notification(41L, message);
         // Add notifications to list.
@@ -620,20 +620,18 @@ class AuthControllerTest {
                 + "-" + localDateTime.getYear()
                 + " " + ZoneId.systemDefault();
 
-        String first = String.format(
-                "{\r\n  \"message\" : \"%s\",\r\n  \"notificationDate\" : \"%s\"\r\n}",
-                message, timeStamp);
+        String first = createPrettyJson("message", message,
+                "notificationDate", timeStamp);
 
         String otherMessage = "Again, hi there (:";
         Notification someOtherNotification = new Notification(41L, otherMessage);
         list.add(someOtherNotification);
 
-        String second = String.format(
-                "{\r\n  \"message\" : \"%s\",\r\n  \"notificationDate\" : \"%s\"\r\n}",
-                otherMessage, timeStamp);
+        String second = createPrettyJson("message", otherMessage,
+                "notificationDate", timeStamp);
         String expectedJson = "{\"notifications\":[" + first + ", " + second + "]}";
         String actualJson = authController.turnListInJsonResponse(list);
-        Thread.sleep(10000);
+
         Assertions.assertEquals(expectedJson, actualJson);
     }
 
@@ -663,5 +661,20 @@ class AuthControllerTest {
         for (int i = 0; i < list.size() - 1; i++) {
             Assertions.assertEquals(list.get(i), actualList.get(i));
         }
+    }
+
+    /**
+     * A helper method to create json pretty string out of String key-value pairs.
+     *
+     * @param kvPairs       list of key-values, must be an even number
+     * @return the json string that can be used in the response body
+     */
+    private String createPrettyJson(String... kvPairs) {
+        ObjectNode node = new ObjectMapper().createObjectNode();
+
+        for (int i = 0; i < kvPairs.length; i += 2) {
+            node.put(kvPairs[i], kvPairs[i + 1]);
+        }
+        return node.toPrettyString();
     }
 }
