@@ -13,17 +13,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
 @AutoConfigureMockMvc
 @SpringBootTest
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 public class DiscoveryRegistrarControllerTest {
 
     @Autowired
     private transient MockMvc mockMvc;
-
-    private static final String contentType = "Content-Type";
-    private static final String jsonContentHeader = "application/json";
 
     @Test
     void testGetNonExistingTarget() throws Exception {
@@ -37,14 +38,15 @@ public class DiscoveryRegistrarControllerTest {
     void testSingleMicroservice() throws Exception {
         Registration toBeRegistered = new Registration("my.amazing.link", 5678);
         mockMvc.perform(post("/discovery/register/my-amazing-link")
-                        .header(contentType, jsonContentHeader)
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                         .content(new Gson().toJson(toBeRegistered)))
                 .andExpect(status().isOk());
 
         // Verify that it was registered
         mockMvc.perform(get("/discovery/my-amazing-link"))
                 .andExpect(status().isOk())
-                .andExpect(header().string(contentType, jsonContentHeader))
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE,
+                        MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(content().json(new Gson().toJson(toBeRegistered)));
     }
 
@@ -56,7 +58,7 @@ public class DiscoveryRegistrarControllerTest {
 
         for (var registration : registrations) {
             mockMvc.perform(post("/discovery/register/multi-pool")
-                            .header(contentType, jsonContentHeader)
+                            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                             .content(new Gson().toJson(registration)))
                     .andExpect(status().isOk());
         }
@@ -65,7 +67,8 @@ public class DiscoveryRegistrarControllerTest {
         for (var registration : registrations) {
             mockMvc.perform(get("/discovery/multi-pool"))
                     .andExpect(status().isOk())
-                    .andExpect(header().string(contentType, jsonContentHeader))
+                    .andExpect(header().string(HttpHeaders.CONTENT_TYPE,
+                            MediaType.APPLICATION_JSON_VALUE))
                     .andExpect(content().json(new Gson().toJson(registration)));
         }
     }
