@@ -4,12 +4,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.google.common.cache.Cache;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public class DiscoveryRegistryTest {
+
+    @Mock
+    private transient Cache<String, Registration> cacheMock;
+
+    @BeforeEach
+    private void setupEach() {
+        // Create fresh mocks
+        MockitoAnnotations.initMocks(this);
+    }
 
     @Test
     void testConstructor() {
@@ -69,6 +85,30 @@ public class DiscoveryRegistryTest {
         registry.addRegistration(registration);
         Thread.yield();
         assertNull(registry.getRegistration());
+    }
+
+    @Test
+    void testGetRegistrationReRegistrations() {
+        LinkedList<Registration> registrations = new LinkedList<>();
+        Registration registration = new Registration("localhost", 1234);
+        registrations.add(registration);
+
+        // Create the registry using the test objects
+        DiscoveryRegistry registry = new DiscoveryRegistry(registrations, cacheMock);
+
+        // Configure behaviour of mock
+        when(cacheMock.size()).thenReturn(1L);
+        when(cacheMock.getIfPresent(registration.remoteAddress())).thenReturn(registration);
+
+        // Add it, and verify that it was added (and remains added)
+        registry.addRegistration(registration);
+        assertThat(registry.getRegistration()).isEqualTo(registration);
+
+        // Assert that there is no eviction time due to the custom cache
+        assertThat(registry.getCacheEvictionTimeMinutes()).isEqualTo(-1);
+
+        // Verify that the registration got re-registered once by the getRegistration method
+        verify(cacheMock, times(1)).put(registration.remoteAddress(), registration);
     }
 
 }
