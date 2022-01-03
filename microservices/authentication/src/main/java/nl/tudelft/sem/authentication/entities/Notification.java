@@ -171,7 +171,7 @@ public class Notification {
                 + " " + this.notificationDate.getDayOfMonth()
                 + "-" + this.notificationDate.getMonthValue()
                 + "-" + this.notificationDate.getYear()
-                + " " + ZoneId.systemDefault();
+                + " " + this.notificationDate.getZone();
 
         return new ObjectMapper().createObjectNode()
                 .put("message", this.message)
