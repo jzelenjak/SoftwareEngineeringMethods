@@ -178,4 +178,28 @@ public class AsyncHiringValidatorTest {
         assertEquals(token, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
+    @Test
+    void testValidateEqualToMaxHours() throws InterruptedException {
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 15);
+        AsyncHiringValidator validator = new AsyncHiringValidator(gatewayConfig);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(authorization, token);
+
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(contract)
+                .addHeader(content, applicationJson));
+
+        // check the state
+        Mono<Boolean> result = validator.validate(headers, declarationRequest.toJson());
+        assertEquals(Boolean.TRUE, result.block());
+
+        // check that request was made to correct place
+        RecordedRequest recordedRequest = mockWebServer.takeRequest();
+
+        assertEquals(get, recordedRequest.getMethod());
+        assertEquals("/api/hiring-service/get-contract?courseID=1", recordedRequest.getPath());
+        assertEquals(token, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
+    }
+
 }
