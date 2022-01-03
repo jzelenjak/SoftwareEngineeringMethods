@@ -120,10 +120,11 @@ class NotificationTest {
     }
 
     @Test
-    void testToJsonSuccess() {
+    void testToJsonSuccess() throws InterruptedException {
         Notification someNotification = new Notification(userId, message);
         LocalDateTime timeStamp = someNotification.getNotificationDate();
-        String json = String.format(
+        String actualJsonResponse = someNotification.toJsonResponse();
+        String expectedJsonResponse = String.format(
                 "{\r\n  \"message\" : \"%s\",\r\n  \"notificationDate\" : \"%s\"\r\n}",
                 this.message, timeStamp.getHour()
                         + ":" + timeStamp.getMinute()
@@ -131,7 +132,8 @@ class NotificationTest {
                         + "-" + timeStamp.getMonthValue()
                         + "-" + timeStamp.getYear()
                         + " " + ZoneId.systemDefault());
-        Assertions.assertEquals(json, someNotification.toJsonResponse());
+        Thread.sleep(10000);
+        Assertions.assertEquals(expectedJsonResponse, actualJsonResponse);
     }
 
     @Test

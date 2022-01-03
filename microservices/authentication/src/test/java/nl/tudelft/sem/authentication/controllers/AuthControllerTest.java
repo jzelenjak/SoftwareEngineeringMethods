@@ -606,7 +606,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void testToJsonSuccess() {
+    void testToJsonSuccess() throws InterruptedException {
         String message = "Hi there :)";
         Notification someNotification = new Notification(41L, message);
         // Add notifications to list.
@@ -633,6 +633,7 @@ class AuthControllerTest {
                 otherMessage, timeStamp);
         String expectedJson = "{\"notifications\":[" + first + ", " + second + "]}";
         String actualJson = authController.turnListInJsonResponse(list);
+        Thread.sleep(10000);
         Assertions.assertEquals(expectedJson, actualJson);
     }
 
