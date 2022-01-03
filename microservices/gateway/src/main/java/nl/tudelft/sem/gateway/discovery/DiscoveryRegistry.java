@@ -43,9 +43,10 @@ public class DiscoveryRegistry {
      * @param registrationQueue The queue to use for storing the registrations.
      * @param registrations     Custom cache for storing entities.
      * @implNote sets the cacheEvictionTimeMinutes to -1, as it is not used in this case
-     * (covered by the cache).
+     *         (covered by the cache).
      */
-    public DiscoveryRegistry(Queue<Registration> registrationQueue, Cache<String, Registration> registrations) {
+    public DiscoveryRegistry(Queue<Registration> registrationQueue,
+                             Cache<String, Registration> registrations) {
         this.cacheEvictionTimeMinutes = -1;
         this.registrationQueue = registrationQueue;
         this.registrations = registrations;

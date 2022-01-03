@@ -132,7 +132,7 @@ public class AsyncHiringValidatorTest {
 
     @Test
     void testValidateNegativeHours() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 0);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 20, 0);
         AsyncHiringValidator validator = new AsyncHiringValidator(gatewayConfig);
         HttpHeaders headers = new HttpHeaders();
         headers.add(authorization, token);
@@ -150,13 +150,13 @@ public class AsyncHiringValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(get, recordedRequest.getMethod());
-        assertEquals("/api/hiring-service/get-contract?courseID=1", recordedRequest.getPath());
+        assertEquals("/api/hiring-service/get-contract?courseID=20", recordedRequest.getPath());
         assertEquals(token, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
     void testValidateMoreThanMaxHours() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 999);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 3, 999);
         AsyncHiringValidator validator = new AsyncHiringValidator(gatewayConfig);
         HttpHeaders headers = new HttpHeaders();
         headers.add(authorization, token);
@@ -174,7 +174,7 @@ public class AsyncHiringValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(get, recordedRequest.getMethod());
-        assertEquals("/api/hiring-service/get-contract?courseID=1", recordedRequest.getPath());
+        assertEquals("/api/hiring-service/get-contract?courseID=3", recordedRequest.getPath());
         assertEquals(token, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 

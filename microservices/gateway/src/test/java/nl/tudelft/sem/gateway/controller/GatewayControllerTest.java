@@ -3,7 +3,6 @@ package nl.tudelft.sem.gateway.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -28,13 +27,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 @AutoConfigureMockMvc
@@ -43,6 +42,7 @@ import reactor.core.publisher.Mono;
 public class GatewayControllerTest {
 
     private static final String API_PREFIX = "/api/";
+    private static final String authorizationToken = "myToken";
 
     @Autowired
     private transient MockMvc mockMvc;
@@ -93,7 +93,7 @@ public class GatewayControllerTest {
 
         // Perform call to registered listener
         MvcResult result = mockMvc.perform(get(API_PREFIX + target)
-                        .header(HttpHeaders.AUTHORIZATION, "myToken"))
+                        .header(HttpHeaders.AUTHORIZATION, authorizationToken))
                 .andReturn();
 
         // Wait for response
@@ -105,8 +105,8 @@ public class GatewayControllerTest {
         // Perform additional verification
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
         assertNotNull(recordedRequest);
-        assertEquals("GET", recordedRequest.getMethod());
-        assertEquals("myToken", recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
+        assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
+        assertEquals(authorizationToken, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
@@ -124,7 +124,7 @@ public class GatewayControllerTest {
 
         // Perform call to registered listener
         MvcResult result = mockMvc.perform(get(API_PREFIX + target)
-                        .header(HttpHeaders.AUTHORIZATION, "myToken"))
+                        .header(HttpHeaders.AUTHORIZATION, authorizationToken))
                 .andReturn();
 
         // Wait for response
@@ -136,8 +136,8 @@ public class GatewayControllerTest {
         // Perform additional verification
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
         assertNotNull(recordedRequest);
-        assertEquals("GET", recordedRequest.getMethod());
-        assertEquals("myToken", recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
+        assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
+        assertEquals(authorizationToken, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
@@ -155,7 +155,7 @@ public class GatewayControllerTest {
 
         // Setup request mock object
         HttpServletRequest requestMock = Mockito.mock(HttpServletRequest.class);
-        when(requestMock.getMethod()).thenReturn("GET");
+        when(requestMock.getMethod()).thenReturn(HttpMethod.GET.name());
         when(requestMock.getScheme()).thenReturn("http");
         when(requestMock.getRequestURI()).thenReturn(url.toString());
         when(requestMock.getQueryString()).thenReturn("");
@@ -168,18 +168,16 @@ public class GatewayControllerTest {
                 .getRequest(target, "", new HttpHeaders(), requestMock);
 
         // Verify that the mono contains a forwarded exception
-        var resolvedException = response.onErrorResume(throwable -> {
+        // Should contain no response (resolved)
+        assertNull(response.onErrorResume(throwable -> {
             assertEquals(throwable.getClass(), MonoForwardingException.class);
             return Mono.empty();
-        }).block();
-
-        // Should contain no response (resolved)
-        assertNull(resolvedException);
+        }).block());
 
         // Perform additional verification
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
         assertNotNull(recordedRequest);
-        assertEquals("GET", recordedRequest.getMethod());
+        assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
     }
 
 }

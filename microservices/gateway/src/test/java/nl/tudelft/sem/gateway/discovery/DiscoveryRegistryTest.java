@@ -18,6 +18,8 @@ import org.mockito.MockitoAnnotations;
 
 public class DiscoveryRegistryTest {
 
+    private static final String LOCALHOST = "localhost";
+
     @Mock
     private transient Cache<String, Registration> cacheMock;
 
@@ -42,7 +44,7 @@ public class DiscoveryRegistryTest {
     @Test
     void testAddSingleRegistration() {
         DiscoveryRegistry registry = new DiscoveryRegistry(1);
-        Registration registration = new Registration("localhost", 1234);
+        Registration registration = new Registration(LOCALHOST, 1234);
 
         // Should not exist at the start
         assertNull(registry.getRegistration());
@@ -56,7 +58,7 @@ public class DiscoveryRegistryTest {
     @Test
     void testAddMultipleRegistrations() {
         DiscoveryRegistry registry = new DiscoveryRegistry(1);
-        List<Registration> registrations = List.of(new Registration("localhost", 2020),
+        List<Registration> registrations = List.of(new Registration(LOCALHOST, 2020),
                 new Registration("tudelft.nl", 8080),
                 new Registration("my.website.com", 6969));
 
@@ -76,7 +78,7 @@ public class DiscoveryRegistryTest {
     @Test
     void testAddRegistrationDirectEviction() {
         DiscoveryRegistry registry = new DiscoveryRegistry(0);
-        Registration registration = new Registration("localhost", 1234);
+        Registration registration = new Registration(LOCALHOST, 1234);
 
         // Should not exist at the start
         assertNull(registry.getRegistration());
@@ -90,7 +92,7 @@ public class DiscoveryRegistryTest {
     @Test
     void testGetRegistrationReRegistrations() {
         LinkedList<Registration> registrations = new LinkedList<>();
-        Registration registration = new Registration("localhost", 1234);
+        Registration registration = new Registration(LOCALHOST, 1234);
         registrations.add(registration);
 
         // Create the registry using the test objects
