@@ -3,8 +3,9 @@ package nl.tudelft.sem.authentication.entities;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,7 @@ class NotificationTest {
     private final transient long userId = 1234567L;
     private final transient String message = "Hey there, you are hired!";
     private final transient String newMessage = "Unfortunately you are fired, get out.";
-    private final transient LocalDateTime notificationDate = LocalDateTime.now();
+    private final transient ZonedDateTime notificationDate = ZonedDateTime.now();
 
     @BeforeEach
     void setUp() {
@@ -125,7 +126,7 @@ class NotificationTest {
     @Test
     void testToJsonSuccess() {
         Notification someNotification = new Notification(userId, message);
-        LocalDateTime timeStamp = someNotification.getNotificationDate();
+        ZonedDateTime timeStamp = someNotification.getNotificationDate();
         String date = timeStamp.getHour()
                 + ":" + timeStamp.getMinute()
                 + " " + timeStamp.getDayOfMonth()

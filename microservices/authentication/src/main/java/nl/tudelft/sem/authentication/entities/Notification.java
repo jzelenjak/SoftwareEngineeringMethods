@@ -1,8 +1,8 @@
 package nl.tudelft.sem.authentication.entities;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -27,8 +27,8 @@ public class Notification {
     @Column(name = "message", nullable = false)
     private String message;
 
-    @Column(name = "notification_date", columnDefinition = "TIMESTAMP")
-    private LocalDateTime notificationDate;
+    @Column(name = "notificationDate", columnDefinition = "TIMESTAMP")
+    private ZonedDateTime notificationDate;
 
 
     /**
@@ -46,7 +46,7 @@ public class Notification {
     public Notification(long userId, String message) {
         this.userId = userId;
         this.message = message;
-        this.notificationDate = LocalDateTime.now();
+        this.notificationDate = ZonedDateTime.now();
     }
 
     /**
@@ -108,7 +108,7 @@ public class Notification {
      *
      * @return notification date.
      */
-    public LocalDateTime getNotificationDate() {
+    public ZonedDateTime getNotificationDate() {
         return this.notificationDate;
     }
 
@@ -117,7 +117,7 @@ public class Notification {
      *
      * @param notificationDate the notification date
      */
-    public void setNotificationDate(LocalDateTime notificationDate) {
+    public void setNotificationDate(ZonedDateTime notificationDate) {
         this.notificationDate = notificationDate;
     }
 

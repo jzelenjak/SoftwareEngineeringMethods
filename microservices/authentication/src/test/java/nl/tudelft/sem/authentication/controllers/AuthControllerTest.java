@@ -13,6 +13,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -612,12 +613,12 @@ class AuthControllerTest {
         // Add notifications to list.
         List<Notification> list = new ArrayList<>();
         list.add(someNotification);
-        LocalDateTime localDateTime = someNotification.getNotificationDate();
-        String timeStamp = localDateTime.getHour()
-                + ":" + localDateTime.getMinute()
-                + " " + localDateTime.getDayOfMonth()
-                + "-" + localDateTime.getMonthValue()
-                + "-" + localDateTime.getYear()
+        ZonedDateTime zonedDateTime = someNotification.getNotificationDate();
+        String timeStamp = zonedDateTime.getHour()
+                + ":" + zonedDateTime.getMinute()
+                + " " + zonedDateTime.getDayOfMonth()
+                + "-" + zonedDateTime.getMonthValue()
+                + "-" + zonedDateTime.getYear()
                 + " " + ZoneId.systemDefault();
 
         String first = createPrettyJson("message", message,

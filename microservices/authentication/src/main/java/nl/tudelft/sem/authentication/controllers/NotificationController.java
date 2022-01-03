@@ -11,7 +11,6 @@ import nl.tudelft.sem.authentication.entities.Notification;
 import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
 import nl.tudelft.sem.authentication.security.UserRole;
 import nl.tudelft.sem.authentication.service.NotificationService;
-import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,7 +37,6 @@ public class NotificationController {
 
     private final transient NotificationService notificationService;
     private final transient JwtTokenProvider jwtTokenProvider;
-    private final transient JwtUtils jwtUtils;
     private final transient ObjectMapper objectMapper = new ObjectMapper();
 
 
@@ -47,13 +45,12 @@ public class NotificationController {
      *
      * @param notificationService   the notification service.
      * @param jwtTokenProvider      the jwt token provider.
-     * @param jwtUtils              the jwt utils library.
+     *
      */
     public NotificationController(NotificationService notificationService,
-                                  JwtTokenProvider jwtTokenProvider, JwtUtils jwtUtils) {
+                                  JwtTokenProvider jwtTokenProvider) {
         this.notificationService = notificationService;
         this.jwtTokenProvider = jwtTokenProvider;
-        this.jwtUtils = jwtUtils;
     }
 
     /**
