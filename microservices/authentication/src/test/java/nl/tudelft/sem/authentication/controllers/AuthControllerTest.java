@@ -620,14 +620,16 @@ class AuthControllerTest {
                 + "-" + localDateTime.getYear()
                 + " " + ZoneId.systemDefault();
 
-        String first = String.format("{\"message\":\"%s\",\"notificationDate\":\"%s\"}",
+        String first = String.format(
+                "{\r\n  \"message\" : \"%s\",\r\n  \"notificationDate\" : \"%s\"\r\n}",
                 message, timeStamp);
 
         String otherMessage = "Again, hi there (:";
         Notification someOtherNotification = new Notification(41L, otherMessage);
         list.add(someOtherNotification);
 
-        String second = String.format("{\"message\":\"%s\",\"notificationDate\":\"%s\"}",
+        String second = String.format(
+                "{\r\n  \"message\" : \"%s\",\r\n  \"notificationDate\" : \"%s\"\r\n}",
                 otherMessage, timeStamp);
         String expectedJson = "{\"notifications\":[" + first + ", " + second + "]}";
         String actualJson = authController.turnListInJsonResponse(list);

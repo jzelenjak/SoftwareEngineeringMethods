@@ -7,7 +7,6 @@ import io.jsonwebtoken.Jws;
 import java.io.IOException;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import nl.tudelft.sem.authentication.entities.Notification;
 import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
 import nl.tudelft.sem.authentication.security.UserRole;

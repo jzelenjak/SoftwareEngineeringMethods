@@ -1,11 +1,12 @@
 package nl.tudelft.sem.authentication.service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import javax.persistence.EntityNotFoundException;
 import nl.tudelft.sem.authentication.entities.Notification;
 import nl.tudelft.sem.authentication.repositories.NotificationDataRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * A class that represents Service.
@@ -67,8 +68,8 @@ public class NotificationService {
     public Notification loadNotificationByNotificationId(long notificationId) {
         return this.notificationDataRepository
                 .findByNotificationId(notificationId)
-                .orElseThrow(() -> new EntityNotFoundException(String.format(
-                        "Notification with id %d not found", notificationId)));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        String.format("Notification with id %d not found", notificationId)));
     }
 
     /**
@@ -82,8 +83,8 @@ public class NotificationService {
         return this.notificationDataRepository
                 .findByUserId(userId)
                 .orElseThrow(() ->
-                        new EntityNotFoundException(String
-                                .format("Notification with user ID %d has no new notification.",
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, String.format(
+                                "Notification with user ID %d has no new notification.",
                                         userId)));
     }
 

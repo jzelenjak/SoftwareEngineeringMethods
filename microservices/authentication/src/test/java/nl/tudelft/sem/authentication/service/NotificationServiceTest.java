@@ -1,25 +1,15 @@
 package nl.tudelft.sem.authentication.service;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import javax.persistence.EntityNotFoundException;
 import nl.tudelft.sem.authentication.entities.Notification;
-import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.repositories.NotificationDataRepository;
-import nl.tudelft.sem.authentication.repositories.UserDataRepository;
-import nl.tudelft.sem.authentication.security.UserRole;
-import org.aspectj.weaver.ast.Not;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
 
 
 @SpringBootTest
@@ -71,7 +61,7 @@ class NotificationServiceTest {
 
     @Test
     void testChangeUserFromNotificationNotFound() {
-        Assertions.assertThrows(EntityNotFoundException.class, () -> this.notificationService
+        Assertions.assertThrows(ResponseStatusException.class, () -> this.notificationService
                         .changeUserIdFromNotification(11L, 5555334L),
                 String.format("Notification with id %d has not been found", 11L));
     }
@@ -103,7 +93,7 @@ class NotificationServiceTest {
 
     @Test
     void testChangeMessageFromNotificationNotFound() {
-        Assertions.assertThrows(EntityNotFoundException.class, () -> this.notificationService
+        Assertions.assertThrows(ResponseStatusException.class, () -> this.notificationService
                     .changeMessageFromNotification(13L,
                             "Your hours have been approved."),
                 String.format("Notification with id %d has not been found", 13L));
@@ -129,7 +119,7 @@ class NotificationServiceTest {
 
     @Test
     void testLoadByNotificationIdNotFound() {
-        Assertions.assertThrows(EntityNotFoundException.class,
+        Assertions.assertThrows(ResponseStatusException.class,
                 () -> this.notificationService.loadNotificationByNotificationId(12345678L));
     }
 
@@ -157,7 +147,7 @@ class NotificationServiceTest {
 
     @Test
     void testLoadByUserIdNotFound() {
-        Assertions.assertThrows(EntityNotFoundException.class,
+        Assertions.assertThrows(ResponseStatusException.class,
                 () -> this.notificationService.loadNotificationByUserId(12345678L));
     }
 
@@ -188,7 +178,7 @@ class NotificationServiceTest {
 
     @Test
     void testDeleteNotificationByNotificationIdFailed() {
-        Assertions.assertThrows(EntityNotFoundException.class,
+        Assertions.assertThrows(ResponseStatusException.class,
                 () -> this.notificationService.deleteNotificationByNotificationId(12345678L));
     }
 
@@ -214,7 +204,7 @@ class NotificationServiceTest {
 
     @Test
     void testDeleteNotificationsByUserIdFailed() {
-        Assertions.assertThrows(EntityNotFoundException.class,
+        Assertions.assertThrows(ResponseStatusException.class,
                 () -> this.notificationService.deleteNotificationsFromUser(12345678L));
     }
 }

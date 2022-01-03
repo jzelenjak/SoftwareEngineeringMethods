@@ -123,7 +123,8 @@ class NotificationTest {
     void testToJsonSuccess() {
         Notification someNotification = new Notification(userId, message);
         LocalDateTime timeStamp = someNotification.getNotificationDate();
-        String json = String.format("{\"message\":\"%s\",\"notificationDate\":\"%s\"}",
+        String json = String.format(
+                "{\r\n  \"message\" : \"%s\",\r\n  \"notificationDate\" : \"%s\"\r\n}",
                 this.message, timeStamp.getHour()
                         + ":" + timeStamp.getMinute()
                         + " " + timeStamp.getDayOfMonth()

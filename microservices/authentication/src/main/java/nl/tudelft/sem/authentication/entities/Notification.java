@@ -1,5 +1,6 @@
 package nl.tudelft.sem.authentication.entities;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Objects;
@@ -165,13 +166,16 @@ public class Notification {
      * @return a string representation of the Notification.
      */
     public String toJsonResponse() {
-        return String.format("{\"message\":\"%s\",\"notificationDate\":\"%s\"}",
-                this.message, this.notificationDate.getHour()
-                        + ":" + this.notificationDate.getMinute()
-                        + " " + this.notificationDate.getDayOfMonth()
-                        + "-" + this.notificationDate.getMonthValue()
-                        + "-" + this.notificationDate.getYear()
-                        + " " + ZoneId.systemDefault());
+        String date = this.notificationDate.getHour()
+                + ":" + this.notificationDate.getMinute()
+                + " " + this.notificationDate.getDayOfMonth()
+                + "-" + this.notificationDate.getMonthValue()
+                + "-" + this.notificationDate.getYear()
+                + " " + ZoneId.systemDefault();
 
+        return new ObjectMapper().createObjectNode()
+                .put("message", this.message)
+                .put("notificationDate", date)
+                .toPrettyString();
     }
 }
