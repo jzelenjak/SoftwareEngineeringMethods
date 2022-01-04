@@ -147,8 +147,7 @@ public class CourseController {
     public String getMultipleCourses(@RequestBody MultiCourseRequest body,
                                      @RequestHeader HttpHeaders httpHeaders) {
         // Check if the user is authorized
-        Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webToken) || checkIfStudent(webToken)) {
+        if (isAuthorized(httpHeaders) != null) {
             // Retrieve a list of courses associated to the IDs
             List<Course> courses = courseService.getMultipleCourses(body.getCourseIds());
 
@@ -258,7 +257,7 @@ public class CourseController {
     }
 
     /**
-     * Method checks if the role in webToken is student or TA.
+     * Method checks if the role in webToken is student.
      *
      * @param claimsJws - a webToken
      * @return - true if student/ta else false
@@ -268,7 +267,7 @@ public class CourseController {
             return false;
         }
         String role = jwtUtils.getRole(claimsJws);
-        return role.equals("STUDENT") || role.equals("TA");
+        return role.equals("STUDENT");
     }
 
     /**
