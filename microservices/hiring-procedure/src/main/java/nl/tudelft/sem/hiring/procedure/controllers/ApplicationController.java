@@ -3,7 +3,6 @@ package nl.tudelft.sem.hiring.procedure.controllers;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.stream.JsonReader;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
@@ -12,9 +11,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
-import javax.management.InstanceNotFoundException;
 import lombok.Data;
-import lombok.val;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
 import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
@@ -22,6 +19,7 @@ import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
 import nl.tudelft.sem.hiring.procedure.services.NotificationService;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncAuthValidator;
+import nl.tudelft.sem.hiring.procedure.validation.AsyncCourseCandidacyValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncCourseExistsValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncCourseTimeValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncRoleValidator;
@@ -96,7 +94,9 @@ public class ApplicationController {
                 .addValidators(
                         new AsyncAuthValidator(jwtUtils),
                         new AsyncRoleValidator(jwtUtils, Set.of(Roles.STUDENT, Roles.TA)),
-                        new AsyncCourseTimeValidator(courseInfoCache, courseId))
+                        new AsyncCourseTimeValidator(courseInfoCache, courseId),
+                        new AsyncCourseCandidacyValidator(jwtUtils, applicationService,
+                                gatewayConfig, courseId))
                 .build();
 
         return head.validate(authHeader, "").flatMap(value -> {

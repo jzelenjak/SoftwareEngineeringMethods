@@ -24,14 +24,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @ExtendWith(MockitoExtension.class)
 public class ApplicationServiceTest {
     @Mock
     private transient ApplicationRepository applicationRepository;
 
-    @Autowired
     @InjectMocks
     private transient ApplicationService applicationService;
 

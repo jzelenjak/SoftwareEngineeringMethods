@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
+import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -24,6 +25,8 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     List<Application> findAllBySubmissionDateBefore(LocalDateTime submissionDate);
 
     List<Application> findAllByUserIdAndAndCourseId(long userId, long courseId);
+
+    List<Application> findAllByUserIdAndStatus(long userId, ApplicationStatus inProgress);
 
     Optional<Application> findByUserIdAndCourseId(long userId, long courseId);
 
