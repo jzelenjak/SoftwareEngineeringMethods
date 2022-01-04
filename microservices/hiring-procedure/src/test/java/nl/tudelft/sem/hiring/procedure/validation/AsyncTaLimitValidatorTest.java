@@ -20,15 +20,16 @@ import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -40,6 +41,8 @@ import reactor.core.publisher.Mono;
 @SpringBootTest
 public class AsyncTaLimitValidatorTest {
 
+    private static final String AUTHORIZATION_TOKEN = "MyToken";
+
     @MockBean
     private transient GatewayConfig gatewayConfigMock;
 
@@ -49,26 +52,27 @@ public class AsyncTaLimitValidatorTest {
     @Autowired
     private transient CourseInfoResponseCache courseInfoCache;
 
-    private static MockWebServer mockWebServer;
-
-    @BeforeAll
-    private static void setup() throws IOException {
-        mockWebServer = new MockWebServer();
-        mockWebServer.start();
-    }
+    private transient MockWebServer mockWebServer;
+    private transient HttpHeaders mockHeaders;
 
     @BeforeEach
-    private void setupEach() {
+    private void setupEach() throws IOException {
+        mockWebServer = new MockWebServer();
+        mockWebServer.start();
+
         HttpUrl url = mockWebServer.url("/");
         when(gatewayConfigMock.getHost()).thenReturn(url.host());
         when(gatewayConfigMock.getPort()).thenReturn(url.port());
+
+        mockHeaders = Mockito.mock(HttpHeaders.class);
+        when(mockHeaders.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn(AUTHORIZATION_TOKEN);
 
         // Invalidate the cache before each test
         courseInfoCache.invalidateCache();
     }
 
-    @AfterAll
-    private static void teardown() throws IOException {
+    @AfterEach
+    private void teardown() throws IOException {
         mockWebServer.shutdown();
     }
 
@@ -121,7 +125,7 @@ public class AsyncTaLimitValidatorTest {
         mockWebServer.enqueue(new MockResponse().setBody(responseBody));
 
         // Perform the validation
-        Mono<Boolean> result = validator.validate(null, "");
+        Mono<Boolean> result = validator.validate(mockHeaders, "");
         assertEquals(Boolean.TRUE, result.block());
 
         // Check the request by the validator component
@@ -158,7 +162,7 @@ public class AsyncTaLimitValidatorTest {
         mockWebServer.enqueue(new MockResponse().setBody(responseBody));
 
         // Perform the validation
-        Mono<Boolean> result = validator.validate(null, "");
+        Mono<Boolean> result = validator.validate(mockHeaders, "");
         assertEquals(Boolean.TRUE, result.block());
 
         // Check the request by the validator component
@@ -195,7 +199,7 @@ public class AsyncTaLimitValidatorTest {
         mockWebServer.enqueue(new MockResponse().setBody(responseBody));
 
         // Perform the validation
-        Mono<Boolean> result = validator.validate(null, "");
+        Mono<Boolean> result = validator.validate(mockHeaders, "");
         assertThrows(ResponseStatusException.class, result::block);
 
         // Check the request by the validator component
@@ -216,7 +220,7 @@ public class AsyncTaLimitValidatorTest {
         mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.value()));
 
         // Perform the validation
-        Mono<Boolean> result = validator.validate(null, "");
+        Mono<Boolean> result = validator.validate(mockHeaders, "");
         assertThrows(ResponseStatusException.class, result::block);
 
         // Check the request by the validator component

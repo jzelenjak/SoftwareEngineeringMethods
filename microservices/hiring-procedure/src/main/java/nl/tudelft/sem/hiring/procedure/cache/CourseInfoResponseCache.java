@@ -4,6 +4,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import java.time.Duration;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -47,7 +48,7 @@ public class CourseInfoResponseCache {
      * @param courseId is the id of the course to retrieve the response for.
      * @return the course info response that might become available in the future.
      */
-    public Mono<String> getCourseInfoResponse(long courseId) {
+    public Mono<String> getCourseInfoResponse(String authorization, long courseId) {
         String response = courseInfoCache.getIfPresent(courseId);
         if (response != null) {
             return Mono.just(response);
@@ -61,6 +62,7 @@ public class CourseInfoResponseCache {
                         .port(gatewayConfig.getPort())
                         .pathSegment("api", "courses", "get", String.valueOf(courseId))
                         .toUriString())
+                .header(HttpHeaders.AUTHORIZATION, authorization)
                 .exchange()
                 .flatMap(clientResponse -> {
                     if (clientResponse.statusCode().isError()) {
