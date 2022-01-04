@@ -24,14 +24,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @ExtendWith(MockitoExtension.class)
 public class ApplicationServiceTest {
     @Mock
     private transient ApplicationRepository applicationRepository;
 
-    @Autowired
     @InjectMocks
     private transient ApplicationService applicationService;
 
@@ -41,8 +39,6 @@ public class ApplicationServiceTest {
     private transient Application application4;
 
     private transient LocalDateTime now;
-    private transient LocalDateTime yearAgo;
-    private transient LocalDateTime weekAgo;
 
     private final transient long userId1 = 521234;
     private final transient long courseId1 = 2450;
@@ -54,12 +50,11 @@ public class ApplicationServiceTest {
     @BeforeEach
     public void beforeEach() {
         now = LocalDateTime.now();
-        yearAgo = now.minusYears(1).minusWeeks(1);
-        weekAgo = now.minusWeeks(1);
+        LocalDateTime yearAgo = now.minusYears(1);
         application1 = new Application(userId1, courseId1, now);
         application2 = new Application(userId1, courseId1, yearAgo);
         application3 = new Application(userId1, courseId2, now);
-        application4 = new Application(userId1, courseId2, weekAgo);
+        application4 = new Application(userId1, courseId2, now);
     }
 
     @Test
@@ -324,6 +319,16 @@ public class ApplicationServiceTest {
 
         assertThrows(NoSuchElementException.class, () -> applicationService
                 .getRating(application1.getUserId(), application1.getCourseId()));
+    }
+
+    @Test
+    public void testGetApplicationsForStudent() {
+        when(applicationRepository.findAllByUserId(application1.getUserId()))
+                .thenReturn(List.of(application1, application2,
+                        application3, application4));
+        applicationService.getApplicationsForStudent(application1.getUserId());
+
+        verify(applicationRepository).findAllByUserId(application1.getUserId());
     }
 
 }

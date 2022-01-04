@@ -92,6 +92,10 @@ public class ApplicationService {
         return applicationRepository.findByUserIdAndCourseId(userId, courseId);
     }
 
+    public List<Application> getApplicationsForStudent(long userId) {
+        return applicationRepository.findAllByUserId(userId);
+    }
+
     /**
      * Function for updating the status of an application to be rejected.
      *

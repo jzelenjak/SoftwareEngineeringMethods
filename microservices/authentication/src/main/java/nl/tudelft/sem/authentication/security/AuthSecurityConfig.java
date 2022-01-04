@@ -47,7 +47,7 @@ public class AuthSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .antMatchers(HttpMethod.PUT, "/api/auth/change_password").authenticated()
                 .antMatchers(HttpMethod.PUT, "/api/auth/change_role")
-                    .hasAnyAuthority("ADMIN", "LECTURER")
+                    .hasAnyAuthority("ADMIN")
                 .antMatchers(HttpMethod.DELETE, "/api/auth/delete")
                     .hasAnyAuthority("ADMIN")
                 .anyRequest()

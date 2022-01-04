@@ -1,13 +1,10 @@
 package nl.tudelft.sem.hour.management.services;
 
-import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Data;
 import nl.tudelft.sem.hour.management.dto.StudentHoursTuple;
-import nl.tudelft.sem.hour.management.dto.UserHoursStatisticsRequest;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
 import org.springframework.stereotype.Service;
 

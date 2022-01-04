@@ -209,8 +209,8 @@ class AuthControllerTest {
                 new Notification(1048369L, "IMPOSTER!"));
 
         this.userDataRepository
-                .save(new UserData(username, encode(password), UserRole.TA, 1048369L));
-        String jwt = jwtTokenProvider.createToken(1048369L, UserRole.TA, new Date());
+                .save(new UserData(username, encode(password), UserRole.LECTURER, 1048369L));
+        String jwt = jwtTokenProvider.createToken(1048369L, UserRole.LECTURER, new Date());
         String jwtPrefixed = PREFIX + jwt;
 
         this.mockMvc
@@ -225,7 +225,7 @@ class AuthControllerTest {
         Assertions.assertNotNull(claimsJws);
         Assertions.assertEquals(1048369L,
                 Long.parseLong(this.jwtTokenProvider.getSubject(claimsJws)));
-        Assertions.assertEquals(this.jwtTokenProvider.getRole(claimsJws), UserRole.TA.name());
+        Assertions.assertEquals(this.jwtTokenProvider.getRole(claimsJws), UserRole.LECTURER.name());
 
         this.userDataRepository.deleteById(username);
     }
@@ -367,77 +367,41 @@ class AuthControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "IAmLecturer", password = "AllMightyMe")
-    void testChangeRoleSuccessfullyAsLecturer() throws Exception {
-        String username = "IAmLecturer";
-        String password = "AllMightyMe";
+    @WithMockUser(username = "IAmLonelyAdmin", password = "ThePowerOfAdmin")
+    void testChangeRoleSuccessfullyAsAdminToAdmin() throws Exception {
+        String username = "IAmLonelyAdmin";
+        String password = "ThePowerOfAdmin";
 
         this.userDataRepository
-                .save(new UserData(username, encode(password), UserRole.LECTURER, 39482394L));
-        String jwt = jwtTokenProvider.createToken(39482394L, UserRole.LECTURER, new Date());
+                .save(new UserData(username, encode(password), UserRole.ADMIN, 4837291L));
+        String jwt = jwtTokenProvider.createToken(4837291L, UserRole.ADMIN, new Date());
         String jwtPrefixed = PREFIX + jwt;
 
-        String ta = "IAmNotYetTa";
-        String taPassword = "SoSadMe";
+        String promotedAdmin = "IAmRetiredTa";
+        String adminPassword = "SuperHappy";
 
         this.userDataRepository
-                .save(new UserData(ta, encode(taPassword), UserRole.STUDENT, 7654321L));
+                .save(new UserData(promotedAdmin, encode(adminPassword),
+                        UserRole.LECTURER, 2233445L));
 
         this.mockMvc
                 .perform(put(CHANGE_ROLE_URL)
                         .contentType(APPLICATION_JSON)
-                        .content(createJson(USERNAME, ta, ROLE, "ta"))
+                        .content(createJson(USERNAME, promotedAdmin, ROLE, "admin"))
                         .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
                         .characterEncoding(UTF8))
                 .andExpect(status().isOk());
 
-        Optional<UserData> lecturer = this.userDataRepository.findByUsername(username);
-        assert lecturer.isPresent();
-        Assertions.assertEquals(lecturer.get().getRole(), UserRole.LECTURER);
+        Optional<UserData> admin = this.userDataRepository.findByUsername(username);
+        assert admin.isPresent();
+        Assertions.assertEquals(admin.get().getRole(), UserRole.ADMIN);
 
-        Optional<UserData> foundTa = this.userDataRepository.findByUsername(ta);
-        assert foundTa.isPresent();
-        Assertions.assertEquals(foundTa.get().getRole(), UserRole.TA);
-
-        this.userDataRepository.deleteById(username);
-        this.userDataRepository.deleteById(ta);
-    }
-
-    @Test
-    @WithMockUser(username = "IAmAlsoLecturer", password = "IHateFraud")
-    void testChangeRoleToStudentSuccessfullyAsLecturer() throws Exception {
-        String username = "IAmAlsoLecturer";
-        String password = "IHateFraud";
-
-        this.userDataRepository
-                .save(new UserData(username, encode(password), UserRole.LECTURER, 99482394L));
-        String jwt = jwtTokenProvider.createToken(99482394L, UserRole.LECTURER, new Date());
-        String jwtPrefixed = PREFIX + jwt;
-
-        String ta = "IAmFraudingTa";
-        String taPassword = "CryingCodeOfConduct";
-
-        this.userDataRepository
-                .save(new UserData(ta, encode(taPassword), UserRole.TA, 9454321L));
-
-        this.mockMvc
-                .perform(put(CHANGE_ROLE_URL)
-                        .contentType(APPLICATION_JSON)
-                        .content(createJson(USERNAME, ta, ROLE, "student"))
-                        .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
-                        .characterEncoding(UTF8))
-                .andExpect(status().isOk());
-
-        Optional<UserData> lecturer = this.userDataRepository.findByUsername(username);
-        assert lecturer.isPresent();
-        Assertions.assertEquals(lecturer.get().getRole(), UserRole.LECTURER);
-
-        Optional<UserData> foundTa = this.userDataRepository.findByUsername(ta);
-        assert foundTa.isPresent();
-        Assertions.assertEquals(foundTa.get().getRole(), UserRole.STUDENT);
+        Optional<UserData> otherAdmin = this.userDataRepository.findByUsername(promotedAdmin);
+        assert otherAdmin.isPresent();
+        Assertions.assertEquals(otherAdmin.get().getRole(), UserRole.ADMIN);
 
         this.userDataRepository.deleteById(username);
-        this.userDataRepository.deleteById(ta);
+        this.userDataRepository.deleteById(promotedAdmin);
     }
 
     @Test

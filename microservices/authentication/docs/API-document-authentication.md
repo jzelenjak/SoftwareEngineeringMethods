@@ -110,7 +110,7 @@ Upon successful login, all notifications that are available for the user that lo
 PUT    /api/auth/change_role
 ```
 
-Endpoint for changing the role of a user. Can only be done by admins or lecturers (a lecturer can only change a user to be a TA, candidate TA or a student), whereas an admin can do everything.
+Endpoint for changing the role of a user. Can only be done by admins.
 
 **Expected body format:**
 
@@ -123,10 +123,10 @@ Endpoint for changing the role of a user. Can only be done by admins or lecturer
 
 _NB! Include the JWT token in &#39;Authorization&#39; header and make sure it starts with &#39;Bearer &#39; prefix._
 
-| Response code | Reason                                                       |
-| ------------- | ------------------------------------------------------------ |
-| 200 OK        | Successful completion                                        |
-| 403 FORBIDDEN | The authorization token is invalid, or a lecturer attempts to promote a user to a role that is at least as high as the lecturer |
+| Response code | Reason                              |
+|---------------|-------------------------------------|
+| 200 OK        | Successful completion               |
+| 403 FORBIDDEN | The authorization token is invalid. |
 
 ---
 

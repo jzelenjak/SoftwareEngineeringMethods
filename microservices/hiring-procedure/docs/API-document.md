@@ -302,3 +302,34 @@ Endpoint for getting a TA's rating for a course. The header of the request shoul
 | 403 FORBIDDEN | User is not permitted to access the endpoint                 |
 | 403 FORBIDDEN | The specified application is not approved or not rated yet   |
 | 404 NOT FOUND | The specified application does not exist                     |
+---
+
+## Get a student's applications
+
+```
+GET /api/hiring-procedure/get-student?userId=<..>
+```
+
+Endpoint for getting all the applications of a student. The header of the request should contain the JWT of the user's session. Only lecturers and admins are allowed to use this endpoint.
+
+| Query parameter | Value                                                       |
+| --------------- | ----------------------------------------------------------- |
+| userId          | The ID of the user for which to retrieve the submissions    |
+
+| Response code | Reason                                                       |
+| ------------- | ------------------------------------------------------------ |
+| 200 OK        | Successful completion                                        |
+| 403 FORBIDDEN | User is not permitted to access the endpoint                 |
+| 404 NOT FOUND | The specified user does not exist or has no submissions      |
+
+```
+GET /api/hiring-procedure/get-student
+```
+
+Endpoint for getting all the applications of the requesting student. The header of the request should contain the JWT of the user's session. Only students and TAs are allowed to use this endpoint.
+
+| Response code | Reason                                                       |
+| ------------- | ------------------------------------------------------------ |
+| 200 OK        | Successful completion                                        |
+| 403 FORBIDDEN | User is not permitted to access the endpoint                 |
+| 404 NOT FOUND | The specified user has no submissions                        |
