@@ -7,7 +7,6 @@ GET  /api/hour-management/declaration
 ```
 
 Endpoint for fetching all stored declarations. This includes both approved, and unapproved declarations. This endpoint requires **admin** or **lecturer** privileges.
-Endpoint for fetching all stored declarations. This includes both approved, and unapproved declarations. This endpoint requires **admin** or **teaches** privileges.
 
 Upon calling this endpoint, a list of declaration objects is returned in a JSON format. See the example below.
 

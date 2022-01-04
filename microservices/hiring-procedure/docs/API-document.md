@@ -46,9 +46,7 @@ Endpoint for withdrawing applications. The header of the request should contain 
 POST /api/hiring-procedure/reject?applicationId=<...>
 ```
 
-
 Endpoint for rejecting an application that is associated to the provided ID. The header of the request should contain the JWT of the user's session. Only users with the **admin** or **lecturer** role are permitted to access this endpoint.
-
 
 | Query parameter | Value                               |
 | --------------- | ----------------------------------- |
@@ -69,9 +67,7 @@ Endpoint for rejecting an application that is associated to the provided ID. The
 POST /api/hiring-procedure/hire-TA?userId=<...>&courseId=<...>
 ```
 
-
 Endpoint for hiring a candidate TA for a specific course. The header of the request should contain the JWT of the user's session. Only users with **admin** or **lecturer** permissions have access.
-
 
 | Query parameter | Value                                              |
 | --------------- | -------------------------------------------------- |
@@ -93,7 +89,6 @@ Endpoint for hiring a candidate TA for a specific course. The header of the requ
 GET  /api/hiring-procedure/get-all-applications?courseId=<...>
 ```
 
-
 Endpoint for retrieving all candidate TAs for a specific course. The header of the request should contain the JWT of the user's session. Only users with **lecturer** or **admin** permissions have access.
 
 | Query parameter | Value                                               |
@@ -112,9 +107,7 @@ Endpoint for retrieving all candidate TAs for a specific course. The header of t
 GET  /api/hiring-procedure/get-applications?userId=<...>
 ```
 
-
 Endpoint for retrieving all applications of a specific user. The header of the request should contain the JWT of the user's session. Only users with **lecturer** or **admin** permissions have access. The same applies for users that have the **same** ID as the ID that is specified in the request.
-
 
 | Query parameter | Value                                             |
 | --------------- | ------------------------------------------------- |
