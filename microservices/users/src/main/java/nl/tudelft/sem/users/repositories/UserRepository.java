@@ -38,6 +38,22 @@ public interface UserRepository extends CrudRepository<User, Long> {
     List<User> findAllByRole(UserRole role);
 
     /**
+     * Finds all users having the given first name.
+     *
+     * @param firstName the first name of a user.
+     * @return the list of users who have the given first name.
+     */
+    Optional<List<User>> findAllByFirstName(String firstName);
+
+    /**
+     * Finds all users having the given last name.
+     *
+     * @param lastName the last name of a user.
+     * @return the list of users who have the given last name.
+     */
+    Optional<List<User>> findAllByLastName(String lastName);
+
+    /**
      * Deletes the user with the given user ID.
      *
      * @param userId the user ID
