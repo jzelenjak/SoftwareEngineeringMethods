@@ -38,13 +38,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class RecommendationControllerTest {
     @Autowired
     private transient ApplicationRepository repo;
@@ -82,6 +80,9 @@ public class RecommendationControllerTest {
         HttpUrl url = mockWebServer.url("/");
         Mockito.when(gatewayConfig.getHost()).thenReturn(url.host());
         Mockito.when(gatewayConfig.getPort()).thenReturn(url.port());
+
+        // Clear the database
+        repo.deleteAll();
     }
 
     @AfterEach

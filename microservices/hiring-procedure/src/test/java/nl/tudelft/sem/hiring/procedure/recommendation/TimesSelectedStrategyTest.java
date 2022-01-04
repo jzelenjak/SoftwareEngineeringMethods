@@ -26,11 +26,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.server.ResponseStatusException;
 
 @SpringBootTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class TimesSelectedStrategyTest {
 
     @Autowired
@@ -77,6 +75,9 @@ public class TimesSelectedStrategyTest {
         gatewayConfig = Mockito.mock(GatewayConfig.class);
         strategy = new TimesSelectedStrategy(repo, gatewayConfig, jwtToken);
         mapper = new ObjectMapper();
+
+        // Clear the database
+        repo.deleteAll();
     }
 
     @AfterEach
