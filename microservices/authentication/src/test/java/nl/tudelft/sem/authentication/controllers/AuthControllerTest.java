@@ -21,7 +21,7 @@ import java.util.Optional;
 import nl.tudelft.sem.authentication.entities.Notification;
 import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
-import nl.tudelft.sem.authentication.repositories.NotificationDataRepository;
+import nl.tudelft.sem.authentication.repositories.NotificationRepository;
 import nl.tudelft.sem.authentication.repositories.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.junit.jupiter.api.Assertions;
@@ -51,7 +51,7 @@ class AuthControllerTest {
     private transient UserDataRepository userDataRepository;
 
     @Autowired
-    private transient NotificationDataRepository notificationDataRepository;
+    private transient NotificationRepository notificationRepository;
 
     @Autowired
     private transient AuthController authController;
@@ -206,7 +206,7 @@ class AuthControllerTest {
         String username = "admin2";
         String password = "passMyWord";
 
-        this.notificationDataRepository.save(
+        this.notificationRepository.save(
                 new Notification(1048369L, "IMPOSTER!"));
 
         this.userDataRepository
@@ -649,9 +649,9 @@ class AuthControllerTest {
     void testGetAllNotificationsFromUserSuccess() {
         final long myUserId = 2121212L;
         Notification first = new Notification(myUserId, "I am the first.");
-        this.notificationDataRepository.save(first);
+        this.notificationRepository.save(first);
         Notification second = new Notification(myUserId, "I am the second.");
-        this.notificationDataRepository.save(second);
+        this.notificationRepository.save(second);
 
         List<Notification> list = new ArrayList<>();
         list.add(first);

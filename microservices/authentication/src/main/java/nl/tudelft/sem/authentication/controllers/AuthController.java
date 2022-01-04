@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import nl.tudelft.sem.authentication.entities.Notification;
@@ -153,7 +154,7 @@ public class AuthController {
             res.getWriter().write(json);
         } catch (AuthenticationException e) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid credentials.");
-        } catch (ResponseStatusException e) {
+        } catch (EntityNotFoundException e) {
             res.getWriter().write("No new notifications.");
         }
     }

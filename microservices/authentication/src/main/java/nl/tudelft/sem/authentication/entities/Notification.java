@@ -1,7 +1,6 @@
 package nl.tudelft.sem.authentication.entities;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import javax.persistence.Column;
