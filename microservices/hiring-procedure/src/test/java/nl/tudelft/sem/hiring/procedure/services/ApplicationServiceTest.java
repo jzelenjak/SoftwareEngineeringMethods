@@ -321,4 +321,14 @@ public class ApplicationServiceTest {
                 .getRating(application1.getUserId(), application1.getCourseId()));
     }
 
+    @Test
+    public void testGetApplicationsForStudent() {
+        when(applicationRepository.findAllByUserId(application1.getUserId()))
+                .thenReturn(List.of(application1, application2,
+                        application3, application4));
+        applicationService.getApplicationsForStudent(application1.getUserId());
+
+        verify(applicationRepository).findAllByUserId(application1.getUserId());
+    }
+
 }

@@ -478,6 +478,37 @@ public class ApplicationController {
     }
 
     /**
+     * Endpoint for retrieving all the applications of a student.
+     *
+     * @param userId The ID of the user for which to fetch the applications.
+     *               If the request was made by a student, this should be empty,
+     *               since their userId will be extracted from the JWT.
+     * @param headers The headers of the request. Should contain the JWT.
+     * @return A list of all applications for that student, or errors if anything goes wrong.
+     */
+    @GetMapping("get-student")
+    public Mono<List<Application>> getStudentSubmissions(
+                                  @RequestParam(required = false) Long userId,
+                                  @RequestHeader HttpHeaders headers) {
+        AsyncValidator head = buildVariableValidator(userId);
+
+        return head.validate(headers, "").flatMap(value -> {
+            Long finalUserId = userId;
+            if (userId == null) {
+                finalUserId = getUserIdFromToken(headers);
+            }
+            List<Application> applications = applicationService
+                    .getApplicationsForStudent(finalUserId);
+            if (applications.size() == 0) {
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "There are no submissions for that student"));
+            }
+            return Mono.just(applications);
+        });
+    }
+
+
+    /**
      * Checks if the JWT is valid. If it is, returns the userId.
      *
      * @param authJwt The authentication header received from the client
