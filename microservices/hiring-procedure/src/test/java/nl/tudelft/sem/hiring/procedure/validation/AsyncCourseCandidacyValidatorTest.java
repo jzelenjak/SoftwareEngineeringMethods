@@ -14,7 +14,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -49,6 +48,7 @@ import reactor.core.publisher.Mono;
 public class AsyncCourseCandidacyValidatorTest {
 
     private static final String AUTHORIZATION_TOKEN = "MyToken";
+    private static final String REMOTE_URL = "/api/courses/get-multiple";
     private static final Long USER_ID = 42L;
 
     private transient MockWebServer mockServer;
@@ -127,7 +127,7 @@ public class AsyncCourseCandidacyValidatorTest {
         RecordedRequest request = mockServer.takeRequest(1, TimeUnit.SECONDS);
         assertNotNull(request);
         assertEquals(HttpMethod.POST.name(), request.getMethod());
-        assertEquals("/api/courses/get-multiple", request.getPath());
+        assertEquals(REMOTE_URL, request.getPath());
         assertEquals(AUTHORIZATION_TOKEN, request.getHeader(HttpHeaders.AUTHORIZATION));
         assertEquals(MediaType.APPLICATION_JSON_VALUE, request.getHeader(HttpHeaders.CONTENT_TYPE));
         assertEquals(constructExpectedCourseRequest(application1, application2, newApplication),
@@ -167,7 +167,7 @@ public class AsyncCourseCandidacyValidatorTest {
         RecordedRequest request = mockServer.takeRequest(1, TimeUnit.SECONDS);
         assertNotNull(request);
         assertEquals(HttpMethod.POST.name(), request.getMethod());
-        assertEquals("/api/courses/get-multiple", request.getPath());
+        assertEquals(REMOTE_URL, request.getPath());
         assertEquals(AUTHORIZATION_TOKEN, request.getHeader(HttpHeaders.AUTHORIZATION));
         assertEquals(MediaType.APPLICATION_JSON_VALUE, request.getHeader(HttpHeaders.CONTENT_TYPE));
         assertEquals(constructExpectedCourseRequest(application1, application2, application3,
@@ -176,23 +176,39 @@ public class AsyncCourseCandidacyValidatorTest {
     }
 
     @Test
-    void testValidateInvalidCandidacyRequestIncorrectInfo() throws InterruptedException {
-        // Construct objects used for testing
-        LocalDateTime now = LocalDateTime.now();
-        Application application1 = new Application(2, 42, 1336, now);
-        Application application2 = new Application(1, 42, 1337, now);
-        Application newApplication = new Application(3, 42, 1339, now);
-
-        // Configure behaviour of the mocks
-        when(applicationService.getUnreviewedApplicationsForUser(42)).thenReturn(
-                List.of(application1, application2));
-
+    void testValidateInvalidCandidacyRequestRemoteServerError() throws InterruptedException {
         // Enqueue a mock response from the course microservice
-        // Oops, not enough info received by course microservice due to non-existing course
-        // or server-side issues
+        // Oops, server-side issue
+        mockServer.enqueue(new MockResponse().setResponseCode(
+                        HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE));
+
+        // Construct the validator
+        var validator = new AsyncCourseCandidacyValidator(jwtUtils, applicationService,
+                gatewayConfig, 1339);
+
+        // Perform validation action, which should fail
+        Mono<Boolean> response = validator.validate(mockHeaders, "");
+
+        // The response should be invalid (remote server error)
+        assertThrows(ResponseStatusException.class, response::block);
+
+        // The request to the course microservice should have been made
+        RecordedRequest request = mockServer.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(request);
+        assertEquals(HttpMethod.POST.name(), request.getMethod());
+        assertEquals(REMOTE_URL, request.getPath());
+        assertEquals(AUTHORIZATION_TOKEN, request.getHeader(HttpHeaders.AUTHORIZATION));
+        assertEquals(MediaType.APPLICATION_JSON_VALUE, request.getHeader(HttpHeaders.CONTENT_TYPE));
+    }
+
+    @Test
+    void testValidateInvalidCandidacyRequestNonExistingCourseNoTaHistory()
+            throws InterruptedException {
+        // Enqueue a mock response from the course microservice
         mockServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value())
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .setBody(constructCoursesResponseIdenticalDates(application1, newApplication)));
+                .setBody("{}"));
 
         // Construct the validator
         var validator = new AsyncCourseCandidacyValidator(jwtUtils, applicationService,
@@ -202,17 +218,15 @@ public class AsyncCourseCandidacyValidatorTest {
         Mono<Boolean> response = validator.validate(mockHeaders, "");
 
         // The response should be invalid (too many applications for courses in same quarter)
-        assertThrows(ResponseStatusException.class, response::block);
+        assertEquals(Boolean.TRUE, response.block());
 
         // The request to the course microservice should have been made
         RecordedRequest request = mockServer.takeRequest(1, TimeUnit.SECONDS);
         assertNotNull(request);
         assertEquals(HttpMethod.POST.name(), request.getMethod());
-        assertEquals("/api/courses/get-multiple", request.getPath());
+        assertEquals(REMOTE_URL, request.getPath());
         assertEquals(AUTHORIZATION_TOKEN, request.getHeader(HttpHeaders.AUTHORIZATION));
         assertEquals(MediaType.APPLICATION_JSON_VALUE, request.getHeader(HttpHeaders.CONTENT_TYPE));
-        assertEquals(constructExpectedCourseRequest(application1, application2, newApplication),
-                JsonParser.parseString(request.getBody().readUtf8()));
     }
 
     /**

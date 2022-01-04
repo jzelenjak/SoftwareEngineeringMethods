@@ -50,7 +50,7 @@ public class AsyncTaLimitValidatorTest {
     private transient ApplicationService applicationServiceMock;
 
     @Autowired
-    private transient CourseInfoResponseCache courseInfoCache;
+    private transient CourseInfoResponseCache cache;
 
     private transient MockWebServer mockWebServer;
     private transient HttpHeaders mockHeaders;
@@ -68,7 +68,7 @@ public class AsyncTaLimitValidatorTest {
         when(mockHeaders.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn(AUTHORIZATION_TOKEN);
 
         // Invalidate the cache before each test
-        courseInfoCache.invalidateCache();
+        cache.invalidateCache();
     }
 
     @AfterEach
@@ -89,7 +89,7 @@ public class AsyncTaLimitValidatorTest {
     @Test
     public void testConstructor() {
         AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
-                courseInfoCache, 1337);
+                cache, 1337);
         assertNotNull(validator);
     }
 
@@ -98,7 +98,7 @@ public class AsyncTaLimitValidatorTest {
         // Construct validator instance and courseId object
         final long courseId = 1337;
         final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
-                courseInfoCache, courseId);
+                cache, courseId);
 
         // Current hiring statistics
         final int currentTaCount = 10;
@@ -140,7 +140,7 @@ public class AsyncTaLimitValidatorTest {
         // Construct validator instance and courseId object
         final long courseId = 1337;
         final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
-                courseInfoCache, courseId);
+                cache, courseId);
 
         // Current hiring statistics
         final int currentTaCount = 10;
@@ -177,7 +177,7 @@ public class AsyncTaLimitValidatorTest {
         // Construct validator instance and courseId object
         final long courseId = 1337;
         final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
-                courseInfoCache, courseId);
+                cache, courseId);
 
         // Current hiring statistics
         final int currentTaCount = 10;
@@ -214,7 +214,7 @@ public class AsyncTaLimitValidatorTest {
         // Construct validator instance and courseId object
         final long courseId = 1337;
         final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
-                courseInfoCache, courseId);
+                cache, courseId);
 
         // Enqueue a response
         mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.value()));

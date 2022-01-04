@@ -93,14 +93,6 @@ public class AsyncCourseCandidacyValidator extends AsyncBaseValidator {
                         // Parse the response
                         var response = JsonParser.parseString(responseBody).getAsJsonObject();
 
-                        // Check if we have received a valid response (info for all courses)
-                        if (response.size() != courseIds.size()) {
-                            return Mono.error(new ResponseStatusException(
-                                    HttpStatus.INTERNAL_SERVER_ERROR,
-                                    "Validator unable to retrieve course information for all "
-                                            + "requested courses"));
-                        }
-
                         // Group all courses by their start date, if there are 4 courses with the
                         // same start date, the request is invalid
                         Optional<Long> maximumOccurrence = response

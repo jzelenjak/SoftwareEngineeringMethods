@@ -13,9 +13,7 @@ import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,7 +37,7 @@ public class AsyncCourseExistsValidatorTest {
     private transient GatewayConfig gatewayConfigMock;
 
     @Autowired
-    private transient CourseInfoResponseCache courseInfoCache;
+    private transient CourseInfoResponseCache cache;
 
     private transient MockWebServer mockWebServer;
     private transient HttpHeaders mockHeaders;
@@ -55,6 +53,9 @@ public class AsyncCourseExistsValidatorTest {
 
         mockHeaders = Mockito.mock(HttpHeaders.class);
         when(mockHeaders.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn(AUTHORIZATION_TOKEN);
+
+        // Invalidate the course info cache
+        cache.invalidateCache();
     }
 
     @AfterEach
@@ -64,7 +65,7 @@ public class AsyncCourseExistsValidatorTest {
 
     @Test
     public void testConstructor() {
-        AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(courseInfoCache, 42);
+        AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(cache, 42);
         assertNotNull(validator);
     }
 
@@ -72,7 +73,7 @@ public class AsyncCourseExistsValidatorTest {
     public void testValidate() {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(courseInfoCache,
+        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(cache,
                 courseId);
 
         // Fetch the local zoned date time, and make it a valid time
@@ -103,7 +104,7 @@ public class AsyncCourseExistsValidatorTest {
     public void testNonExistentCourse() {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(courseInfoCache,
+        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(cache,
                 courseId);
 
         // Enqueue a response
