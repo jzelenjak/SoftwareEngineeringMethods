@@ -17,6 +17,7 @@ import io.jsonwebtoken.Jws;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -92,6 +93,7 @@ public class ApplicationControllerTest {
     private static final String GET_RATING_API = "/api/hiring-procedure/get-rating";
     private static final String SET_RATING_API = "/api/hiring-procedure/rate";
     private static final String GET_APPLICATIONS_API = "/api/hiring-procedure/get-applications";
+    private static final String GET_STUDENT_API = "/api/hiring-procedure/get-student";
     private static final String GET_METHOD = "GET";
     private static final String NOT_FOUND_ERROR = "Application not found.";
     private static final String RATING_STRING = "rating";
@@ -1208,6 +1210,82 @@ public class ApplicationControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void testGetStudentLecturerPass() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        when(applicationService.getApplicationsForStudent(userId))
+                .thenReturn(List.of(new Application(userId, courseId, LocalDateTime.now())));
+
+        MvcResult result = mockMvc.perform(get(GET_STUDENT_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetStudentTaPass() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.TA.name());
+        when(jwtUtils.getUserId(claims)).thenReturn(userId);
+        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
+        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
+        when(applicationService.getApplicationsForStudent(userId))
+                .thenReturn(List.of(new Application(userId, courseId, LocalDateTime.now())));
+
+        MvcResult result = mockMvc.perform(get(GET_STUDENT_API)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetStudentLecturerForbidden() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        MvcResult result = mockMvc.perform(get(GET_STUDENT_API)
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetStudentTaForbidden() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.TA.name());
+        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
+        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
+        when(applicationService.getApplicationsForStudent(userId))
+                .thenReturn(List.of(new Application(userId, courseId, LocalDateTime.now())));
+
+        MvcResult result = mockMvc.perform(get(GET_STUDENT_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetStudentNoApplications() throws Exception {
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+        when(applicationService.getApplicationsForStudent(userId))
+                .thenReturn(List.of());
+
+        MvcResult result = mockMvc.perform(get(GET_STUDENT_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
+    }
+
     /**
      * Test utility function that generates a valid response for the course microservice.
      * The actual functionality of the validator that is 'fooled' here can be found in the
@@ -1239,5 +1317,4 @@ public class ApplicationControllerTest {
         // Return the JSON object as String
         return json.toString();
     }
-
 }

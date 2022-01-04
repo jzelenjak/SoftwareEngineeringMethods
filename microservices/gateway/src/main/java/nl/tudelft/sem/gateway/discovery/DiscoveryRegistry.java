@@ -14,7 +14,7 @@ import lombok.SneakyThrows;
  */
 public class DiscoveryRegistry {
 
-    // Time at which a cache entry is invalidated
+    // Time at which a cache entry is invalidated (-1 if unused)
     @Getter
     private final int cacheEvictionTimeMinutes;
 
@@ -25,6 +25,8 @@ public class DiscoveryRegistry {
     /**
      * Constructs a discovery registry instance that keeps track of all registrations for a
      * particular endpoint.
+     *
+     * @param cacheEvictionTimeMinutes The time in minutes after which a registration is removed.
      */
     public DiscoveryRegistry(int cacheEvictionTimeMinutes) {
         this.cacheEvictionTimeMinutes = cacheEvictionTimeMinutes;
@@ -32,6 +34,22 @@ public class DiscoveryRegistry {
         this.registrations = CacheBuilder.newBuilder()
                 .expireAfterAccess(cacheEvictionTimeMinutes, TimeUnit.MINUTES)
                 .build();
+    }
+
+    /**
+     * Constructs a discovery registry instance that keeps track of all registrations for a
+     * particular endpoint.
+     *
+     * @param registrationQueue The queue to use for storing the registrations.
+     * @param registrations     Custom cache for storing entities.
+     * @implNote sets the cacheEvictionTimeMinutes to -1, as it is not used in this case
+     *         (covered by the cache).
+     */
+    public DiscoveryRegistry(Queue<Registration> registrationQueue,
+                             Cache<String, Registration> registrations) {
+        this.cacheEvictionTimeMinutes = -1;
+        this.registrationQueue = registrationQueue;
+        this.registrations = registrations;
     }
 
     /**

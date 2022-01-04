@@ -10,12 +10,14 @@ import javax.persistence.Id;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
+@ToString
 public class HourDeclaration {
 
     @Id
@@ -90,18 +92,6 @@ public class HourDeclaration {
     @Override
     public int hashCode() {
         return Objects.hash(getDeclarationId(), getStudentId(), getCourseId(), getDeclaredHours());
-    }
-
-    @Override
-    public String toString() {
-        return "HourDeclaration{"
-                + "declarationId=" + declarationId
-                + ", studentId=" + studentId
-                + ", courseId=" + courseId
-                + ", approved=" + approved
-                + ", declaredHours=" + declaredHours
-                + ", declarationDate=" + declarationDate
-                + '}';
     }
 }
 

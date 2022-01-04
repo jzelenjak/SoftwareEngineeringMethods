@@ -92,6 +92,10 @@ public class ApplicationService {
         return applicationRepository.findByUserIdAndCourseId(userId, courseId);
     }
 
+    public List<Application> getApplicationsForStudent(long userId) {
+        return applicationRepository.findAllByUserId(userId);
+    }
+
     /**
      * Finds all the unreviewed applications for a particular user.
      *
