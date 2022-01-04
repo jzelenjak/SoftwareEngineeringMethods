@@ -1,6 +1,6 @@
 package nl.tudelft.sem.hour.management.entities;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -38,7 +38,7 @@ public class HourDeclaration {
     private double declaredHours;
 
     @Column(name = "declaration_date", columnDefinition = "TIMESTAMP")
-    private LocalDateTime declarationDate;
+    private ZonedDateTime declarationDate;
 
     /**
      * Construct an HourDeclaration DOA instance.
@@ -52,7 +52,7 @@ public class HourDeclaration {
         this.declaredHours = hourDeclarationRequest.getDeclaredHours();
 
         this.approved = false;
-        this.declarationDate = LocalDateTime.now();
+        this.declarationDate = ZonedDateTime.now();
     }
 
     /**
@@ -64,7 +64,7 @@ public class HourDeclaration {
      * @param declarationDate date of declaration
      */
     public HourDeclaration(long declarationId, HourDeclarationRequest hourDeclarationRequest,
-                           boolean approved, LocalDateTime declarationDate) {
+                           boolean approved, ZonedDateTime declarationDate) {
         this.declarationId = declarationId;
         this.studentId = hourDeclarationRequest.getStudentId();
         this.courseId = hourDeclarationRequest.getCourseId();

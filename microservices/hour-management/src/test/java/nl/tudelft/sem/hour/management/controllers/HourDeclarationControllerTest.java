@@ -85,7 +85,7 @@ public class HourDeclarationControllerTest {
     @Mock
     private transient Jws<Claims> jwsMock;
 
-    private final transient LocalDateTime testDate = LocalDateTime.now();
+    private final transient ZonedDateTime testDate = ZonedDateTime.now();
 
     private final transient HourDeclarationRequest hourDeclarationRequest =
             new HourDeclarationRequest(1234, 5678, 1);
@@ -303,6 +303,12 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testRejectDeclaration() throws Exception {
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
+
+        // Enqueue response that tells us that the user teaches the course
+        // associated to the declaration ID
+        mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value()));
+
         when(notificationService.notify(1234L,
                 "Your declaration with id 1 has been rejected.",
                 ""))
@@ -320,6 +326,10 @@ public class HourDeclarationControllerTest {
 
         // ensures that delete is no longer in system
         assertThat(hourDeclaration.isEmpty()).isTrue();
+
+        // Verify that a request was sent to the course microservice
+        RecordedRequest request = mockWebServer.takeRequest(10, TimeUnit.MILLISECONDS);
+        assertThat(request).isNotNull();
     }
 
     @Test
@@ -334,6 +344,12 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testRejectDeclarationNotificationFail() throws Exception {
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
+
+        // Enqueue response that tells us that the user teaches the course
+        // associated to the declaration ID
+        mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value()));
+
         when(notificationService.notify(1234L,
                 "Your declaration with id 1 has been rejected.",
                 ""))
@@ -346,20 +362,40 @@ public class HourDeclarationControllerTest {
 
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isConflict());
+
+        // Verify that a request was sent to the course microservice
+        RecordedRequest request = mockWebServer.takeRequest(10, TimeUnit.MILLISECONDS);
+        assertThat(request).isNotNull();
     }
 
     @Test
-    void testRejectDeclarationApproved() throws Exception {
+    void testRejectDeclarationAlreadyApproved() throws Exception {
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
+
+        // Enqueue response that tells us that the user teaches the course
+        // associated to the declaration ID
+        mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value()));
+
         MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/2/reject")
                         .header(authorization, ""))
                 .andReturn();
 
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
+
+        // Verify that a request was sent to the course microservice
+        RecordedRequest request = mockWebServer.takeRequest(10, TimeUnit.MILLISECONDS);
+        assertThat(request).isNotNull();
     }
 
     @Test
     void testApproveDeclaration() throws Exception {
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
+
+        // Enqueue response that tells us that the user teaches the course
+        // associated to the declaration ID
+        mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value()));
+
         when(notificationService.notify(1234L,
                 "Your declaration with id 1 has been approved.",
                 ""))
@@ -378,6 +414,10 @@ public class HourDeclarationControllerTest {
 
         assertThat(hourDeclaration.isEmpty()).isFalse();
         assertThat(hourDeclaration.get().isApproved()).isTrue();
+
+        // Verify that a request was sent to the course microservice
+        RecordedRequest request = mockWebServer.takeRequest(10, TimeUnit.MILLISECONDS);
+        assertThat(request).isNotNull();
     }
 
     @Test
@@ -393,6 +433,12 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testApproveDeclarationNotificationFail() throws Exception {
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
+
+        // Enqueue response that tells us that the user teaches the course
+        // associated to the declaration ID
+        mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value()));
+
         when(notificationService.notify(1234L,
                 "Your declaration with id 1 has been approved.",
                 ""))
@@ -405,16 +451,32 @@ public class HourDeclarationControllerTest {
 
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isConflict());
+
+
+        // Verify that a request was sent to the course microservice
+        RecordedRequest request = mockWebServer.takeRequest(10, TimeUnit.MILLISECONDS);
+        assertThat(request).isNotNull();
     }
 
     @Test
-    void testApproveDeclarationApproved() throws Exception {
+    void testApproveDeclarationAlreadyApproved() throws Exception {
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
+
+        // Enqueue response that tells us that the user teaches the course
+        // associated to the declaration ID
+        mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value()));
+
         MvcResult mvcResult = mockMvc.perform(put("/api/hour-management/declaration/2/approve")
                         .header(authorization, ""))
                 .andReturn();
 
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
+
+
+        // Verify that a request was sent to the course microservice
+        RecordedRequest request = mockWebServer.takeRequest(10, TimeUnit.MILLISECONDS);
+        assertThat(request).isNotNull();
     }
 
     @Test
