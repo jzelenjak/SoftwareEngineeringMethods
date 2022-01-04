@@ -186,7 +186,7 @@ public class CourseService {
      * @param lecturerId - id of the lecturer
      * @return list of course id's
      */
-    public List<Long> getCourseIdForLecturer(long lecturerId) {
+    public List<Long> getCourseIdsForLecturer(long lecturerId) {
         List<Teaches> list = teachesRepository.findAllByLecturerId(lecturerId);
 
         if (list == null || list.isEmpty()) {
@@ -229,7 +229,6 @@ public class CourseService {
             teachesRepository.save(teach);
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
             return false;
         }
     }

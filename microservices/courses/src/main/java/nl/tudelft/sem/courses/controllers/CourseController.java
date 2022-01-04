@@ -78,7 +78,7 @@ public class CourseController {
             @PathVariable String code, @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
 
-        if (checkIfStudent(webtoken) || checkIfLecturer(webtoken)) {
+        if (checkIfStudent(webtoken) || checkIfLecturerOrAdmin(webtoken)) {
             List<Course> courses = courseService.getCourses(code);
             if (courses != null && !courses.isEmpty()) {
                 List<CourseResponse> courseResponses = new ArrayList<>();
@@ -114,7 +114,7 @@ public class CourseController {
     public CourseResponse getCourseById(@PathVariable long id,
                                         @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webtoken) || checkIfStudent(webtoken)) {
+        if (checkIfLecturerOrAdmin(webtoken) || checkIfStudent(webtoken)) {
             Course course = courseService.getCourse(id);
             if (course == null) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -164,7 +164,7 @@ public class CourseController {
     public boolean addGrade(@RequestBody GradeRequest request,
                             @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webtoken)) {
+        if (checkIfLecturerOrAdmin(webtoken)) {
             if (request == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "No Request was provided");
@@ -192,7 +192,7 @@ public class CourseController {
                                 @PathVariable("courseid") long courseId,
                                 @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webtoken) || checkIfStudent(webtoken)) {
+        if (checkIfLecturerOrAdmin(webtoken) || checkIfStudent(webtoken)) {
             Grade grade = courseService.getGrade(userid, courseId);
             if (grade == null) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -214,8 +214,8 @@ public class CourseController {
     public List<Long> getCoursesOfLecturer(@PathVariable long lecturerId,
                                            @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webtoken) || checkIfStudent(webtoken)) {
-            List<Long> courseIds = courseService.getCourseIdForLecturer(lecturerId);
+        if (checkIfLecturerOrAdmin(webtoken) || checkIfStudent(webtoken)) {
+            List<Long> courseIds = courseService.getCourseIdsForLecturer(lecturerId);
             if (courseIds == null) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Could not find any courses for lecturer");
@@ -262,7 +262,7 @@ public class CourseController {
                                            @PathVariable("courseid") long courseid,
                                            @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webtoken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webtoken) || checkIfStudent(webtoken)) {
+        if (checkIfLecturerOrAdmin(webtoken) || checkIfStudent(webtoken)) {
             Boolean result = courseService.lecturerTeachesCourse(lecturerid, courseid);
             if (result) {
                 return result;
@@ -308,7 +308,7 @@ public class CourseController {
             return false;
         }
         String role = jwtUtils.getRole(claimsJws);
-        return role.equals("STUDENT") || role.equals("TA");
+        return role.equals("STUDENT");
     }
 
     /**
@@ -318,7 +318,7 @@ public class CourseController {
      * @param claimsJws - a webtoken
      * @return - true if lecturer/admin else false
      */
-    public boolean checkIfLecturer(Jws<Claims> claimsJws) {
+    public boolean checkIfLecturerOrAdmin(Jws<Claims> claimsJws) {
         if (claimsJws == null) {
             return false;
         }

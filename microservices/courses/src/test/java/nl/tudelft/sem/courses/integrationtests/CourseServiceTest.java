@@ -55,7 +55,7 @@ public class CourseServiceTest {
     }
 
     @Test
-    void addingNewCourseTest() {
+    void testAddNewCourse() {
         Course result = courseService.addNewCourses(courseRequest);
         verify(courseRepository, Mockito.times(1)).save(Mockito.any());
         Assert.assertNotNull(result);
@@ -64,7 +64,7 @@ public class CourseServiceTest {
     }
 
     @Test
-    void addingNewDuplicateCourseTest() {
+    void testAddNewCourseDuplicate() {
 
         Course course = new Course();
         course.setId(1);
@@ -88,7 +88,7 @@ public class CourseServiceTest {
     }
 
     @Test
-    void addingTwoCoursesWithSameCourseCode() {
+    void testAddNewCourseAddingTwoCoursesWithSameCourseCode() {
 
         Course course = new Course();
         course.setId(1);
@@ -117,7 +117,7 @@ public class CourseServiceTest {
     //Now tests for the second service method deleting a course. First we have to add a course.
 
     @Test
-    void deletingAnExistingCourse() {
+    void testDeleteCourseWithExistingCourse() {
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
@@ -135,7 +135,7 @@ public class CourseServiceTest {
 
 
     @Test
-    void deletingAnonExistingCourse() {
+    void testDeleteCourseWithNonExistingCourse() {
 
         Optional<Course> optionalCourse = Optional.ofNullable(null);
         when(courseRepository.findById(Mockito.any())).thenReturn(optionalCourse);
@@ -146,7 +146,7 @@ public class CourseServiceTest {
     }
 
     @Test
-    void deleteOfCourseFails() {
+    void testDeleteCourseFails() {
         doThrow(IllegalArgumentException.class).when(courseRepository).delete(Mockito.any());
 
         String result = courseService.deleteCourse(1);
@@ -156,7 +156,7 @@ public class CourseServiceTest {
 
 
     @Test
-    void deletingAnExistingCourseException() {
+    void testDeleteCourseAnExistingCourseException() {
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
@@ -176,7 +176,7 @@ public class CourseServiceTest {
 
     //testing getting the list of all courses with matching course code.
     @Test
-    void gettingCourses() {
+    void testGetCourses() {
 
         Course course = new Course();
         course.setId(1);
@@ -196,7 +196,7 @@ public class CourseServiceTest {
 
 
     @Test
-    void gettingExistingGrade() {
+    void testGetGradeExistingGrade() {
 
         Course course = new Course();
         course.setId(1);
@@ -223,7 +223,7 @@ public class CourseServiceTest {
     }
 
     @Test
-    void optionalGradeIsNull() {
+    void testGetGradeOptionalGradeIsNull() {
 
         Course course = new Course();
         course.setId(1);
@@ -249,7 +249,7 @@ public class CourseServiceTest {
     }
 
     @Test
-    void optionalCourseIsEmpty() {
+    void testGetGradeOptionalCourseIsEmpty() {
 
         Course course = new Course();
         course.setId(1);
@@ -278,7 +278,7 @@ public class CourseServiceTest {
     }
 
     @Test
-    void repositoryMethodThrowsException() {
+    void testGetGradeRepositoryMethodThrowsException() {
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
@@ -306,7 +306,7 @@ public class CourseServiceTest {
     //we do it now for the getCoures method.
 
     @Test
-    void gettingAvalidCourse() {
+    void testGetCourseWithValidCourse() {
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
@@ -324,7 +324,7 @@ public class CourseServiceTest {
     }
 
     @Test
-    void gettingAnInvalidCourse() {
+    void testGetCourseWithInvalidCourse() {
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
@@ -342,7 +342,7 @@ public class CourseServiceTest {
     }
 
     @Test
-    void addingAvalidGradeForUser() {
+    void testAddGradeWithValidGradeForUser() {
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
@@ -369,7 +369,7 @@ public class CourseServiceTest {
 
 
     @Test
-    void addingAvalidGradeForUserException() {
+    void testAddGradeWithValidGradeForUserException() {
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
@@ -396,7 +396,7 @@ public class CourseServiceTest {
     }
 
     @Test
-    void addingAexistingGradeForUser() {
+    void testAddGradeWithExistingGradeForUser() {
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
@@ -422,7 +422,7 @@ public class CourseServiceTest {
     }
 
     @Test
-    void addingAexistingGradeForUserButFailed() {
+    void testAddGradeButFailed() {
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
@@ -455,7 +455,7 @@ public class CourseServiceTest {
 
 
     @Test
-    void addingGradeThrewException() {
+    void testAddGradeThrewException() {
         Course course = new Course();
         course.setId(1);
         course.setStartDate(date);
@@ -482,7 +482,7 @@ public class CourseServiceTest {
     }
 
     @Test
-    void testGetCourseIdForLecturer() {
+    void testGetCourseIdsForLecturer() {
         Teaches teaches1 = new Teaches(2, 1);
         Teaches teaches2 = new Teaches(3, 1);
 
@@ -490,7 +490,7 @@ public class CourseServiceTest {
 
 
         when(teachesRepository.findAllByLecturerId(1)).thenReturn(list);
-        List<Long> courseIds = courseService.getCourseIdForLecturer(1);
+        List<Long> courseIds = courseService.getCourseIdsForLecturer(1);
         Assert.assertEquals(Arrays.asList(1L, 2L, 3L), courseIds);
         verify(teachesRepository, Mockito.times(1)).findAllByLecturerId(1);
 
@@ -499,7 +499,7 @@ public class CourseServiceTest {
     @Test
     void testGetCourseIdForLecturerButIsNull() {
         when(teachesRepository.findAllByLecturerId(1)).thenReturn(null);
-        Assert.assertNull(courseService.getCourseIdForLecturer(1));
+        Assert.assertNull(courseService.getCourseIdsForLecturer(1));
         verify(teachesRepository, Mockito.times(1)).findAllByLecturerId(1);
 
     }
@@ -520,14 +520,14 @@ public class CourseServiceTest {
     }
 
     @Test
-    void testAddNewTeachesToRepo() {
+    void testCreateTeachesAddNewTeachesToRepo() {
         Boolean result = courseService.createTeaches(1, 1);
         verify(teachesRepository, Mockito.times(1)).save(Mockito.any());
         Assert.assertTrue(result);
     }
 
     @Test
-    void testFailedToAddNewTeach() {
+    void testCreateTeachesFailedToAddNewTeach() {
         doThrow(IllegalArgumentException.class).when(teachesRepository).save(Mockito.any());
         Boolean result = courseService.createTeaches(1, 1);
         verify(teachesRepository, Mockito.times(1)).save(Mockito.any());

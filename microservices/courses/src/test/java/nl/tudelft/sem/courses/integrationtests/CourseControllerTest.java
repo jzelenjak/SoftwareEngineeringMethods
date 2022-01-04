@@ -10,16 +10,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
-import java.time.LocalDate;
+
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.controllers.CourseController;
-import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
 import nl.tudelft.sem.courses.respositories.TeachesRepository;
@@ -159,7 +157,7 @@ public class CourseControllerTest {
 
     //testing for null or empty courses.
     @Test
-    void testEmptyCoursesListReturned() throws Exception {
+    void testGetCoursesByCodeEmptyCoursesListReturned() throws Exception {
 
         mockMvc.perform(get(getCoursePath + courseCode)
                 .header(authorizationHeader, ""))
@@ -167,13 +165,13 @@ public class CourseControllerTest {
     }
 
     @Test
-    void testUnauthroizedGettingOfCoursesList() throws Exception {
+    void testGetCoursesByCodeUnauthorized() throws Exception {
         mockMvc.perform(get(getCoursePath + courseCode))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void gettingCourseByItsId() throws Exception {
+    void testGetCourseById() throws Exception {
         //First we add the course
 
 
@@ -196,20 +194,20 @@ public class CourseControllerTest {
     }
 
     @Test
-    void gettingAcourseWhichDoesNotExist() throws Exception {
+    void testGetCourseByIdWithCourseWhichDoesNotExist() throws Exception {
         mockMvc.perform(get("/api/courses/get/1")
                 .header(authorizationHeader, ""))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void testUnauthroziedAccessForGettingCourse() throws Exception {
+    void testGetCourseByIdUnauthorizedAccess() throws Exception {
         mockMvc.perform(get("/api/courses/get/1"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void deletingAnExistingCourse() throws Exception {
+    void testDeletingAnExistingCourse() throws Exception {
         //First we add the course
 
         mockMvc.perform(post(createCoursePath)
@@ -234,20 +232,20 @@ public class CourseControllerTest {
     }
 
     @Test
-    void deletingAnonExistentCourse() throws Exception {
+    void testDeletingAnonExistentCourse() throws Exception {
         mockMvc.perform(delete("/api/courses/delete/1")
                 .header(authorizationHeader, ""))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void noAuthorizationForDeletingCourses() throws Exception {
+    void testDeletingCourseUnauthorized() throws Exception {
         mockMvc.perform(delete("/api/courses/delete/1"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void addingAgradeObject() throws Exception {
+    void testAddGrade() throws Exception {
         mockMvc.perform(post(createCoursePath)
                 .header(authorizationHeader, "")
                 .contentType(jsonContentHeader)
@@ -278,7 +276,7 @@ public class CourseControllerTest {
     }
 
     @Test
-    void addingGradeWhenGradeAlreadyExists() throws Exception {
+    void testAddGradeWhenGradeAlreadyExists() throws Exception {
         mockMvc.perform(post(createCoursePath)
                 .header(authorizationHeader, "")
                 .contentType(jsonContentHeader)
@@ -313,7 +311,7 @@ public class CourseControllerTest {
     }
 
     @Test
-    void notAuthorizedAddingOfGrades() throws Exception {
+    void testAddGradeUnauthorized() throws Exception {
         GradeRequest gradeRequest = new GradeRequest(1, 5.75f, 1);
 
         mockMvc.perform(post(createGradePath)
@@ -323,7 +321,7 @@ public class CourseControllerTest {
     }
 
     @Test
-    void getGradeOfAuser() throws Exception {
+    void testGetGradeOfAuser() throws Exception {
 
         mockMvc.perform(post(createCoursePath)
                 .header(authorizationHeader, "")
@@ -363,7 +361,7 @@ public class CourseControllerTest {
     }
 
     @Test
-    void testNoGradeFound() throws Exception {
+    void testGetGradeOfUserNoGradeFound() throws Exception {
 
         mockMvc.perform(get("/api/courses/get/grade/1/1")
                 .header(authorizationHeader, ""))
@@ -372,7 +370,7 @@ public class CourseControllerTest {
     }
 
     @Test
-    void testNoAuthroizationToRetrieveGrades() throws Exception {
+    void testGetGradeOfUserUnauthorized() throws Exception {
         mockMvc.perform(get("/api/courses/get/grade/1/1"))
                 .andExpect(status().isForbidden());
     }
@@ -380,7 +378,7 @@ public class CourseControllerTest {
 
     //testing the isAuthroizedMethod
     @Test
-    void testIsNoToken() throws Exception {
+    void testIsAuthorizedMethodNoToken() throws Exception {
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(authorizationHeader, "Bearer test");
@@ -392,7 +390,7 @@ public class CourseControllerTest {
 
     //testing the isAuthroizedMethod
     @Test
-    void testIsNoJwsClaims() throws Exception {
+    void testIsAuthorizedNoJwsClaims() throws Exception {
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(authorizationHeader, "Bearer test");
@@ -405,7 +403,7 @@ public class CourseControllerTest {
 
     //testing the isAuthroizedMethod
     @Test
-    void testIsNotCorrectRole() throws Exception {
+    void testIsAuthorizedNotCorrectRole() throws Exception {
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(authorizationHeader, "Bearer test");
@@ -417,12 +415,12 @@ public class CourseControllerTest {
         Assert.assertEquals("STUDENT", jwtUtils.getRole(result));
         Assert.assertEquals(true, courseController.checkIfStudent(result));
         Assert.assertNotEquals("LECTURER", jwtUtils.getRole(result));
-        Assert.assertEquals(false, courseController.checkIfLecturer(result));
+        Assert.assertEquals(false, courseController.checkIfLecturerOrAdmin(result));
 
     }
 
     @Test
-    void addNewLecturerToCourse() throws Exception {
+    void testAddNewLecturerToCourse() throws Exception {
         mockMvc.perform(post(assignLecturerPath)
                 .header(authorizationHeader, "")
                 .contentType(jsonContentHeader))
@@ -431,7 +429,7 @@ public class CourseControllerTest {
     }
 
     @Test
-    void notAuthorizedToAddLecturer() throws Exception {
+    void testAddNewLecturerToCourseUnauthorized() throws Exception {
         mockMvc.perform(post(assignLecturerPath))
                 .andExpect(status().isForbidden());
     }
@@ -469,7 +467,7 @@ public class CourseControllerTest {
     }
 
     @Test
-    void testFailedToGetAnyCourses() throws Exception {
+    void testGetCoursesOfLecturerFailedToGetAnyCourses() throws Exception {
         mockMvc.perform(get("/api/courses/get/lecturer/courses/1")
                 .header(authorizationHeader, ""))
                 .andExpect(status().isNotFound());
@@ -477,13 +475,13 @@ public class CourseControllerTest {
     }
 
     @Test
-    void testNotAuthorizedToGetLecturers() throws Exception {
+    void testGetCoursesOfLecturerUnauthorized() throws Exception {
         mockMvc.perform(get("/api/courses/get/lecturer/courses/1"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void testLecturerTeachesCourse() throws Exception {
+    void testDoesLecturerTeacheCourse() throws Exception {
         mockMvc.perform(post(assignLecturerPath)
                 .header(authorizationHeader, "")
                 .contentType(jsonContentHeader))
@@ -496,7 +494,7 @@ public class CourseControllerTest {
     }
 
     @Test
-    void testLecturerDoesNotTeachCourse() throws Exception {
+    void testDoesLecturerTeachCourseDoesNotTeachCourse() throws Exception {
         mockMvc.perform(get("/api/courses/get/teaches/1/1")
                 .header(authorizationHeader, "")
                 .contentType(jsonContentHeader))
@@ -505,7 +503,7 @@ public class CourseControllerTest {
     }
 
     @Test
-    void testNoAuthenticationLecturerTeachingCourse() throws Exception {
+    void testDoesLecturerTeachCourseUnauthorized() throws Exception {
         mockMvc.perform(get("/api/courses/get/teaches/1/1"))
                 .andExpect(status().isForbidden());
     }
