@@ -80,6 +80,7 @@ public class AsyncCourseTimeValidatorTest {
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
         assertEquals("/api/courses/get/1", recordedRequest.getPath());
+        assertEquals(TOKEN, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
@@ -102,6 +103,7 @@ public class AsyncCourseTimeValidatorTest {
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
         assertEquals("/api/courses/get/12", recordedRequest.getPath());
+        assertEquals(TOKEN, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
@@ -128,6 +130,7 @@ public class AsyncCourseTimeValidatorTest {
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
         assertEquals("/api/courses/get/1", recordedRequest.getPath());
+        assertEquals(TOKEN, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
@@ -155,6 +158,7 @@ public class AsyncCourseTimeValidatorTest {
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
         assertEquals("/api/courses/get/1", recordedRequest.getPath());
+        assertEquals(TOKEN, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     private JsonObject configureCourseResponseBody(ZonedDateTime start, ZonedDateTime end) {
