@@ -16,7 +16,7 @@ import java.util.Optional;
 import nl.tudelft.sem.authentication.entities.Notification;
 import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
-import nl.tudelft.sem.authentication.repositories.NotificationDataRepository;
+import nl.tudelft.sem.authentication.repositories.NotificationRepository;
 import nl.tudelft.sem.authentication.repositories.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.junit.jupiter.api.AfterEach;
@@ -37,7 +37,7 @@ class NotificationControllerTest {
     private transient MockMvc mockMvc;
 
     @Autowired
-    private transient NotificationDataRepository notificationDataRepository;
+    private transient NotificationRepository notificationRepository;
 
     @Autowired
     private transient UserDataRepository userDataRepository;
@@ -122,7 +122,7 @@ class NotificationControllerTest {
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
     void testGetNotificationsFromExistingUserAsAdminSuccess() throws Exception {
         Notification notification = new Notification(5695444L, "Hi Admin!");
-        this.notificationDataRepository.save(notification);
+        this.notificationRepository.save(notification);
 
         this.mockMvc
                 .perform(get(GET_URL)
@@ -133,7 +133,7 @@ class NotificationControllerTest {
                 .andExpect(status().isOk());
 
         Optional<List<Notification>> optionalList =
-                this.notificationDataRepository.findByUserId(5695444L);
+                this.notificationRepository.findByUserId(5695444L);
         assert optionalList.isPresent();
 
         List<Notification> expectedList = new ArrayList<>();
@@ -145,14 +145,14 @@ class NotificationControllerTest {
             Assertions.assertEquals(expectedList.get(i), actualList.get(i));
         }
 
-        this.notificationDataRepository.deleteAll();
+        this.notificationRepository.deleteAll();
     }
 
     @Test
     @WithMockUser(username = STUDENTUSERNAME, password = SHAREDPASSWORD)
     void testGetNotificationsFromExistingUserAsStudentFailed() throws Exception {
         Notification notification = new Notification(5695444L, "Hi Admin!");
-        this.notificationDataRepository.save(notification);
+        this.notificationRepository.save(notification);
 
         this.mockMvc
                 .perform(get(GET_URL)
@@ -162,7 +162,7 @@ class NotificationControllerTest {
                         .characterEncoding(UTF8))
                 .andExpect(status().isForbidden());
 
-        this.notificationDataRepository.deleteAll();
+        this.notificationRepository.deleteAll();
     }
 
     @Test
@@ -177,7 +177,7 @@ class NotificationControllerTest {
             .andExpect(status().isOk());
 
         Optional<List<Notification>> optionalList =
-                this.notificationDataRepository.findByUserId(81395544414353L);
+                this.notificationRepository.findByUserId(81395544414353L);
         assert optionalList.isPresent();
 
         List<Notification> list = optionalList.get();
@@ -185,13 +185,13 @@ class NotificationControllerTest {
         final long notificationId = first.getNotificationId();
 
         Optional<Notification> optionalNotification =
-                this.notificationDataRepository.findByNotificationId(notificationId);
+                this.notificationRepository.findByNotificationId(notificationId);
         assert optionalNotification.isPresent();
 
         Notification notification = optionalNotification.get();
         Assertions.assertEquals(notification.getNotificationId(), notificationId);
 
-        this.notificationDataRepository.deleteAll();
+        this.notificationRepository.deleteAll();
     }
 
     @Test
@@ -207,7 +207,7 @@ class NotificationControllerTest {
                 .andExpect(status().isOk());
 
         Optional<List<Notification>> optionalList =
-                this.notificationDataRepository.findByUserId(4441435386473932L);
+                this.notificationRepository.findByUserId(4441435386473932L);
         assert optionalList.isPresent();
 
         List<Notification> list = optionalList.get();
@@ -215,13 +215,13 @@ class NotificationControllerTest {
         final long notificationId = first.getNotificationId();
 
         Optional<Notification> optionalNotification =
-                this.notificationDataRepository.findByNotificationId(notificationId);
+                this.notificationRepository.findByNotificationId(notificationId);
         assert optionalNotification.isPresent();
 
         Notification notification = optionalNotification.get();
         Assertions.assertEquals(notification.getNotificationId(), notificationId);
 
-        this.notificationDataRepository.deleteAll();
+        this.notificationRepository.deleteAll();
     }
 
     @Test
@@ -236,17 +236,17 @@ class NotificationControllerTest {
                 .andExpect(status().isForbidden());
 
         Optional<Notification> optionalNotification =
-                this.notificationDataRepository.findByNotificationId(1L);
+                this.notificationRepository.findByNotificationId(1L);
         assert optionalNotification.isEmpty();
 
-        this.notificationDataRepository.deleteAll();
+        this.notificationRepository.deleteAll();
     }
 
     @Test
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
     void testAddNotificationWithAnotherNotificationSuccess() throws Exception {
         Notification notification = new Notification(4864864486L, "Hello there!");
-        this.notificationDataRepository.save(notification);
+        this.notificationRepository.save(notification);
 
         this.mockMvc
                 .perform(post(ADD_URL)
@@ -258,19 +258,19 @@ class NotificationControllerTest {
                 .andExpect(status().isOk());
 
         Optional<List<Notification>> optionalNotifications =
-                this.notificationDataRepository.findByUserId(4864864486L);
+                this.notificationRepository.findByUserId(4864864486L);
         assert optionalNotifications.isPresent();
         List<Notification> list = optionalNotifications.get();
         Assertions.assertEquals(list.size(), 2);
 
-        this.notificationDataRepository.deleteAll();
+        this.notificationRepository.deleteAll();
     }
 
     @Test
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
     void testChangeUserFromNotificationSuccess() throws Exception {
         Notification notification = new Notification(4648648L, "Hello!");
-        this.notificationDataRepository.save(notification);
+        this.notificationRepository.save(notification);
         final long targetNotificationId = notification.getNotificationId();
 
         this.mockMvc
@@ -283,20 +283,20 @@ class NotificationControllerTest {
                 .andExpect(status().isOk());
 
         Optional<Notification> optionalNotification =
-                this.notificationDataRepository.findByNotificationId(targetNotificationId);
+                this.notificationRepository.findByNotificationId(targetNotificationId);
         assert optionalNotification.isPresent();
 
         Notification newNotification = optionalNotification.get();
         Assertions.assertEquals(1234567, newNotification.getUserId());
 
-        this.notificationDataRepository.deleteAll();
+        this.notificationRepository.deleteAll();
     }
 
     @Test
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
     void testChangeMessageFromNotificationSuccess() throws Exception {
         Notification notification = new Notification(4648648L, "Hi JavAa!");
-        this.notificationDataRepository.save(notification);
+        this.notificationRepository.save(notification);
         final long targetNotificationId = notification.getNotificationId();
 
         this.mockMvc
@@ -310,20 +310,20 @@ class NotificationControllerTest {
                 .andExpect(status().isOk());
 
         Optional<Notification> optionalNotification =
-                this.notificationDataRepository.findByNotificationId(targetNotificationId);
+                this.notificationRepository.findByNotificationId(targetNotificationId);
         assert optionalNotification.isPresent();
 
         Notification newNotification = optionalNotification.get();
         Assertions.assertEquals("Hi Java!", newNotification.getMessage());
 
-        this.notificationDataRepository.deleteAll();
+        this.notificationRepository.deleteAll();
     }
 
     @Test
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
     void testDeleteExistingNotificationById() throws Exception {
         Notification notification = new Notification(1212121L, "Delete me!");
-        this.notificationDataRepository.save(notification);
+        this.notificationRepository.save(notification);
         final long targetNotificationId = notification.getNotificationId();
         this.mockMvc
                 .perform(delete(DELETE_BY_ID_URL)
@@ -334,7 +334,7 @@ class NotificationControllerTest {
                         .characterEncoding(UTF8))
                 .andExpect(status().isOk());
 
-        this.notificationDataRepository.deleteAll();
+        this.notificationRepository.deleteAll();
     }
 
     @Test
@@ -349,9 +349,9 @@ class NotificationControllerTest {
         list.add(notification2);
         list.add(notification3);
 
-        this.notificationDataRepository.save(notification1);
-        this.notificationDataRepository.save(notification2);
-        this.notificationDataRepository.save(notification3);
+        this.notificationRepository.save(notification1);
+        this.notificationRepository.save(notification2);
+        this.notificationRepository.save(notification3);
 
         this.mockMvc
                 .perform(delete(DELETE_BY_USER_URL)
@@ -362,7 +362,7 @@ class NotificationControllerTest {
                 .andExpect(status().isOk());
 
         Optional<List<Notification>> listOfNotifications =
-                this.notificationDataRepository.findByUserId(1212121L);
+                this.notificationRepository.findByUserId(1212121L);
         assert listOfNotifications.isEmpty();
     }
 

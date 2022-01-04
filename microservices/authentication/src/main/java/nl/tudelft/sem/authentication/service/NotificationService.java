@@ -1,11 +1,11 @@
 package nl.tudelft.sem.authentication.service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import javax.persistence.EntityNotFoundException;
 import nl.tudelft.sem.authentication.entities.Notification;
-import nl.tudelft.sem.authentication.repositories.NotificationDataRepository;
+import nl.tudelft.sem.authentication.repositories.NotificationRepository;
 import org.springframework.stereotype.Service;
+
 
 /**
  * A class that represents Service.
@@ -14,10 +14,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class NotificationService {
 
-    private final transient NotificationDataRepository notificationDataRepository;
+    private final transient NotificationRepository notificationRepository;
 
-    public NotificationService(NotificationDataRepository notificationDataRepository) {
-        this.notificationDataRepository = notificationDataRepository;
+    public NotificationService(NotificationRepository notificationRepository) {
+        this.notificationRepository = notificationRepository;
     }
 
     /**
@@ -29,7 +29,7 @@ public class NotificationService {
      * @return true when successfully added.
      */
     public boolean addNewNotification(long userId, String message) {
-        this.notificationDataRepository
+        this.notificationRepository
                 .save(new Notification(userId, message));
         return true;
     }
@@ -43,7 +43,7 @@ public class NotificationService {
     public void changeUserIdFromNotification(long notificationId, long userId) {
         Notification notification = loadNotificationByNotificationId(notificationId);
         notification.setUserId(userId);
-        notificationDataRepository.save(notification);
+        notificationRepository.save(notification);
     }
 
     /**
@@ -55,7 +55,7 @@ public class NotificationService {
     public void changeMessageFromNotification(long notificationId, String message) {
         Notification notification = loadNotificationByNotificationId(notificationId);
         notification.setMessage(message);
-        notificationDataRepository.save(notification);
+        notificationRepository.save(notification);
     }
 
     /**
@@ -65,7 +65,7 @@ public class NotificationService {
      * @return notification if found, else throw exception.
      */
     public Notification loadNotificationByNotificationId(long notificationId) {
-        return this.notificationDataRepository
+        return this.notificationRepository
                 .findByNotificationId(notificationId)
                 .orElseThrow(() -> new EntityNotFoundException(String.format(
                         "Notification with id %d not found", notificationId)));
@@ -79,11 +79,11 @@ public class NotificationService {
      * @return the list of notifications from the user if present, else throw exception.
      */
     public List<Notification> loadNotificationByUserId(long userId) {
-        return this.notificationDataRepository
+        return this.notificationRepository
                 .findByUserId(userId)
                 .orElseThrow(() ->
-                        new EntityNotFoundException(String
-                                .format("Notification with user ID %d has no new notification.",
+                        new EntityNotFoundException(String.format(
+                                "Notification with user ID %d has no new notification.",
                                         userId)));
     }
 
@@ -94,7 +94,7 @@ public class NotificationService {
      */
     public void deleteNotificationByNotificationId(long notificationId) {
         Notification notification = loadNotificationByNotificationId(notificationId);
-        notificationDataRepository.delete(notification);
+        notificationRepository.delete(notification);
     }
 
     /**
@@ -104,6 +104,6 @@ public class NotificationService {
      */
     public void deleteNotificationsFromUser(long userId) {
         List<Notification> notifications = loadNotificationByUserId(userId);
-        notificationDataRepository.deleteAll(notifications);
+        notificationRepository.deleteAll(notifications);
     }
 }
