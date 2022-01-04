@@ -10,7 +10,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
-
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -18,6 +17,7 @@ import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.controllers.CourseController;
+import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
 import nl.tudelft.sem.courses.respositories.TeachesRepository;
@@ -174,14 +174,16 @@ public class CourseControllerTest {
     void testGetCourseById() throws Exception {
         //First we add the course
 
-
-        mockMvc.perform(post(createCoursePath)
+        MvcResult mvcResult1 = mockMvc.perform(post(createCoursePath)
                 .header(authorizationHeader, "")
                 .contentType(jsonContentHeader)
                 .content(objectMapper.writeValueAsString(courseRequest)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andReturn();
+        String content1 = mvcResult1.getResponse().getContentAsString();
+        Course course = objectMapper.readValue(content1, Course.class);
         //now we check if it has the correct course id.
-        MvcResult mvcResult = mockMvc.perform(get("/api/courses/get/1")
+        MvcResult mvcResult = mockMvc.perform(get("/api/courses/get/" + course.getId())
                 .header(authorizationHeader, ""))
                 .andExpect(status().isOk())
                 .andReturn();
