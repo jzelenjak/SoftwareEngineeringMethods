@@ -1,6 +1,5 @@
 package nl.tudelft.sem.courses.entities;
 
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -14,22 +13,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
-
 @Entity(name = "Grades")
 @Table(name = "grade")
-
 @Getter
 @Setter
 @NoArgsConstructor
 @EqualsAndHashCode
 public class Grade {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Course course;
@@ -37,11 +31,8 @@ public class Grade {
     @Column(name = "grade")
     private float gradeValue;
 
-
-
     @Column(name = "user_id")
     private long userId;
-
 
     /**
      * When using this constructor you must provide a course and a user.
@@ -55,7 +46,6 @@ public class Grade {
         this.userId = userId;
         this.gradeValue = gradeValue;
     }
-
 
     /**
      * When using this constructor you must provide a course and a user.

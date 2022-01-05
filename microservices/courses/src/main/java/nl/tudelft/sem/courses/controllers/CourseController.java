@@ -16,6 +16,7 @@ import nl.tudelft.sem.courses.services.CourseService;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -60,16 +61,16 @@ public class CourseController {
      * @return returns a http success or bad request
      */
     @PostMapping("/create")
-    public boolean createNewCourse(@RequestBody CourseRequest request,
-                                   @RequestHeader HttpHeaders httpHeaders) {
+    public Course createNewCourse(@RequestBody CourseRequest request,
+                                  @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webToken)) {
-            String result = courseService.addNewCourses(request);
-            if (result.contains("Failed")) {
+        if (checkIfAdmin(webToken)) {
+            Course result = courseService.addNewCourses(request);
+            if (result == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Failed to create new course");
             }
-            return true;
+            return result;
         }
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
@@ -85,7 +86,7 @@ public class CourseController {
             @PathVariable String code, @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webToken = isAuthorized(httpHeaders);
 
-        if (checkIfStudent(webToken) || checkIfLecturer(webToken)) {
+        if (checkIfStudent(webToken) || checkIfLecturerOrAdmin(webToken)) {
             List<Course> courses = courseService.getCourses(code);
             if (courses != null && !courses.isEmpty()) {
                 List<CourseResponse> courseResponses = new ArrayList<>();
@@ -121,7 +122,7 @@ public class CourseController {
     public CourseResponse getCourseById(@PathVariable long id,
                                         @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webToken) || checkIfStudent(webToken)) {
+        if (checkIfLecturerOrAdmin(webToken) || checkIfStudent(webToken)) {
             Course course = courseService.getCourse(id);
             if (course == null) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -168,14 +169,15 @@ public class CourseController {
      * @param id -  Id of the course we want to delete
      * @return returns a http success or bad request
      */
-    @PostMapping("/delete/{id}")
+    @DeleteMapping("/delete/{id}")
     public boolean deleteCourse(@PathVariable long id,
                                 @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webToken)) {
+        if (checkIfAdmin(webToken)) {
             String result = courseService.deleteCourse(id);
             if (result.contains("Failed")) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Failed to delete course");
             }
             return true;
         }
@@ -194,7 +196,7 @@ public class CourseController {
     public boolean addGrade(@RequestBody GradeRequest request,
                             @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webToken)) {
+        if (checkIfLecturerOrAdmin(webToken)) {
             if (request == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "No Request was provided");
@@ -209,7 +211,6 @@ public class CourseController {
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
 
-
     /**
      * Returns the grade of a user for a specific course.
      *
@@ -222,13 +223,83 @@ public class CourseController {
                                 @PathVariable("courseid") long courseId,
                                 @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if (checkIfLecturer(webToken) || checkIfStudent(webToken)) {
+        if (checkIfLecturerOrAdmin(webToken) || checkIfStudent(webToken)) {
             Grade grade = courseService.getGrade(userid, courseId);
             if (grade == null) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Could not find the grade for user and course");
             } else {
                 return grade.getGradeValue();
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
+    }
+
+    /**
+     * Returns all the course ids for a lecturer.
+     *
+     * @param lecturerId - id of the lecturer
+     * @return list of course ids
+     */
+    @GetMapping("/get/lecturer/courses/{lecturerId}")
+    public List<Long> getCoursesOfLecturer(@PathVariable long lecturerId,
+                                           @RequestHeader HttpHeaders httpHeaders) {
+        Jws<Claims> webToken = isAuthorized(httpHeaders);
+        if (checkIfLecturerOrAdmin(webToken) || checkIfStudent(webToken)) {
+            List<Long> courseIds = courseService.getCourseIdsForLecturer(lecturerId);
+            if (courseIds == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Could not find any courses for lecturer");
+            } else {
+                return courseIds;
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
+    }
+
+    /**
+     * Assigns a lecturer to a course.
+     *
+     * @param lecturerId - the id of the lecturer
+     * @param courseId   - the id of the course
+     * @return if the operation was successful
+     */
+    @PostMapping("/assign/lecturer/{lecturerId}/{courseId}")
+    public Boolean addLecturerToCourse(@PathVariable("lecturerId") long lecturerId,
+                                       @PathVariable("courseId") long courseId,
+                                       @RequestHeader HttpHeaders httpHeaders) {
+        Jws<Claims> webToken = isAuthorized(httpHeaders);
+        if (checkIfAdmin(webToken)) {
+            Boolean result = courseService.createTeaches(lecturerId, courseId);
+            if (result) {
+                return true;
+            } else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Failed to assign Lecturer to Course");
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
+    }
+
+    /**
+     * Checks if the lecturer is assigned to a course.
+     *
+     * @param lecturerId - the id of the lecturer
+     * @param courseId   - the id of the course
+     * @return true if lecturer teaches course otherwise false
+     */
+    @GetMapping("/get/teaches/{lecturerId}/{courseId}")
+    public Boolean doesLecturerTeachCourse(@PathVariable("lecturerId") long lecturerId,
+                                           @PathVariable("courseId") long courseId,
+                                           @RequestHeader HttpHeaders httpHeaders) {
+        Jws<Claims> webToken = isAuthorized(httpHeaders);
+        if (checkIfLecturerOrAdmin(webToken) || checkIfStudent(webToken)) {
+            Boolean result = courseService.lecturerTeachesCourse(lecturerId, courseId);
+            if (result) {
+                return true;
+            } else {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Lecturer does not teach course");
             }
         }
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
@@ -242,7 +313,7 @@ public class CourseController {
      */
     public Jws<Claims> isAuthorized(HttpHeaders httpHeaders) {
         //first we try to get the authorization header information.
-        String authHeader = httpHeaders.getFirst("Authorization");
+        String authHeader = httpHeaders.getFirst(HttpHeaders.AUTHORIZATION);
         //if there is no such header return null
         if (authHeader == null) {
             return null;
@@ -271,17 +342,31 @@ public class CourseController {
     }
 
     /**
-     * Method checks if role in webToken is
-     * lecturer or a admin.
+     * Method checks if role in webToken is a lecturer or an admin.
      *
      * @param claimsJws - a webToken
-     * @return - true if lecturer/admin else false
+     * @return - true if lecturer/admin, false otherwise
      */
-    public boolean checkIfLecturer(Jws<Claims> claimsJws) {
+    public boolean checkIfLecturerOrAdmin(Jws<Claims> claimsJws) {
         if (claimsJws == null) {
             return false;
         }
         String role = jwtUtils.getRole(claimsJws);
         return role.equals("LECTURER") || role.equals("ADMIN");
+    }
+
+    /**
+     * Method checks if role in web token is
+     * admin.
+     *
+     * @param claimsJws - a web token
+     * @return - true if admin else false
+     */
+    public boolean checkIfAdmin(Jws<Claims> claimsJws) {
+        if (claimsJws == null) {
+            return false;
+        }
+        String role = jwtUtils.getRole(claimsJws);
+        return role.equals("ADMIN");
     }
 }

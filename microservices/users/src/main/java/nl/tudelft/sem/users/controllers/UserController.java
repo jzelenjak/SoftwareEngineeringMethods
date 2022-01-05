@@ -27,6 +27,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
@@ -49,6 +51,8 @@ public class UserController {
     private final transient GatewayConfig gatewayConfig;
 
     private static final transient String USERNAME = "username";
+    private static final transient String FIRSTNAME = "firstName";
+    private static final transient String LASTNAME = "lastName";
     private static final transient String USERID = "userId";
     private static final transient String ROLE = "role";
 
@@ -111,7 +115,6 @@ public class UserController {
                 });
     }
 
-
     /**
      * Gets a user by their username. Is only allowed for lecturers and admins.
      *
@@ -130,7 +133,6 @@ public class UserController {
         String json = new ObjectMapper().writeValueAsString(getUserByUsername(username));
         return new ResponseEntity<>(json, HttpStatus.OK);
     }
-
 
     /**
      * Gets a user by their user ID. Is only allowed for lecturers and admins.
@@ -173,6 +175,51 @@ public class UserController {
         return new ResponseEntity<>(json, HttpStatus.OK);
     }
 
+    /**
+     * Gets users by first name. Only allowed by admin.
+     *
+     * @param req the HTTP request.
+     * @return the users with the given first name.
+     *         If no users are found, then 404 NOT FOUND is sent back.
+     * @throws IOException when something goes wrong with servlets
+     */
+    @GetMapping("/by_first_name")
+    public ResponseEntity<String> getByFirstName(HttpServletRequest req) throws IOException {
+        String prefixedJwt = req.getHeader(HttpHeaders.AUTHORIZATION);
+        validateAdmin(prefixedJwt);
+
+        final String firstName = req.getParameter(FIRSTNAME);
+        Optional<List<User>> users = this.userService.getUsersByFirstName(firstName);
+        if (users.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    String.format("No users having first name '%s' found!", firstName));
+        }
+        String json = new ObjectMapper().writeValueAsString(users.get());
+        return new ResponseEntity<>(json, HttpStatus.OK);
+    }
+
+    /**
+     * Gets users by last name. Only allowed by admin.
+     *
+     * @param req the HTTP request.
+     * @return the users with the given last name.
+     *         If no users are found, then 404 NOT FOUND is sent back.
+     * @throws IOException when something goes wrong with servlets
+     */
+    @GetMapping("/by_last_name")
+    public ResponseEntity<String> getByLastName(HttpServletRequest req) throws IOException {
+        String prefixedJwt = req.getHeader(HttpHeaders.AUTHORIZATION);
+        validateAdmin(prefixedJwt);
+
+        final String lastName = req.getParameter(LASTNAME);
+        Optional<List<User>> users = this.userService.getUsersByLastName(lastName);
+        if (users.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    String.format("No users having last name '%s' found!", lastName));
+        }
+        String json = new ObjectMapper().writeValueAsString(users.get());
+        return new ResponseEntity<>(json, HttpStatus.OK);
+    }
 
     /**
      * Changes the role of a user given their userId. Only allowed for admins.
@@ -186,7 +233,7 @@ public class UserController {
     @PutMapping("/change_role")
     public Mono<ResponseEntity<String>> changeRole(HttpServletRequest req) throws IOException {
         String prefixedJwt = req.getHeader(HttpHeaders.AUTHORIZATION);
-        validate(prefixedJwt, Set.of(UserRole.ADMIN.name()));
+        validateAdmin(prefixedJwt);
 
         JsonNode jsonNode = new ObjectMapper().readTree(req.getInputStream());
         long userId = parseUserId(parseJsonField(jsonNode, USERID));
@@ -215,6 +262,43 @@ public class UserController {
                 });
     }
 
+    /**
+     * Changes the first name of a user. Only possible by admins.
+     *
+     * @param req the HTTP request.
+     * @throws IOException IO exception if something goes wrong with the servlets.
+     */
+    @PutMapping("/change_first_name")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public void changeFirstName(HttpServletRequest req) throws IOException {
+        String prefixedJwt = req.getHeader(HttpHeaders.AUTHORIZATION);
+        validateAdmin(prefixedJwt);
+
+        JsonNode jsonNode = new ObjectMapper().readTree(req.getInputStream());
+        long userId = parseUserId(parseJsonField(jsonNode, USERID));
+        String newFirstName = parseJsonField(jsonNode, FIRSTNAME);
+        this.userService.changeFirstName(userId, newFirstName);
+    }
+
+    /**
+     * Changes the last name of a user. Only possible by admins.
+     *
+     * @param req the HTTP request.
+     * @throws IOException IO exception if something goes wrong with the servlets.
+     */
+    @PutMapping("/change_last_name")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public void changeLastName(HttpServletRequest req) throws IOException {
+        String prefixedJwt = req.getHeader(HttpHeaders.AUTHORIZATION);
+        validateAdmin(prefixedJwt);
+
+        JsonNode jsonNode = new ObjectMapper().readTree(req.getInputStream());
+        long userId = parseUserId(parseJsonField(jsonNode, USERID));
+        String newLastName = parseJsonField(jsonNode, LASTNAME);
+        this.userService.changeLastName(userId, newLastName);
+    }
 
     /**
      * Deletes a user by their user ID. Only allowed for admins.
@@ -228,7 +312,7 @@ public class UserController {
     @DeleteMapping("/delete")
     public Mono<ResponseEntity<String>> deleteByUserId(HttpServletRequest req) {
         String prefixedJwt = req.getHeader(HttpHeaders.AUTHORIZATION);
-        validate(prefixedJwt, Set.of(UserRole.ADMIN.name()));
+        validateAdmin(prefixedJwt);
 
         long userId = parseUserId(req.getParameter(USERID));
         String username = getUserByUserId(userId).getUsername();
@@ -257,6 +341,15 @@ public class UserController {
     /*
      * Helper methods to reduce code duplication.
      */
+
+    /**
+     * Helper method to validate admin role.
+     *
+     * @param jwtPrefixed the JWT token extracted from 'Authorization' header
+     */
+    private void validateAdmin(String jwtPrefixed) {
+        validate(jwtPrefixed, Set.of(UserRole.ADMIN.name()));
+    }
 
     /**
      * A helper method to create a URI for HTTP request.

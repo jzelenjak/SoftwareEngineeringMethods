@@ -3,25 +3,26 @@ package nl.tudelft.sem.courses.services;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
+import nl.tudelft.sem.courses.entities.Teaches;
+import nl.tudelft.sem.courses.entities.TeachesPk;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import nl.tudelft.sem.courses.respositories.TeachesRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class CourseService {
 
+    private final transient CourseRepository courseRepository;
 
+    private final transient GradeRepository gradeRepository;
 
-    private transient CourseRepository courseRepository;
-
-    private transient GradeRepository gradeRepository;
+    private final transient TeachesRepository teachesRepository;
 
     /**
      * Constructor for Dependency Injection.
@@ -29,9 +30,12 @@ public class CourseService {
      * @param courseRepository - A repository object for courses
      * @param gradeRepository -  A repository object for grades
      */
-    public CourseService(CourseRepository courseRepository, GradeRepository gradeRepository) {
+    public CourseService(CourseRepository courseRepository,
+                         GradeRepository gradeRepository,
+                         TeachesRepository teachesRepository) {
         this.courseRepository = courseRepository;
         this.gradeRepository = gradeRepository;
+        this.teachesRepository = teachesRepository;
     }
 
     /**
@@ -39,28 +43,34 @@ public class CourseService {
      * The request must be through the controller.
      *
      * @param request - The request
-     * @return String - returns successful string.
+     * @return long - returns positive number upon successful completion,
+     *      otherwise returns -1
      */
-    public String addNewCourses(CourseRequest request)  {
+    public Course addNewCourses(CourseRequest request)  {
         List<Course> courses = courseRepository.findAllByCourseCode(request.getCourseCode());
 
-
-        if (courses.isEmpty()) {
-            Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
-                    request.getFinishDate(), request.getNumStudents());
-            courseRepository.save(newCourse);
-
-            return "Success. Added course";
-        } else {
-            Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
-                    request.getFinishDate(), request.getNumStudents());
-            if (courses.contains(newCourse)) {
-                return "Failed";
-            } else {
+        try {
+            if (courses.isEmpty()) {
+                Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
+                        request.getFinishDate(), request.getNumStudents());
                 courseRepository.save(newCourse);
-                return "Success. Added course";
+                courseRepository.flush();
+                return newCourse;
+            } else {
+                Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
+                        request.getFinishDate(), request.getNumStudents());
+                if (courses.contains(newCourse)) {
+                    return null;
+                } else {
+                    courseRepository.save(newCourse);
+                    courseRepository.flush();
+                    return newCourse;
+                }
             }
+        } catch (Exception e) {
+            return null;
         }
+
     }
 
     /**
@@ -171,10 +181,61 @@ public class CourseService {
                 Course course = getCourse(request.getCourseId());
                 Grade grade = new Grade(course, request.getUserId(), request.getGrade());
                 gradeRepository.save(grade);
-            } else {
-                existingGrade.setGradeValue(request.getGrade());
-                gradeRepository.save(existingGrade);
             }
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Gives all the course ids for the
+     * courses the lecturer teaches.
+     *
+     * @param lecturerId - id of the lecturer
+     * @return list of course id's
+     */
+    public List<Long> getCourseIdsForLecturer(long lecturerId) {
+        List<Teaches> list = teachesRepository.findAllByLecturerId(lecturerId);
+
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        List<Long> result = list.stream().map(teaches -> teaches.getCourseId())
+                .collect(Collectors.toList());
+
+        return result;
+    }
+
+    /**
+     * Checks if the lecturer teaches a specific course.
+     *
+     * @param lecturerId - lecturer's id
+     * @param courseId - the courses id
+     * @return true if lecturer teaches course otherwise false
+     */
+    public Boolean lecturerTeachesCourse(long lecturerId, long courseId) {
+        Optional<Teaches> teachesCourse = teachesRepository
+                .findById(new TeachesPk(courseId, lecturerId));
+        if (teachesCourse.isEmpty()) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * Assigns a lecturer to a course.
+     * This is done by creating a teach entity
+     *
+     * @param lecturerId - lecturer's id
+     * @param courseId - id of the course
+     * @return if operation was successful or not
+     */
+    public Boolean createTeaches(long lecturerId, long courseId) {
+        try {
+            Teaches teach = new Teaches(courseId, lecturerId);
+            teachesRepository.save(teach);
             return true;
         } catch (Exception e) {
             return false;
