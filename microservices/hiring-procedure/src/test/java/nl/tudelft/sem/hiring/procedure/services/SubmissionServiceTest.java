@@ -58,13 +58,13 @@ public class SubmissionServiceTest {
     }
 
     @Test
-    public void createApplicationTest() {
+    public void testCreateApplication() {
         submissionService.createSubmission(userId1, courseId1, now);
         verify(submissionRepository).save(submission1);
     }
 
     @Test
-    public void checkSameApplicationTrue() {
+    public void testCheckSameApplicationTrue() {
         given(submissionRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
                 List.of(submission2));
         boolean actual = submissionService.checkSameSubmission(userId1,
@@ -73,7 +73,7 @@ public class SubmissionServiceTest {
     }
 
     @Test
-    public void checkSameApplicationFalse() {
+    public void testCheckSameApplicationFalse() {
         given(submissionRepository.findAllByUserIdAndAndCourseId(userId1, courseId2)).willReturn(
                 List.of(submission4));
         boolean actual = submissionService.checkSameSubmission(userId1,
@@ -82,21 +82,21 @@ public class SubmissionServiceTest {
     }
 
     @Test
-    public void checkDeadlineTrue() {
+    public void testCheckDeadlineTrue() {
         LocalDateTime fourWeeks = now.plusWeeks(4);
         boolean actual = submissionService.checkDeadline(fourWeeks);
         assertTrue(actual);
     }
 
     @Test
-    public void checkDeadlineFalse() {
+    public void testCheckDeadlineFalse() {
         LocalDateTime twoWeeks = now.minusWeeks(2);
         boolean actual = submissionService.checkDeadline(twoWeeks);
         assertFalse(actual);
     }
 
     @Test
-    public void getApplicationsForCourseTest() {
+    public void testGetApplicationsForCourse() {
         given(submissionRepository.findAllByCourseId(courseId1)).willReturn(
                 List.of(submission1, submission2));
         List<Submission> actual = submissionService.getSubmissionsForCourse(courseId1);
@@ -114,7 +114,7 @@ public class SubmissionServiceTest {
     }
 
     @Test
-    public void getAllApplications() {
+    public void testGetAllApplications() {
         given(submissionRepository.findAll()).willReturn(
                 List.of(submission1, submission2, submission3, submission4));
         List<Submission> actual = submissionService.getAllSubmissions();
@@ -124,7 +124,7 @@ public class SubmissionServiceTest {
     }
 
     @Test
-    public void checkCandidateTrue() {
+    public void testCheckCandidateTrue() {
         given(submissionRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
                 List.of(submission1, submission2));
         boolean actual = submissionService.checkCandidate(userId1, courseId1);
@@ -132,7 +132,7 @@ public class SubmissionServiceTest {
     }
 
     @Test
-    public void checkCandidateFalse() {
+    public void testCheckCandidateFalse() {
         submission1.setStatus(SubmissionStatus.ACCEPTED);
         given(submissionRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
                 List.of(submission1, submission2));
@@ -142,7 +142,7 @@ public class SubmissionServiceTest {
     }
 
     @Test
-    public void checkCandidateNoApplications() {
+    public void testCheckCandidateNoApplications() {
         given(submissionRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
                 List.of(submission2));
         boolean actual = submissionService.checkCandidate(userId1, courseId1);
@@ -150,7 +150,7 @@ public class SubmissionServiceTest {
     }
 
     @Test
-    public void hireGoesThroughTest() {
+    public void testHireGoesThrough() {
         given(submissionRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
                 List.of(submission1, submission2));
         submissionService.hire(userId1, courseId1);
@@ -159,7 +159,7 @@ public class SubmissionServiceTest {
     }
 
     @Test
-    public void hireFailsTest() {
+    public void testHireFails() {
         given(submissionRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
                 List.of(submission2));
         submissionService.hire(userId1, courseId1);
@@ -178,7 +178,7 @@ public class SubmissionServiceTest {
     }
 
     @Test
-    public void getApplicationByIdTest() {
+    public void testGetApplicationById() {
         given(submissionRepository.findById(submission1.getSubmissionId())).willReturn(
                 Optional.of(submission1));
         Optional<Submission> actual = submissionService.getSubmission(
@@ -189,7 +189,7 @@ public class SubmissionServiceTest {
     }
 
     @Test
-    public void withdrawApplicationTest() {
+    public void testWithdrawApplication() {
         Submission submissionMock = Mockito.mock(Submission.class);
         when(submissionRepository.findById(submission1.getSubmissionId()))
                 .thenReturn(Optional.of(submissionMock));
@@ -200,7 +200,7 @@ public class SubmissionServiceTest {
     }
 
     @Test
-    public void rejectApplicationTest() {
+    public void testRejectApplication() {
         Submission submissionMock = Mockito.mock(Submission.class);
         when(submissionRepository.findById(submission1.getSubmissionId()))
                 .thenReturn(Optional.of(submissionMock));

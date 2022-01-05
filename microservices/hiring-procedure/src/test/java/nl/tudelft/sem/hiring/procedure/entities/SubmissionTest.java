@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 public class SubmissionTest {
 
     @Test
-    public void constructorTest() {
+    public void testConstructor() {
         LocalDateTime time = LocalDateTime.now();
         Submission submission = new Submission(5211111, 1250, time);
         assertEquals(submission.getUserId(), 5211111);
@@ -19,7 +19,7 @@ public class SubmissionTest {
     }
 
     @Test
-    public void constructorIdTest() {
+    public void testConstructorId() {
         LocalDateTime time = LocalDateTime.now();
         Submission submission = new Submission(1, 5211111, 1250, time);
         assertEquals(submission.getUserId(), 5211111);
