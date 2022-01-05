@@ -443,8 +443,8 @@ public class UserController {
         } catch (Exception e) {
             // Either IllegalArgumentException or NullPointerException
             String reason = String.format("Role must be one of the following: %s.",
-                Arrays.stream(UserRole.values()).map(Enum::name)
-                    .collect(Collectors.joining(", ")));
+                    Arrays.stream(UserRole.values()).map(Enum::name)
+                            .collect(Collectors.joining(", ")));
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
         }
     }
