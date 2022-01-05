@@ -3,8 +3,8 @@ package nl.tudelft.sem.hiring.procedure.repositories;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import nl.tudelft.sem.hiring.procedure.entities.Application;
-import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
+import nl.tudelft.sem.hiring.procedure.entities.Submission;
+import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,23 +12,23 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ApplicationRepository extends JpaRepository<Application, Long> {
+public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
-    List<Application> findAllByApplicationId(long applicationId);
+    List<Submission> findAllBySubmissionId(long submissionId);
 
-    List<Application> findAllByUserId(long userId);
+    List<Submission> findAllByUserId(long userId);
 
-    List<Application> findAllByCourseId(long courseId);
+    List<Submission> findAllByCourseId(long courseId);
 
-    List<Application> findAllBySubmissionDateAfter(LocalDateTime submissionDate);
+    List<Submission> findAllBySubmissionDateAfter(LocalDateTime submissionDate);
 
-    List<Application> findAllBySubmissionDateBefore(LocalDateTime submissionDate);
+    List<Submission> findAllBySubmissionDateBefore(LocalDateTime submissionDate);
 
-    List<Application> findAllByUserIdAndAndCourseId(long userId, long courseId);
+    List<Submission> findAllByUserIdAndAndCourseId(long userId, long courseId);
 
-    List<Application> findAllByUserIdAndStatus(long userId, ApplicationStatus inProgress);
+    List<Submission> findAllByUserIdAndStatus(long userId, SubmissionStatus inProgress);
 
-    Optional<Application> findByUserIdAndCourseId(long userId, long courseId);
+    Optional<Submission> findByUserIdAndCourseId(long userId, long courseId);
 
 
     /**
@@ -41,8 +41,8 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
      * @param pageable basically, a way to specify LIMIT clause
      * @return the list of user IDs and the corresponding number of total times selected
      */
-    @Query("SELECT userId, COUNT(userId) AS times FROM Application"
-        + " WHERE userId IN (SELECT userId FROM Application WHERE courseId = :cid)"
+    @Query("SELECT userId, COUNT(userId) AS times FROM Submission"
+        + " WHERE userId IN (SELECT userId FROM Submission WHERE courseId = :cid)"
         + " AND status = 2 GROUP BY userId HAVING COUNT(userId) >= :minValue"
         + " ORDER BY times DESC")
     List<Object[]> findTopByTotalTimesSelected(@Param("cid") long courseId, long minValue,
@@ -59,9 +59,9 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
      * @param pageable  basically, a way to specify LIMIT clause
      * @return the list of user IDs and the corresponding number of times selected
      */
-    @Query("SELECT userId, COUNT(userId) AS times FROM Application"
+    @Query("SELECT userId, COUNT(userId) AS times FROM Submission"
         + " WHERE courseId IN :cids AND userId IN"
-        + " (SELECT userId FROM Application WHERE courseId = :cid)"
+        + " (SELECT userId FROM Submission WHERE courseId = :cid)"
         + " AND status = 2 GROUP BY userId HAVING COUNT(userId) >= :minValue"
         + " ORDER BY times DESC")
     List<Object[]> findTopByTimesSelected(@Param("cid") long courseId,
@@ -74,6 +74,6 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
      * @param courseId the id of the course for which students apply
      * @return the list of applicants (userIds) for the given course
      */
-    @Query("SELECT userId FROM Application WHERE courseId = :cid")
+    @Query("SELECT userId FROM Submission WHERE courseId = :cid")
     List<Long> findAllApplicantsByCourseId(@Param("cid") long courseId);
 }

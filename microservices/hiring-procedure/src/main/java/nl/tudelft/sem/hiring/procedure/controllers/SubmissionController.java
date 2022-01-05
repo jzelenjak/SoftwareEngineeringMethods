@@ -13,9 +13,9 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.Data;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
-import nl.tudelft.sem.hiring.procedure.entities.Application;
-import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
-import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
+import nl.tudelft.sem.hiring.procedure.entities.Submission;
+import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
+import nl.tudelft.sem.hiring.procedure.services.SubmissionService;
 import nl.tudelft.sem.hiring.procedure.services.NotificationService;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncAuthValidator;
@@ -46,12 +46,12 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequestMapping("/api/hiring-procedure")
 @Data
-public class ApplicationController {
+public class SubmissionController {
     private static final String COURSE_NOT_FOUND = "Course not found";
     private static final String USER_NOT_FOUND = "User not found";
     private static final String INVALID_TOKEN = "Provided token is not valid";
 
-    private ApplicationService applicationService;
+    private SubmissionService submissionService;
     private final NotificationService notificationService;
     private CourseInfoResponseCache courseInfoCache;
     private WebClient webClient;
@@ -59,20 +59,20 @@ public class ApplicationController {
     private final transient JwtUtils jwtUtils;
 
     /**
-     * Constructor for the Application Controller.
+     * Constructor for the Submission Controller.
      *
-     * @param applicationService      Specifies the ApplicationService.
+     * @param submissionService      Specifies the SubmissionService.
      * @param notificationService     the notification service.
      * @param courseInfoCache         the course info response cache.
      * @param jwtUtils                the jwt utils.
      * @param gatewayConfig           the gateway config.
      */
     @Autowired
-    public ApplicationController(ApplicationService applicationService,
-                                 NotificationService notificationService,
-                                 CourseInfoResponseCache courseInfoCache, JwtUtils jwtUtils,
-                                 GatewayConfig gatewayConfig) {
-        this.applicationService = applicationService;
+    public SubmissionController(SubmissionService submissionService,
+                                NotificationService notificationService,
+                                CourseInfoResponseCache courseInfoCache, JwtUtils jwtUtils,
+                                GatewayConfig gatewayConfig) {
+        this.submissionService = submissionService;
         this.notificationService = notificationService;
         this.courseInfoCache = courseInfoCache;
         this.webClient = WebClient.create();
@@ -95,7 +95,7 @@ public class ApplicationController {
                         new AsyncAuthValidator(jwtUtils),
                         new AsyncRoleValidator(jwtUtils, Set.of(Roles.STUDENT, Roles.TA)),
                         new AsyncCourseTimeValidator(courseInfoCache, courseId),
-                        new AsyncCourseCandidacyValidator(jwtUtils, applicationService,
+                        new AsyncCourseCandidacyValidator(jwtUtils, submissionService,
                                 gatewayConfig, courseId))
                 .build();
 
@@ -103,27 +103,27 @@ public class ApplicationController {
             long userId;
             userId = getUserIdFromToken(authHeader);
 
-            if (applicationService.checkSameApplication(userId, courseId)) {
+            if (submissionService.checkSameSubmission(userId, courseId)) {
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "User has already applied"));
             }
 
-            applicationService.createApplication(userId, courseId, LocalDateTime.now());
+            submissionService.createSubmission(userId, courseId, LocalDateTime.now());
             return Mono.empty();
         });
     }
 
     /**
-     * Endpoint for retrieving all applications for a specific course.
+     * Endpoint for retrieving all submissions for a specific course.
      * User must be a lecturer.
      *
      * @param courseId The ID of the course
-     * @return A list of all applications that have been found
+     * @return A list of all submissions that have been found
      */
-    @GetMapping("/get-applications")
+    @GetMapping("/get-submissions")
     @ResponseBody
-    public Mono<List<Application>> getApplications(@RequestParam() long courseId,
-                                                   @RequestHeader() HttpHeaders authHeader) {
+    public Mono<List<Submission>> getSubmissions(@RequestParam() long courseId,
+                                                 @RequestHeader() HttpHeaders authHeader) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(jwtUtils),
@@ -131,20 +131,20 @@ public class ApplicationController {
                 .build();
 
         return head.validate(authHeader, "").flatMap(value ->
-                Mono.just(applicationService.getApplicationsForCourse(courseId)));
+                Mono.just(submissionService.getSubmissionsForCourse(courseId)));
 
 
     }
 
     /**
-     * Endpoint for retrieving all applications.
+     * Endpoint for retrieving all submissions.
      * User must be a lecturer.
      *
-     * @return A list of all applications that have been found
+     * @return A list of all submissions that have been found
      */
-    @GetMapping("/get-all-applications")
+    @GetMapping("/get-all-submissions")
     @ResponseBody
-    public Mono<List<Application>> getAllApplications(@RequestHeader() HttpHeaders authHeader) {
+    public Mono<List<Submission>> getAllSubmissions(@RequestHeader() HttpHeaders authHeader) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(jwtUtils),
@@ -152,7 +152,7 @@ public class ApplicationController {
                 .build();
 
         return head.validate(authHeader, "").flatMap(value ->
-                Mono.just(applicationService.getAllApplications()));
+                Mono.just(submissionService.getAllSubmissions()));
     }
 
     /**
@@ -173,80 +173,80 @@ public class ApplicationController {
                         new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)),
                         new AsyncCourseExistsValidator(courseInfoCache, courseId),
                         new AsyncUserExistsValidator(gatewayConfig, userId),
-                        new AsyncTaLimitValidator(applicationService, courseInfoCache, courseId)
+                        new AsyncTaLimitValidator(submissionService, courseInfoCache, courseId)
                 ).build();
 
         return head.validate(authHeader, "").flatMap(value -> {
-            if (!applicationService.checkCandidate(userId, courseId)) {
+            if (!submissionService.checkCandidate(userId, courseId)) {
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "User is not a viable candidate"));
             }
-            Optional<Application> optionalApplication =
-                    applicationService.getApplication(userId, courseId);
-            if (optionalApplication.isEmpty()) {
+            Optional<Submission> optionalSubmission =
+                    submissionService.getSubmission(userId, courseId);
+            if (optionalSubmission.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, String.format(
-                        "Application with userId %s and courseId %s has not been found.",
+                        "Submission with userId %s and courseId %s has not been found.",
                                 userId, courseId)));
             }
-            Application application = optionalApplication.get();
+            Submission submission = optionalSubmission.get();
             // Register hiring
-            applicationService.hire(userId, courseId);
+            submissionService.hire(userId, courseId);
 
             // Send notification request
             notificationService.notify(userId,
-                    String.format("Your application with id %s has been approved.",
-                            application.getApplicationId()),
+                    String.format("Your submission with id %s has been approved.",
+                            submission.getSubmissionId()),
                     authHeader.getFirst(HttpHeaders.AUTHORIZATION));
             return Mono.empty();
         });
     }
 
     /**
-     * Updates the status of an application to be rejected.
+     * Updates the status of an submission to be rejected.
      *
-     * @param applicationId id of the application to be rejected.
+     * @param submissionId id of the submission to be rejected.
      * @param headers       the headers of the request.
      */
     @PostMapping("reject")
-    public Mono<Void> reject(@RequestParam long applicationId, @RequestHeader HttpHeaders headers) {
+    public Mono<Void> reject(@RequestParam long submissionId, @RequestHeader HttpHeaders headers) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(jwtUtils),
                         new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN))
                 ).build();
 
-        // Perform validation, and reject application if exists
+        // Perform validation, and reject submission if exists
         return head.validate(headers, "").flatMap(value -> {
-            // Fetch the application using the provided ID
-            Optional<Application> applicationOpt = applicationService.getApplication(applicationId);
+            // Fetch the submission using the provided ID
+            Optional<Submission> submissionOpt = submissionService.getSubmission(submissionId);
 
-            // Check if the application exists
-            if (applicationOpt.isEmpty()) {
+            // Check if the submission exists
+            if (submissionOpt.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Application not found"));
+                        "Submission not found"));
             }
 
-            // Check if the application is already processed (withdrawn, rejected, or accepted)
-            Application application = applicationOpt.get();
-            if (application.getStatus() != ApplicationStatus.IN_PROGRESS) {
+            // Check if the submission is already processed (withdrawn, rejected, or accepted)
+            Submission submission = submissionOpt.get();
+            if (submission.getStatus() != SubmissionStatus.IN_PROGRESS) {
                 return Mono.error(new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                        "Application has already been processed"));
+                        "Submission has already been processed"));
             }
 
-            // Change the status of the application to rejected
-            applicationService.rejectApplication(applicationId);
+            // Change the status of the submission to rejected
+            submissionService.rejectSubmission(submissionId);
 
             // Send notification request
-            notificationService.notify(application.getUserId(),
-                    String.format("Your application with id %s has been rejected.",
-                            application.getApplicationId()),
+            notificationService.notify(submission.getUserId(),
+                    String.format("Your submission with id %s has been rejected.",
+                            submission.getSubmissionId()),
                     headers.getFirst(HttpHeaders.AUTHORIZATION));
             return Mono.empty();
         });
     }
 
     /**
-     * Allows students to withdraw their application.
+     * Allows students to withdraw their submission.
      *
      * @param courseId is the ID of the course that was applied to.
      * @param headers  is the list of request headers.
@@ -267,22 +267,22 @@ public class ApplicationController {
             String resolvedToken = jwtUtils.resolveToken(token);
 
             long userId = jwtUtils.getUserId(jwtUtils.validateAndParseClaims(resolvedToken));
-            Optional<Application> application = applicationService.getApplication(userId, courseId);
+            Optional<Submission> submission = submissionService.getSubmission(userId, courseId);
 
-            // Check if the application is valid (exists)
-            if (application.isEmpty()) {
+            // Check if the submission is valid (exists)
+            if (submission.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                        "Application does not exist"));
+                        "Submission does not exist"));
             }
 
-            // Check if the application has not been processed yet
-            if (application.get().getStatus() != ApplicationStatus.IN_PROGRESS) {
+            // Check if the submission has not been processed yet
+            if (submission.get().getStatus() != SubmissionStatus.IN_PROGRESS) {
                 return Mono.error(new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                        "Application has already been processed"));
+                        "Submission has already been processed"));
             }
 
-            // Change the status of the application to 'withdrawn'
-            applicationService.withdrawApplication(application.get().getApplicationId());
+            // Change the status of the submission to 'withdrawn'
+            submissionService.withdrawSubmission(submission.get().getSubmissionId());
             return Mono.empty();
         });
     }
@@ -335,11 +335,11 @@ public class ApplicationController {
     }
 
     /**
-     * Endpoint for fetching the maximum contractually allowed hours of work for an application.
+     * Endpoint for fetching the maximum contractually allowed hours of work for an submission.
      *
-     * @param userId The ID of the user that is associated to that application.
+     * @param userId The ID of the user that is associated to that submission.
      *               If the user is a student, this is not specified.
-     * @param courseId The ID of the course that is associated to that application
+     * @param courseId The ID of the course that is associated to that submission
      * @param headers The headers of the request. Should contain the JWT.
      * @return The max allowed hours
      */
@@ -354,7 +354,7 @@ public class ApplicationController {
                 finalUserId = getUserIdFromToken(headers);
             }
             try {
-                return Mono.just(applicationService.getMaxHours(finalUserId, courseId));
+                return Mono.just(submissionService.getMaxHours(finalUserId, courseId));
             } catch (NoSuchElementException e) {
                 return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "There is no submission that is associated to that userId and courseId"));
@@ -363,15 +363,15 @@ public class ApplicationController {
     }
 
     /**
-     * Endpoint for updating the value of the maximum allowed hours for an application.
+     * Endpoint for updating the value of the maximum allowed hours for an submission.
      *
-     * @param applicationId The id of the application for which to update the value.
+     * @param submissionId The id of the submission for which to update the value.
      * @param headers The headers of the request. Should contain the JWT.
      * @param body The body of the request. Should contain the specified maxHours.
      * @return 200 OK if request goes through, or errors if anything goes wrong.
      */
     @PostMapping("set-max-hours")
-    public Mono<Void> setMaxHours(@RequestParam long applicationId,
+    public Mono<Void> setMaxHours(@RequestParam long submissionId,
                                   @RequestHeader HttpHeaders headers, @RequestBody String body) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(new AsyncAuthValidator(jwtUtils),
@@ -387,7 +387,7 @@ public class ApplicationController {
             }
             hours = hoursJsonObject.getAsInt();
             try {
-                applicationService.setMaxHours(applicationId, hours);
+                submissionService.setMaxHours(submissionId, hours);
             } catch (NoSuchElementException e) {
                 return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "There is no submission that is associated to that userId and courseId"));
@@ -399,7 +399,7 @@ public class ApplicationController {
     /**
      * Endpoint for getting the rating of a TA for a course.
      *
-     * @param userId The ID of the user that is associated to the requested application
+     * @param userId The ID of the user that is associated to the requested submission
      * @param courseId The ID of the course that the TA is working on
      * @param headers The headers of the request. Should contain the JWT.
      * @return The rating of the TA, or errors if anything goes wrong. Check docs
@@ -416,16 +416,16 @@ public class ApplicationController {
                 finalUserId = getUserIdFromToken(headers);
             }
             try {
-                return Mono.just(applicationService.getRating(finalUserId, courseId));
+                return Mono.just(submissionService.getRating(finalUserId, courseId));
             } catch (Exception e) {
                 if (e.getClass().equals(NoSuchElementException.class)) {
                     return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                             "There is no submission that is associated to that "
                                     + "userId and courseId"));
                 }
-                if (e.getMessage().equals("Application is not approved.")) {
+                if (e.getMessage().equals("Submission is not approved.")) {
                     return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
-                            "The respective application has not been approved"));
+                            "The respective submission has not been approved"));
                 }
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "The respective TA has no rating for this course"));
@@ -434,15 +434,15 @@ public class ApplicationController {
     }
 
     /**
-     * Endpoint for updating the value of the maximum allowed hours for an application.
+     * Endpoint for updating the value of the maximum allowed hours for an submission.
      *
-     * @param applicationId The id of the application for which to update the value.
+     * @param submissionId The id of the submission for which to update the value.
      * @param headers The headers of the request. Should contain the JWT.
      * @param body The body of the request. Should contain the specified maxHours.
      * @return 200 OK if request goes through, or errors if anything goes wrong.
      */
     @PostMapping("rate")
-    public Mono<Void> setRating(@RequestParam long applicationId,
+    public Mono<Void> setRating(@RequestParam long submissionId,
                                   @RequestHeader HttpHeaders headers, @RequestBody String body) {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(new AsyncAuthValidator(jwtUtils),
@@ -463,7 +463,7 @@ public class ApplicationController {
                         "Rating should be between 0 and 10."));
             }
             try {
-                applicationService.setRating(applicationId, rating);
+                submissionService.setRating(submissionId, rating);
             } catch (Exception e) {
                 if (e.getClass().equals(NoSuchElementException.class)) {
                     return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -471,23 +471,23 @@ public class ApplicationController {
                                     + "userId and courseId"));
                 }
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "The respective application has not been approved"));
+                        "The respective submission has not been approved"));
             }
             return Mono.empty();
         });
     }
 
     /**
-     * Endpoint for retrieving all the applications of a student.
+     * Endpoint for retrieving all the submissions of a student.
      *
-     * @param userId The ID of the user for which to fetch the applications.
+     * @param userId The ID of the user for which to fetch the submissions.
      *               If the request was made by a student, this should be empty,
      *               since their userId will be extracted from the JWT.
      * @param headers The headers of the request. Should contain the JWT.
-     * @return A list of all applications for that student, or errors if anything goes wrong.
+     * @return A list of all submissions for that student, or errors if anything goes wrong.
      */
     @GetMapping("get-student")
-    public Mono<List<Application>> getStudentSubmissions(
+    public Mono<List<Submission>> getStudentSubmissions(
                                   @RequestParam(required = false) Long userId,
                                   @RequestHeader HttpHeaders headers) {
         AsyncValidator head = buildVariableValidator(userId);
@@ -497,13 +497,13 @@ public class ApplicationController {
             if (userId == null) {
                 finalUserId = getUserIdFromToken(headers);
             }
-            List<Application> applications = applicationService
-                    .getApplicationsForStudent(finalUserId);
-            if (applications.size() == 0) {
+            List<Submission> submissions = submissionService
+                    .getSubmissionsForStudent(finalUserId);
+            if (submissions.size() == 0) {
                 return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "There are no submissions for that student"));
             }
-            return Mono.just(applications);
+            return Mono.just(submissions);
         });
     }
 

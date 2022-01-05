@@ -19,8 +19,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import nl.tudelft.sem.hiring.procedure.entities.Application;
-import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
+import nl.tudelft.sem.hiring.procedure.entities.Submission;
+import nl.tudelft.sem.hiring.procedure.services.SubmissionService;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import nl.tudelft.sem.jwt.JwtUtils;
 import okhttp3.HttpUrl;
@@ -61,7 +61,7 @@ public class AsyncCourseCandidacyValidatorTest {
     private transient GatewayConfig gatewayConfig;
 
     @MockBean
-    private transient ApplicationService applicationService;
+    private transient SubmissionService submissionService;
 
     @Mock
     private transient Jws<Claims> claims;
@@ -90,7 +90,7 @@ public class AsyncCourseCandidacyValidatorTest {
 
     @Test
     void testConstructor() {
-        var validator = new AsyncCourseCandidacyValidator(jwtUtils, applicationService,
+        var validator = new AsyncCourseCandidacyValidator(jwtUtils, submissionService,
                 gatewayConfig, 1337);
         assertNotNull(validator);
     }
@@ -99,22 +99,22 @@ public class AsyncCourseCandidacyValidatorTest {
     void testValidateValidCandidacyRequest() throws InterruptedException {
         // Construct objects used for testing
         LocalDateTime now = LocalDateTime.now();
-        Application application1 = new Application(1, 42, 1337, now);
-        Application application2 = new Application(2, 42, 1338, now);
-        Application newApplication = new Application(3, 42, 1339, now);
+        Submission submission1 = new Submission(1, 42, 1337, now);
+        Submission submission2 = new Submission(2, 42, 1338, now);
+        Submission newSubmission = new Submission(3, 42, 1339, now);
 
         // Configure behaviour of the mocks
-        when(applicationService.getUnreviewedApplicationsForUser(42)).thenReturn(
-                List.of(application1, application2));
+        when(submissionService.getUnreviewedSubmissionsForUser(42)).thenReturn(
+                List.of(submission1, submission2));
 
         // Enqueue a mock response from the courses microservice
         mockServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value())
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .setBody(constructCoursesResponseIdenticalDates(application1, application2,
-                        newApplication)));
+                .setBody(constructCoursesResponseIdenticalDates(submission1, submission2,
+                    newSubmission)));
 
         // Construct the validator
-        var validator = new AsyncCourseCandidacyValidator(jwtUtils, applicationService,
+        var validator = new AsyncCourseCandidacyValidator(jwtUtils, submissionService,
                 gatewayConfig, 1339);
 
         // Perform validation action, which should pass
@@ -130,7 +130,7 @@ public class AsyncCourseCandidacyValidatorTest {
         assertEquals(REMOTE_URL, request.getPath());
         assertEquals(AUTHORIZATION_TOKEN, request.getHeader(HttpHeaders.AUTHORIZATION));
         assertEquals(MediaType.APPLICATION_JSON_VALUE, request.getHeader(HttpHeaders.CONTENT_TYPE));
-        assertEquals(constructExpectedCourseRequest(application1, application2, newApplication),
+        assertEquals(constructExpectedCourseRequest(submission1, submission2, newSubmission),
                 JsonParser.parseString(request.getBody().readUtf8()));
     }
 
@@ -138,23 +138,23 @@ public class AsyncCourseCandidacyValidatorTest {
     void testValidateInvalidCandidacyRequestTooManyApplications() throws InterruptedException {
         // Construct objects used for testing
         LocalDateTime now = LocalDateTime.now();
-        Application application1 = new Application(2, 42, 1336, now);
-        Application application2 = new Application(1, 42, 1337, now);
-        Application application3 = new Application(2, 42, 1338, now);
-        Application newApplication = new Application(3, 42, 1339, now);
+        Submission submission1 = new Submission(2, 42, 1336, now);
+        Submission submission2 = new Submission(1, 42, 1337, now);
+        Submission submission3 = new Submission(2, 42, 1338, now);
+        Submission newSubmission = new Submission(3, 42, 1339, now);
 
         // Configure behaviour of the mocks
-        when(applicationService.getUnreviewedApplicationsForUser(42)).thenReturn(
-                List.of(application1, application2, application3));
+        when(submissionService.getUnreviewedSubmissionsForUser(42)).thenReturn(
+                List.of(submission1, submission2, submission3));
 
         // Enqueue a mock response from the courses microservice
         mockServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value())
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .setBody(constructCoursesResponseIdenticalDates(application1, application2,
-                        application3, newApplication)));
+                .setBody(constructCoursesResponseIdenticalDates(submission1, submission2,
+                    submission3, newSubmission)));
 
         // Construct the validator
-        var validator = new AsyncCourseCandidacyValidator(jwtUtils, applicationService,
+        var validator = new AsyncCourseCandidacyValidator(jwtUtils, submissionService,
                 gatewayConfig, 1339);
 
         // Perform validation action, which should fail
@@ -170,8 +170,8 @@ public class AsyncCourseCandidacyValidatorTest {
         assertEquals(REMOTE_URL, request.getPath());
         assertEquals(AUTHORIZATION_TOKEN, request.getHeader(HttpHeaders.AUTHORIZATION));
         assertEquals(MediaType.APPLICATION_JSON_VALUE, request.getHeader(HttpHeaders.CONTENT_TYPE));
-        assertEquals(constructExpectedCourseRequest(application1, application2, application3,
-                        newApplication),
+        assertEquals(constructExpectedCourseRequest(submission1, submission2, submission3,
+                newSubmission),
                 JsonParser.parseString(request.getBody().readUtf8()));
     }
 
@@ -184,7 +184,7 @@ public class AsyncCourseCandidacyValidatorTest {
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE));
 
         // Construct the validator
-        var validator = new AsyncCourseCandidacyValidator(jwtUtils, applicationService,
+        var validator = new AsyncCourseCandidacyValidator(jwtUtils, submissionService,
                 gatewayConfig, 1339);
 
         // Perform validation action, which should fail
@@ -211,7 +211,7 @@ public class AsyncCourseCandidacyValidatorTest {
                 .setBody("{}"));
 
         // Construct the validator
-        var validator = new AsyncCourseCandidacyValidator(jwtUtils, applicationService,
+        var validator = new AsyncCourseCandidacyValidator(jwtUtils, submissionService,
                 gatewayConfig, 1339);
 
         // Perform validation action, which should fail
@@ -233,14 +233,14 @@ public class AsyncCourseCandidacyValidatorTest {
      * Test helper to generate JSON responses for application with identical start and end
      * dates.
      *
-     * @param applications The applications to generate JSON for.
+     * @param submissions The applications to generate JSON for.
      * @return The JSON response.
      */
-    private String constructCoursesResponseIdenticalDates(Application... applications) {
+    private String constructCoursesResponseIdenticalDates(Submission... submissions) {
         JsonObject json = new JsonObject();
-        for (Application application : applications) {
+        for (Submission submission : submissions) {
             JsonObject applicationResponse = new JsonObject();
-            applicationResponse.addProperty("courseId", application.getCourseId());
+            applicationResponse.addProperty("courseId", submission.getCourseId());
 
             ZonedDateTime start = ZonedDateTime.now();
             applicationResponse.addProperty("startDate", start.toString());
@@ -251,7 +251,7 @@ public class AsyncCourseCandidacyValidatorTest {
                     ThreadLocalRandom.current().nextLong(50, 500));
 
             // Insert the object in the response
-            json.add(String.valueOf(application.getCourseId()), applicationResponse);
+            json.add(String.valueOf(submission.getCourseId()), applicationResponse);
         }
         return json.toString();
     }
@@ -259,13 +259,13 @@ public class AsyncCourseCandidacyValidatorTest {
     /**
      * Test helper to generate JSON requests for the course microservice.
      *
-     * @param applications The applications to generate JSON for.
+     * @param submissions The applications to generate JSON for.
      * @return The expected JSON request.
      */
-    private JsonObject constructExpectedCourseRequest(Application... applications) {
+    private JsonObject constructExpectedCourseRequest(Submission... submissions) {
         JsonObject json = new JsonObject();
         JsonArray courseIds = new JsonArray();
-        Arrays.stream(applications).forEach(a -> courseIds.add(a.getCourseId()));
+        Arrays.stream(submissions).forEach(a -> courseIds.add(a.getCourseId()));
         json.add("courseIds", courseIds);
         return json;
     }

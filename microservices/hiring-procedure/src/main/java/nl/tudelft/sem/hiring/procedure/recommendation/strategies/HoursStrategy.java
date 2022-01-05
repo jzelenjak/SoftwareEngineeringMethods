@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
-import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
+import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -24,7 +24,7 @@ public class HoursStrategy implements RecommendationStrategy {
 
     private final transient WebClient webClient;
 
-    private final transient ApplicationRepository repo;
+    private final transient SubmissionRepository repo;
 
     private final transient String authorization;
 
@@ -35,7 +35,7 @@ public class HoursStrategy implements RecommendationStrategy {
      * @param gatewayConfig the gateway configuration.
      * @param authorization the authorization token of the caller.
      */
-    public HoursStrategy(ApplicationRepository repo, GatewayConfig gatewayConfig,
+    public HoursStrategy(SubmissionRepository repo, GatewayConfig gatewayConfig,
                          String authorization) {
         this.repo = repo;
         this.webClient = WebClient.create();

@@ -19,12 +19,12 @@ import org.hibernate.annotations.UpdateTimestamp;
 @EqualsAndHashCode
 @ToString
 @NoArgsConstructor
-public class Application {
+public class Submission {
 
     @Id
-    @Column(name = "application_id")
+    @Column(name = "submission_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long applicationId;
+    private long submissionId;
 
     @Column(name = "user_id")
     private long userId;
@@ -33,10 +33,10 @@ public class Application {
     private long courseId;
 
     /**
-     * Specifies the status of the application.
+     * Specifies the status of the submission.
      */
     @Column(name = "status")
-    private ApplicationStatus status;
+    private SubmissionStatus status;
 
     @Column(name = "max_hours")
     private int maxHours = 200;
@@ -52,33 +52,33 @@ public class Application {
     private LocalDateTime lastUpdate;
 
     /**
-     * Constructor used generally to declare an Application.
+     * Constructor used generally to declare a Submission.
      *
      * @param userId The userId of the user that sent the request
      * @param courseId The courseId of the course the user wishes to apply to
      * @param submissionDate The date at which the microservice received the request
      */
-    public Application(long userId, long courseId, LocalDateTime submissionDate) {
+    public Submission(long userId, long courseId, LocalDateTime submissionDate) {
         this.userId = userId;
         this.courseId = courseId;
-        this.status = ApplicationStatus.IN_PROGRESS;
+        this.status = SubmissionStatus.IN_PROGRESS;
         this.submissionDate = submissionDate;
     }
 
     /**
-     * Constructor used for testing (production!). Allows to specify the applicationId.
+     * Constructor used for testing (production!). Allows to specify the submissionId.
      *
-     * @param applicationId Specified id for testing purposes
+     * @param submissionId Specified id for testing purposes
      * @param userId The userId of the user that sent the request
      * @param courseId The courseId of the course the user wishes to apply to
      * @param submissionDate The date at which the microservice received the request
      */
-    public Application(long applicationId, long userId, long courseId,
-                       LocalDateTime submissionDate) {
-        this.applicationId = applicationId;
+    public Submission(long submissionId, long userId, long courseId,
+                      LocalDateTime submissionDate) {
+        this.submissionId = submissionId;
         this.userId = userId;
         this.courseId = courseId;
-        this.status = ApplicationStatus.IN_PROGRESS;
+        this.status = SubmissionStatus.IN_PROGRESS;
         this.submissionDate = submissionDate;
     }
 }
