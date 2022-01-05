@@ -345,6 +345,18 @@ public class UserController {
                 });
     }
 
+    /**
+     * Teach people not to make sus requests.
+     *
+     * @return a simple yet famous and very important message
+     */
+    @GetMapping("/admin")
+    @ResponseStatus(HttpStatus.NOT_ACCEPTABLE)
+    public @ResponseBody String kindaSus() {
+        return "Kinda sus, ngl!";
+    }
+
+
 
     /*
      * Helper methods to reduce code duplication.

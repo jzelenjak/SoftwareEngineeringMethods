@@ -680,6 +680,15 @@ class UserControllerTest {
      */
 
     @Test
+    void testKindaSus() throws Exception {
+        String message = mockMvc.perform(get("/api/users/admin"))
+                .andExpect(status().isNotAcceptable())
+            .andReturn().getResponse().getContentAsString();
+
+        Assertions.assertThat(message).isEqualTo("Kinda sus, ngl!");
+    }
+
+    @Test
     void testGatewayConfigHost() {
         GatewayConfig config = new GatewayConfig();
         config.setHost("google.com");
