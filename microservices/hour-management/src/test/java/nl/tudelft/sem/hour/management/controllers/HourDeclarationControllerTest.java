@@ -15,7 +15,6 @@ import com.google.gson.JsonObject;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Locale;
@@ -303,6 +302,7 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testRejectDeclaration() throws Exception {
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
 
         // Enqueue response that tells us that the user teaches the course
@@ -334,6 +334,7 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testRejectDeclarationInvalidId() throws Exception {
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/20/reject")
                         .header(authorization, ""))
                 .andReturn();
@@ -344,6 +345,7 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testRejectDeclarationNotificationFail() throws Exception {
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
 
         // Enqueue response that tells us that the user teaches the course
@@ -370,6 +372,7 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testRejectDeclarationAlreadyApproved() throws Exception {
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
 
         // Enqueue response that tells us that the user teaches the course
@@ -390,6 +393,7 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testApproveDeclaration() throws Exception {
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
 
         // Enqueue response that tells us that the user teaches the course
@@ -422,6 +426,7 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testApproveDeclarationInvalidId() throws Exception {
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         MvcResult mvcResult = mockMvc.perform(put("/api/hour-management/declaration/20/approve")
                         .header(authorization, ""))
                 .andReturn();
@@ -433,6 +438,7 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testApproveDeclarationNotificationFail() throws Exception {
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
 
         // Enqueue response that tells us that the user teaches the course
@@ -460,6 +466,7 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testApproveDeclarationAlreadyApproved() throws Exception {
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
 
         // Enqueue response that tells us that the user teaches the course

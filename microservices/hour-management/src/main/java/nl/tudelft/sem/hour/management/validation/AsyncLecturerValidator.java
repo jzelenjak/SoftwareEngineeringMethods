@@ -38,9 +38,16 @@ public class AsyncLecturerValidator extends AsyncBaseValidator {
 
     @Override
     public Mono<Boolean> validate(HttpHeaders headers, String body) {
-        // Fetch the lecturer's user ID from the authorization token
+        // Parse the authorization token to retrieve the role and user ID
         String token = jwtUtils.resolveToken(headers.getFirst(HttpHeaders.AUTHORIZATION));
         Jws<Claims> claims = jwtUtils.validateAndParseClaims(token);
+
+        // Admins do not have to be lecturers, therefore they should be able to bypass this check
+        if (jwtUtils.getRole(claims).equals(AsyncRoleValidator.Roles.ADMIN.name())) {
+            return evaluateNext(headers, body);
+        }
+
+        // Retrieve the ID of the user from the token
         Long userId = jwtUtils.getUserId(claims);
 
         // Initiate the request and forward the response to the next validator (if any)

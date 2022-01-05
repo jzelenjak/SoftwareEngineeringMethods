@@ -101,6 +101,21 @@ public class AsyncLecturerValidatorTest {
     }
 
     @Test
+    void testValidateAdminBypass() {
+        // Pretend that the user is an admin (which allows them to bypass the validator)
+        when(jwtUtils.getRole(jwsMock)).thenReturn(AsyncRoleValidator.Roles.ADMIN.name());
+        AsyncLecturerValidator validator = new AsyncLecturerValidator(gatewayConfig, jwtUtils,
+                1337L);
+
+        // Check the state
+        Mono<Boolean> result = validator.validate(headers, "");
+        assertEquals(Boolean.TRUE, result.block());
+
+        // Verify that no request to the course microservice was made
+        assertEquals(0, mockWebServer.getRequestCount());
+    }
+
+    @Test
     void testValidateInvalid() throws InterruptedException {
         when(jwtUtils.getUserId(jwsMock)).thenReturn(12L);
         AsyncLecturerValidator validator = new AsyncLecturerValidator(gatewayConfig, jwtUtils,
