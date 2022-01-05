@@ -2,6 +2,7 @@ package nl.tudelft.sem.courses.services;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.GradeRequest;
@@ -17,13 +18,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class CourseService {
 
+    private final transient CourseRepository courseRepository;
 
+    private final transient GradeRepository gradeRepository;
 
-    private transient CourseRepository courseRepository;
-
-    private transient GradeRepository gradeRepository;
-
-    private transient TeachesRepository teachesRepository;
+    private final transient TeachesRepository teachesRepository;
 
     /**
      * Constructor for Dependency Injection.
@@ -102,6 +101,16 @@ public class CourseService {
      */
     public List<Course> getCourses(String courseCode) {
         return courseRepository.findAllByCourseCode(courseCode);
+    }
+
+    /**
+     * Returns a list of courses associated to the given IDs.
+     *
+     * @param courseIds - Set of course IDs
+     * @return - List of courses associated to the given IDs
+     */
+    public List<Course> getMultipleCourses(Set<Long> courseIds) {
+        return courseRepository.findAllByIds(courseIds);
     }
 
     /**

@@ -13,15 +13,16 @@ import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -29,35 +30,42 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = CourseInfoResponseCache.class)
 public class AsyncCourseExistsValidatorTest {
+
+    private static final String AUTHORIZATION_TOKEN = "MyToken";
+
     @MockBean
     private transient GatewayConfig gatewayConfigMock;
 
     @Autowired
-    private transient CourseInfoResponseCache courseInfoCache;
+    private transient CourseInfoResponseCache cache;
 
-    private static MockWebServer mockWebServer;
-
-    @BeforeAll
-    private static void setup() throws IOException {
-        mockWebServer = new MockWebServer();
-        mockWebServer.start();
-    }
+    private transient MockWebServer mockWebServer;
+    private transient HttpHeaders mockHeaders;
 
     @BeforeEach
-    private void setupEach() {
+    private void setupEach() throws IOException {
+        mockWebServer = new MockWebServer();
+        mockWebServer.start();
+
         HttpUrl url = mockWebServer.url("/");
         when(gatewayConfigMock.getHost()).thenReturn(url.host());
         when(gatewayConfigMock.getPort()).thenReturn(url.port());
+
+        mockHeaders = Mockito.mock(HttpHeaders.class);
+        when(mockHeaders.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn(AUTHORIZATION_TOKEN);
+
+        // Invalidate the course info cache
+        cache.invalidateCache();
     }
 
-    @AfterAll
-    private static void teardown() throws IOException {
+    @AfterEach
+    private void teardown() throws IOException {
         mockWebServer.shutdown();
     }
 
     @Test
     public void testConstructor() {
-        AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(courseInfoCache, 42);
+        AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(cache, 42);
         assertNotNull(validator);
     }
 
@@ -65,7 +73,7 @@ public class AsyncCourseExistsValidatorTest {
     public void testValidate() {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(courseInfoCache,
+        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(cache,
                 courseId);
 
         // Fetch the local zoned date time, and make it a valid time
@@ -85,7 +93,7 @@ public class AsyncCourseExistsValidatorTest {
         String requestBody = json.toString();
 
         // Perform the validation
-        Boolean result = validator.validate(null, requestBody)
+        Boolean result = validator.validate(mockHeaders, requestBody)
                 .onErrorReturn(false)
                 .block();
         assertNotNull(result);
@@ -96,7 +104,7 @@ public class AsyncCourseExistsValidatorTest {
     public void testNonExistentCourse() {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(courseInfoCache,
+        final AsyncCourseExistsValidator validator = new AsyncCourseExistsValidator(cache,
                 courseId);
 
         // Enqueue a response
@@ -108,7 +116,7 @@ public class AsyncCourseExistsValidatorTest {
         String requestBody = json.toString();
 
         // Perform the validation
-        Boolean result = validator.validate(null, requestBody)
+        Boolean result = validator.validate(mockHeaders, requestBody)
                 .onErrorReturn(false)
                 .block();
         assertNotNull(result);

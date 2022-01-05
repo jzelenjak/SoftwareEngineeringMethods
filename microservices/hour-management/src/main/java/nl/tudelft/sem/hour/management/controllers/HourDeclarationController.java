@@ -15,6 +15,7 @@ import nl.tudelft.sem.hour.management.services.StatisticsService;
 import nl.tudelft.sem.hour.management.validation.AsyncAuthValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncCourseTimeValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncHiringValidator;
+import nl.tudelft.sem.hour.management.validation.AsyncLecturerValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator.Roles;
 import nl.tudelft.sem.hour.management.validation.AsyncValidator;
@@ -119,6 +120,8 @@ public class HourDeclarationController {
                                                   @RequestHeader HttpHeaders headers) {
         // Fetch the info for a single declaration
         Optional<HourDeclaration> result = hourDeclarationRepository.findById(declarationId);
+
+        // Verify that the declaration exists
         if (result.isEmpty()) {
             return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                     String.format("There are no declarations with id: %d in the system.",
@@ -149,23 +152,29 @@ public class HourDeclarationController {
     public @ResponseBody
     Mono<Void> deleteDeclaredHour(@PathVariable("id") long declarationId,
                                   @RequestHeader HttpHeaders headers) {
+
+        // Fetch the declaration from the database
+        Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository
+                .findById(declarationId);
+
+        // Verify that the declaration exists
+        if (hourDeclaration.isEmpty()) {
+            return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Given declaration does not exists."));
+        }
+
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
                         new AsyncRoleValidator(gatewayConfig, jwtUtils,
-                                Set.of(Roles.ADMIN, Roles.LECTURER))
+                                Set.of(Roles.ADMIN, Roles.LECTURER)),
+                        new AsyncLecturerValidator(gatewayConfig, jwtUtils,
+                                hourDeclaration.get().getCourseId())
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
-            // Fetch the declaration from the database
-            Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository
-                    .findById(declarationId);
-
-            // Verify that the declaration exists and has not been approved yet
-            if (hourDeclaration.isEmpty()) {
-                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Given declaration does not exists."));
-            } else if (hourDeclaration.get().isApproved()) {
+            // Verify that has not been approved yet
+            if (hourDeclaration.get().isApproved()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Given declaration has been approved already."));
             }
@@ -191,21 +200,29 @@ public class HourDeclarationController {
     public @ResponseBody
     Mono<Void> approveDeclaredHour(@PathVariable("id") long declarationId,
                                    @RequestHeader HttpHeaders headers) {
+
+        // Fetch the declaration from the database
+        Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository
+                .findById(declarationId);
+
+        // Verify that the declaration exists
+        if (hourDeclaration.isEmpty()) {
+            return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Given declaration does not exists."));
+        }
+
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
                         new AsyncRoleValidator(gatewayConfig, jwtUtils,
-                                Set.of(Roles.ADMIN, Roles.LECTURER))
+                                Set.of(Roles.ADMIN, Roles.LECTURER)),
+                        new AsyncLecturerValidator(gatewayConfig, jwtUtils,
+                                hourDeclaration.get().getCourseId())
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
-            Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository
-                    .findById(declarationId);
-
-            if (hourDeclaration.isEmpty()) {
-                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Given declaration does not exists."));
-            } else if (hourDeclaration.get().isApproved()) {
+            // Verify that has not been approved yet
+            if (hourDeclaration.get().isApproved()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Given declaration has been approved."));
             }

@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Optional;
@@ -61,7 +62,7 @@ public class StatisticsControllerTest {
     @Mock
     private transient Jws<Claims> jwsMock;
 
-    private final transient LocalDateTime testDate = LocalDateTime.now();
+    private final transient ZonedDateTime testDate = ZonedDateTime.now();
 
     private final transient HourDeclarationRequest hourDeclarationRequest =
             new HourDeclarationRequest(1234, 5678, 1);

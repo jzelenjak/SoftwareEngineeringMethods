@@ -97,6 +97,17 @@ public class ApplicationService {
     }
 
     /**
+     * Finds all the unreviewed applications for a particular user.
+     *
+     * @param userId is the ID of the user.
+     * @return a list of all the unreviewed applications for the given user.
+     */
+    public List<Application> getUnreviewedApplicationsForUser(long userId) {
+        return applicationRepository.findAllByUserIdAndStatus(userId,
+                ApplicationStatus.IN_PROGRESS);
+    }
+
+    /**
      * Function for updating the status of an application to be rejected.
      *
      * @param applicationId is the ID of the application.
@@ -161,7 +172,7 @@ public class ApplicationService {
      * Method for setting the maximum amount of allowed contractual hours for an application.
      *
      * @param applicationId The ID of the application for which to change the maximum allowed hours
-     * @param maxHours The amount to which to update
+     * @param maxHours      The amount to which to update
      * @throws NoSuchElementException when an application with that associated id does not exist.
      */
     public void setMaxHours(long applicationId, int maxHours) throws NoSuchElementException {
@@ -178,7 +189,7 @@ public class ApplicationService {
     /**
      * Method for getting the maximum amount of allowed contractual hours for an application.
      *
-     * @param userId The ID of the user for which to get the maximum allowed hours
+     * @param userId   The ID of the user for which to get the maximum allowed hours
      * @param courseId The ID of the course for which to get the maximum allowed hours
      * @return The maxHours of the application with those two parameters
      * @throws NoSuchElementException when no applications with those parameters exist
@@ -198,8 +209,8 @@ public class ApplicationService {
      * Method for setting the rating of an approved application.
      *
      * @param applicationId The ID of the application for which to set the rating
-     * @param rating The value of the rating
-     * @throws IllegalStateException if the application has not been approved
+     * @param rating        The value of the rating
+     * @throws IllegalStateException  if the application has not been approved
      * @throws NoSuchElementException if an application with those parameters does not exist.
      */
     public void setRating(long applicationId, double rating)
@@ -220,11 +231,11 @@ public class ApplicationService {
     /**
      * Method for getting the rating of an approved application.
      *
-     * @param userId The ID of the user for which to get the rating
+     * @param userId   The ID of the user for which to get the rating
      * @param courseId The ID of the course for which to get the rating
      * @return The rating of the TA
-     * @throws IllegalStateException if the application has not been approved
-     *                              or has not been rated yet.
+     * @throws IllegalStateException  if the application has not been approved
+     *                                or has not been rated yet.
      * @throws NoSuchElementException if an application with those parameters does not exist.
      */
     public double getRating(long userId, long courseId)

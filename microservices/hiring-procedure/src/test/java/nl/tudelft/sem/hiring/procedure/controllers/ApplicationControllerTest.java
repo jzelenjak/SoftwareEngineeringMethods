@@ -20,6 +20,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
 import nl.tudelft.sem.hiring.procedure.entities.Application;
@@ -32,8 +33,8 @@ import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -43,6 +44,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -114,7 +116,7 @@ public class ApplicationControllerTest {
 
         // Invalidate the cache before each test
         courseInfoResponseCache.invalidateCache();
-        
+
         // Default JWT mock behaviour
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
@@ -133,7 +135,7 @@ public class ApplicationControllerTest {
         json.addProperty("courseCode", "");
         json.addProperty("startDate", now.toString());
         json.addProperty("endData", now.toString());
-        json.addProperty("numberOfStudents", 0);
+        json.addProperty(NUMBER_OF_STUDENTS, 0);
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(json.toString()));
     }
 
@@ -156,6 +158,9 @@ public class ApplicationControllerTest {
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setBody(json.toString()));
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(generateValidCourseMultiInfoMockResponse(1)));
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(APPLY_API
@@ -166,10 +171,13 @@ public class ApplicationControllerTest {
         mockMvc.perform(asyncDispatch(result))
                 .andExpect(status().isOk());
 
-        // Extra checks
+        // Extra checks (endpoints called by validator class)
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
         assertNotNull(recordedRequest);
         assertEquals(GET_METHOD, recordedRequest.getMethod());
+        recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest);
+        assertEquals(HttpMethod.POST.name(), recordedRequest.getMethod());
     }
 
     @Test
@@ -227,6 +235,9 @@ public class ApplicationControllerTest {
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setBody(json.toString()));
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(generateValidCourseMultiInfoMockResponse(1)));
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(APPLY_API
@@ -237,10 +248,13 @@ public class ApplicationControllerTest {
         mockMvc.perform(asyncDispatch(result))
                 .andExpect(status().isForbidden());
 
-        // Extra checks
+        // Extra checks (endpoints called by validator class)
         RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
         assertNotNull(recordedRequest);
         assertEquals(GET_METHOD, recordedRequest.getMethod());
+        recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest);
+        assertEquals(HttpMethod.POST.name(), recordedRequest.getMethod());
     }
 
     @Test
@@ -383,7 +397,7 @@ public class ApplicationControllerTest {
         // Register listener
         JsonObject json = new JsonObject();
         json.addProperty(START_TIME, courseStartNextYear.toString());
-        json.addProperty("numberOfStudents", 0);
+        json.addProperty(NUMBER_OF_STUDENTS, 0);
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setBody(json.toString()));
@@ -1270,5 +1284,37 @@ public class ApplicationControllerTest {
 
         mockMvc.perform(asyncDispatch(result))
                 .andExpect(status().isNotFound());
+    }
+
+    /**
+     * Test utility function that generates a valid response for the course microservice.
+     * The actual functionality of the validator that is 'fooled' here can be found in the
+     * {@link nl.tudelft.sem.hiring.procedure.validation.AsyncCourseCandidacyValidatorTest} class.
+     *
+     * @param responseSize the size of the response (objects).
+     * @return a valid response for the course microservice.
+     */
+    private String generateValidCourseMultiInfoMockResponse(int responseSize) {
+        JsonObject json = new JsonObject();
+
+        // Generate a valid response with random info
+        for (int i = 0; i < responseSize; i++) {
+            JsonObject courseInfo = new JsonObject();
+            long courseId = ThreadLocalRandom.current().nextLong();
+            courseInfo.addProperty("courseId", courseId);
+
+            ZonedDateTime start = ZonedDateTime.now();
+            courseInfo.addProperty("startDate", start.toString());
+            courseInfo.addProperty("endDate", start.plusMonths(3).toString());
+
+            courseInfo.addProperty("courseCode", RandomStringUtils.random(7));
+            courseInfo.addProperty(NUMBER_OF_STUDENTS,
+                    ThreadLocalRandom.current().nextInt(50, 500));
+
+            json.add(String.valueOf(courseId), courseInfo);
+        }
+
+        // Return the JSON object as String
+        return json.toString();
     }
 }

@@ -35,7 +35,8 @@ public class AsyncTaLimitValidator extends AsyncBaseValidator {
 
     @Override
     public Mono<Boolean> validate(HttpHeaders headers, String body) {
-        return courseInfoCache.getCourseInfoResponse(courseId)
+        return courseInfoCache.getCourseInfoResponse(headers.getFirst(HttpHeaders.AUTHORIZATION),
+                        courseId)
                 .flatMap(responseBody -> {
                     var response = JsonParser.parseString(responseBody).getAsJsonObject();
 

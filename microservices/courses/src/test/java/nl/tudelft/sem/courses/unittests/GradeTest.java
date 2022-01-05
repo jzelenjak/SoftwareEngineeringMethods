@@ -1,20 +1,15 @@
 package nl.tudelft.sem.courses.unittests;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import org.junit.jupiter.api.Test;
-
-
 
 
 public class GradeTest {
@@ -24,7 +19,7 @@ public class GradeTest {
 
 
     @Test
-    public void constructorTest() {
+    public void testConstructor() {
         long id = 1;
         long userId = 5;
         Grade grade = new Grade(id, course, userId, 2.0f);
@@ -33,7 +28,7 @@ public class GradeTest {
     }
 
     @Test
-    public void testingEqualsMethod() {
+    public void testEqualsMethod() {
         long id = 1;
         long id2 = 2;
 
@@ -47,7 +42,7 @@ public class GradeTest {
     }
 
     @Test
-    public void testingToString() {
+    public void testToString() {
         long id = 1;
         long userId = 5;
         Grade grade = new Grade(id, course, userId, 2.0f);
@@ -64,17 +59,17 @@ public class GradeTest {
 
 
     @Test
-    public void notTheSameClass() {
+    public void testEqualsDifferentClassType() {
         long id = 1;
         long userId = 5;
         Grade grade = new Grade(id, course, userId, 2.0f);
 
-        boolean result = grade.equals(LocalDate.now());
+        boolean result = grade.equals(new Object());
         assertFalse(result);
     }
 
     @Test
-    public void gradeValueIsDifferent() {
+    public void testGradeValueIsDifferent() {
         long id = 1;
         long userId = 5;
         Grade grade = new Grade(id, course, userId, 2.0f);
@@ -84,7 +79,7 @@ public class GradeTest {
     }
 
     @Test
-    public void coursesAreDifferent() {
+    public void testCoursesAreDifferent() {
         Course course2 = new Course(2, "CSE2216",
                 ZonedDateTime.parse("2007-12-03T10:15:30+01:00[Europe/Paris]"), date, 1);
 
@@ -97,39 +92,22 @@ public class GradeTest {
     }
 
     @Test
-    public void equalsNullTest() {
+    public void testEqualsNullTest() {
         Grade grade = new Grade(2, course, 1, 2.0f);
-        Grade grade2 = null;
-        boolean result = grade.equals(grade2);
-        assertFalse(result);
+        assertNotEquals(grade, null);
     }
 
     @Test
-    public void equalsSameObject() {
+    public void testEqualsSameObject() {
         Grade grade = new Grade(2, course, 1, 2.0f);
-        boolean result = grade.equals(grade);
-        assertTrue(result);
+        assertEquals(grade, grade);
     }
 
     @Test
-    public void equalsidsAredifferent() {
+    public void testEqualsIdsAreDifferent() {
         Grade grade = new Grade(2, course, 1, 2.0f);
-        Grade grade2 = new Grade(5,  course, 2, 2.0f);
-        assertFalse(grade.equals(grade2));
-    }
-
-    @Test
-    public void gradeIdIsTheSame() {
-        Grade grade = new Grade(5, course, 1, 2.0f);
-        Grade grade2 = new Grade(5,  course, 2, 2.0f);
-        assertTrue(grade.equals(grade2));
-    }
-
-    @Test
-    public void coursesAreEqual() {
-        Grade grade = new Grade(5, course, 1, 2.0f);
-        Grade grade2 = new Grade(1,  course, 1, 2.0f);
-        assertTrue(grade.equals(grade2));
+        Grade grade2 = new Grade(5, course, 2, 2.0f);
+        assertNotEquals(grade, grade2);
     }
 
 }

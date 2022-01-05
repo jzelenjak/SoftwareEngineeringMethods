@@ -27,8 +27,8 @@ public class Teaches {
      * Teaches Constructor. Used in testing to reduce the number
      * of lines in the code caused by setter methods.
      *
-     * @param courseId - the Id of the course
-     * @param lecturerId - the Id of the lecturer
+     * @param courseId - the ID of the course
+     * @param lecturerId - the ID of the lecturer
      */
     public Teaches(long courseId, long lecturerId) {
         this.courseId = courseId;
