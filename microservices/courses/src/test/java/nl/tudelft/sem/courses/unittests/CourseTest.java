@@ -90,4 +90,58 @@ public class CourseTest {
         assertFalse(result);
     }
 
+    @Test
+    public void oneObjectIsNull() {
+        Course course = new Course(1, courseCode, date, date, 1);
+        Course course2 = null;
+        boolean result = course.equals(course2);
+        assertFalse(result);
+    }
+
+    @Test
+    public void startDatesSameEndDatesDifferent() {
+        Course course = new Course(1, courseCode, date, date, 1);
+        Course course2 = new Course(2, courseCode, date,
+                ZonedDateTime.parse("2007-12-03T10:15:30+01:00[Europe/Paris]"), 1);
+        boolean result = course.equals(course2);
+        assertFalse(result);
+    }
+
+    @Test
+    public void coursesAreEqual() {
+        Course course = new Course(1, courseCode, date, date, 1);
+        Course course2 = new Course(2, courseCode, date, date, 1);
+        boolean result = course.equals(course2);
+        assertTrue(result);
+    }
+
+    @Test
+    public void numberOfStudentsDifferent() {
+        Course course = new Course(1, courseCode, date, date, 1);
+        Course course2 = new Course(2, courseCode, date, date, 2);
+        boolean result = course.equals(course2);
+        assertFalse(result);
+    }
+
+    @Test
+    public void testDateEqualsMethod() {
+        boolean result = course.datesEqual(date, date);
+        assertTrue(result);
+    }
+
+    @Test
+    public void testDatesDaysAreNotEqual() {
+        ZonedDateTime time = ZonedDateTime.parse("2021-12-03T10:15:30+01:00[Europe/Paris]");
+        boolean result = course.datesEqual(date, time);
+        assertFalse(result);
+    }
+
+    @Test
+    public void testDatesMonthsAreNotEqual() {
+        ZonedDateTime time = ZonedDateTime.parse("2021-11-03T10:15:30+01:00[Europe/Paris]");
+        boolean result = course.datesEqual(date, time);
+        assertFalse(result);
+    }
+
+
 }

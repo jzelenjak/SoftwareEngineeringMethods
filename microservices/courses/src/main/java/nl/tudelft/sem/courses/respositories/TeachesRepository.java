@@ -2,24 +2,17 @@ package nl.tudelft.sem.courses.respositories;
 
 import java.util.List;
 import java.util.Optional;
-import nl.tudelft.sem.courses.entities.Course;
+import nl.tudelft.sem.courses.entities.Teaches;
+import nl.tudelft.sem.courses.entities.TeachesPk;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-
-
-
 @Repository
-public interface CourseRepository extends JpaRepository<Course, Long> {
+public interface TeachesRepository extends JpaRepository<Teaches, TeachesPk> {
 
-
-    @Override
-    Optional<Course> findById(Long along);
-
-    List<Course> findAllByCourseCode(String courseCode);
-
+    List<Teaches> findAllByLecturerId(long lecturerId);
 
     @Override
-    void deleteById(Long id);
+    Optional<Teaches> findById(TeachesPk teachesPk);
 }
