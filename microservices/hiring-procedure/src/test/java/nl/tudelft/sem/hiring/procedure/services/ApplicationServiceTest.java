@@ -105,6 +105,15 @@ public class ApplicationServiceTest {
     }
 
     @Test
+    public void testGetUnreviewedApplicationsForUser() {
+        given(applicationRepository.findAllByUserIdAndStatus(userId1,
+                ApplicationStatus.IN_PROGRESS)).willReturn(List.of(application1, application2));
+        List<Application> actual = applicationService.getUnreviewedApplicationsForUser(userId1);
+        List<Application> expected = List.of(application1, application2);
+        assertEquals(actual, expected);
+    }
+
+    @Test
     public void getAllApplications() {
         given(applicationRepository.findAll()).willReturn(
                 List.of(application1, application2, application3, application4));
@@ -295,7 +304,7 @@ public class ApplicationServiceTest {
                 .thenReturn(List.of(application1));
 
         assertThrows(IllegalStateException.class, () -> applicationService
-                        .getRating(application1.getUserId(), application1.getCourseId()));
+                .getRating(application1.getUserId(), application1.getCourseId()));
     }
 
     @Test

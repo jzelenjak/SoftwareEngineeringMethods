@@ -6,7 +6,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 
-
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode

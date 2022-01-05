@@ -27,7 +27,7 @@ public class AsyncUserExistsValidator extends AsyncBaseValidator {
      * Constructor of the user exists validator class.
      *
      * @param gatewayConfig is the gateway configuration.
-     * @param userId      is the course ID.
+     * @param userId        is the course ID.
      */
     public AsyncUserExistsValidator(GatewayConfig gatewayConfig, long userId) {
         this.gatewayConfig = gatewayConfig;
@@ -40,20 +40,21 @@ public class AsyncUserExistsValidator extends AsyncBaseValidator {
         JsonObject json = new JsonObject();
         json.addProperty("userId", userId);
         return webClient.get()
-            .uri(UriComponentsBuilder.newInstance().scheme("http")
-                .host(gatewayConfig.getHost())
-                .port(gatewayConfig.getPort())
-                .pathSegment("api", "users", "by-userid")
-                .queryParam("userId", userId)
-                .toUriString())
-            .exchange()
-            .flatMap(clientResponse -> {
-                if (clientResponse.statusCode().isError()) {
-                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "User not found"));
-                }
-                // Continue with the request
-                return evaluateNext(headers, body);
-            });
+                .uri(UriComponentsBuilder.newInstance().scheme("http")
+                        .host(gatewayConfig.getHost())
+                        .port(gatewayConfig.getPort())
+                        .pathSegment("api", "users", "by-userid")
+                        .queryParam("userId", userId)
+                        .toUriString())
+                .header(HttpHeaders.AUTHORIZATION, headers.getFirst(HttpHeaders.AUTHORIZATION))
+                .exchange()
+                .flatMap(clientResponse -> {
+                    if (clientResponse.statusCode().isError()) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                "User not found"));
+                    }
+                    // Continue with the request
+                    return evaluateNext(headers, body);
+                });
     }
 }

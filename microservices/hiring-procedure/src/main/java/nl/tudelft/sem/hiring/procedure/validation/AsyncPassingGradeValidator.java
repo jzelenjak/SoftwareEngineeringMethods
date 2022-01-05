@@ -59,6 +59,7 @@ public class AsyncPassingGradeValidator extends AsyncBaseValidator {
                         .queryParam("courseId", courseId)
                         .queryParam("userId", userId)
                         .toUriString())
+                .header(HttpHeaders.AUTHORIZATION, token)
                 .exchange()
                 .flatMap(clientResponse -> {
                     if (clientResponse.statusCode().isError()) {
