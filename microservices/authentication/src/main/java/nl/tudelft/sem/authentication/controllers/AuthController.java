@@ -3,9 +3,11 @@ package nl.tudelft.sem.authentication.controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -205,8 +207,9 @@ public class AuthController {
             return UserRole.valueOf(role);
         } catch (Exception e) {
             // Either IllegalArgumentException or NullPointerException
-            String reason = String.format("Role must be one of the following: %s, %s, %s",
-                    "STUDENT", "LECTURER", "ADMIN");
+            String reason = String.format("Role must be one of the following: %s.",
+                    Arrays.stream(UserRole.values()).map(Enum::name)
+                            .collect(Collectors.joining(", ")));
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
         }
     }

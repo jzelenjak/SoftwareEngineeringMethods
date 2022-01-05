@@ -6,10 +6,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import nl.tudelft.sem.jwt.JwtUtils;
 import nl.tudelft.sem.users.config.GatewayConfig;
@@ -422,8 +424,9 @@ public class UserController {
             return UserRole.valueOf(roleStr);
         } catch (Exception e) {
             // Either IllegalArgumentException or NullPointerException
-            String reason = String.format("Role must be one of the following: %s, %s, %s",
-                    "STUDENT", "LECTURER", "ADMIN");
+            String reason = String.format("Role must be one of the following: %s.",
+                    Arrays.stream(UserRole.values()).map(Enum::name)
+                            .collect(Collectors.joining(", ")));
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
         }
     }
