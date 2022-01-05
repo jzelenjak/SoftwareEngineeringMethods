@@ -5,12 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 import org.junit.jupiter.api.Test;
 
 public class HourDeclarationTest {
 
-    private final transient LocalDateTime dateTime = LocalDateTime.now();
+    private final transient ZonedDateTime dateTime = ZonedDateTime.now();
     private final transient HourDeclarationRequest hourDeclarationRequest =
             new HourDeclarationRequest(1234, 5678, 10.5);
     private final transient HourDeclarationRequest hourDeclarationRequest1 =
