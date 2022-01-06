@@ -12,17 +12,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
+import nl.tudelft.sem.courses.communication.EditionsResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.controllers.CourseController;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.TeachesRepository;
 import nl.tudelft.sem.jwt.JwtUtils;
+import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +58,7 @@ public class CourseControllerTest {
     private static final String courseCode = "CSE2216";
     private static final String createGradePath = "/api/courses/create/grade";
     private static final String assignLecturerPath = "/api/courses/assign/lecturer/1/1";
+    private static final String allEditionsPath = "/api/courses/get-all-editions";
     private static final ZonedDateTime date = ZonedDateTime.now();
     private static final CourseRequest courseRequest = new CourseRequest(courseCode,
             date, date, 1);
@@ -234,6 +238,65 @@ public class CourseControllerTest {
         mockMvc.perform(post("/api/courses/get-multiple")
                         .content("{}")
                         .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetAllEditionsOfCourse() throws Exception {
+        //first creation request
+        MvcResult mvcResult = mockMvc.perform(post(createCoursePath)
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(courseRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+        //second creation request
+        CourseRequest courseRequest1 = new CourseRequest(courseCode, date,
+                ZonedDateTime.of(1, 1, 1, 1, 1, 1, 1, ZoneId.systemDefault()),  1);
+
+        MvcResult mvcResult2 = mockMvc.perform(post(createCoursePath)
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(courseRequest1)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+
+        String content = mvcResult.getResponse().getContentAsString();
+        Course course = objectMapper.readValue(content, Course.class);
+
+        MvcResult mvcResult1 = mockMvc.perform(get(allEditionsPath + "?courseId=" + course.getId())
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(courseRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String content2 = mvcResult2.getResponse().getContentAsString();
+        Course course2 = objectMapper.readValue(content2, Course.class);
+
+        String resultContent = mvcResult1.getResponse().getContentAsString();
+        EditionsResponse response = objectMapper.readValue(resultContent, EditionsResponse.class);
+        Assert.assertEquals(Arrays.asList(course.getId(),
+                course2.getId()), response.getCourseIds());
+
+    }
+
+    @Test
+    void testGetAllEditionsOfCourseNoCourses() throws Exception {
+        mockMvc.perform(get(allEditionsPath + "?courseId=1")
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(courseRequest)))
+                .andExpect(status().isBadRequest());
+
+    }
+
+    @Test
+    void testGetAllEditionsOfCourseUnauthoried() throws Exception {
+        mockMvc.perform(get(allEditionsPath + "?courseId=1")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(courseRequest)))
                 .andExpect(status().isForbidden());
     }
 

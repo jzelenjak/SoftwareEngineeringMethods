@@ -26,6 +26,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.web.servlet.tags.form.InputTag;
+import org.xmlunit.builder.Input;
 
 
 @ExtendWith(SpringExtension.class)
@@ -338,6 +340,75 @@ public class CourseServiceTest {
         Course result = courseService.getCourse(1);
 
         verify(courseRepository, Mockito.times(1)).findById(Mockito.any());
+        Assert.assertNull(result);
+    }
+
+    @Test
+    void testGetAllEditionsOfCourseValidList() {
+        Course inputCourse = new Course();
+        inputCourse.setId(1);
+        inputCourse.setStartDate(date);
+        inputCourse.setFinishDate(date);
+        inputCourse.setCourseCode(courseCode);
+
+        List<Course> courses = Arrays.asList(inputCourse);
+
+        Optional<Course> optionalCourse = Optional.ofNullable(inputCourse);
+
+        when(courseRepository.findById(Mockito.any())).thenReturn(optionalCourse);
+        when(courseRepository.findAllByCourseCode(Mockito.any())).thenReturn(courses);
+
+        List<Long> result = courseService.getAllEditionsOfCourse(1);
+        List<Long> expectedResult = Arrays.asList(1L);
+        verify(courseRepository, Mockito.times(1)).findById(Mockito.any());
+        verify(courseRepository, Mockito.times(1)).findAllByCourseCode(Mockito.any());
+
+        Assert.assertEquals(result, expectedResult);
+    }
+
+    @Test
+    void testGetAllEditionsOfCourseNoCourseFoundWithGivenId() {
+        List<Long> result = courseService.getAllEditionsOfCourse(1);
+        Assert.assertNull(result);
+    }
+
+    @Test
+    void testGetAllEditionsOfCourseFailedToFindAllCoursesByCourseCode() {
+        Course inputCourse = new Course();
+        inputCourse.setId(1);
+        inputCourse.setStartDate(date);
+        inputCourse.setFinishDate(date);
+        inputCourse.setCourseCode(courseCode);
+
+        Optional<Course> optionalCourse = Optional.ofNullable(inputCourse);
+
+        when(courseRepository.findById(Mockito.any())).thenReturn(optionalCourse);
+        when(courseRepository.findAllByCourseCode(Mockito.any())).thenReturn(null);
+
+        List<Long> result = courseService.getAllEditionsOfCourse(1);
+        verify(courseRepository, Mockito.times(1)).findById(Mockito.any());
+        verify(courseRepository, Mockito.times(1)).findAllByCourseCode(Mockito.any());
+
+        Assert.assertNull(result);
+    }
+
+    @Test
+    void testGetAllEditionsOfCourseExceptionThrown() {
+        Course inputCourse = new Course();
+        inputCourse.setId(1);
+        inputCourse.setStartDate(date);
+        inputCourse.setFinishDate(date);
+        inputCourse.setCourseCode(courseCode);
+
+        Optional<Course> optionalCourse = Optional.ofNullable(inputCourse);
+        when(courseRepository.findById(Mockito.any())).thenReturn(optionalCourse);
+        doThrow(IllegalArgumentException.class)
+                .when(courseRepository).findAllByCourseCode(Mockito.any());
+        List<Long> result = courseService.getAllEditionsOfCourse(1);
+
+        verify(courseRepository, Mockito.times(1)).findById(Mockito.any());
+        verify(courseRepository, Mockito.times(1)).findAllByCourseCode(Mockito.any());
+
         Assert.assertNull(result);
     }
 

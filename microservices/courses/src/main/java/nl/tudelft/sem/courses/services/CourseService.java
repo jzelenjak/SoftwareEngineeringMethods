@@ -162,6 +162,35 @@ public class CourseService {
     }
 
     /**
+     * Endpoint takes course id as input.
+     * It gives back list of course ids for
+     * courses which have the same course code
+     * as the course in the input.
+     *
+     * @param courseId - The id of the input course.
+     * @return - List of courses with matching course code.
+     */
+    public List<Long> getAllEditionsOfCourse(long courseId) {
+        Course course = getCourse(courseId);
+        if (course == null) {
+            return null;
+        }
+        try {
+            List<Course> courses = courseRepository.findAllByCourseCode(course.getCourseCode());
+            if (courses == null) {
+                return null;
+            }
+            List<Long> courseIds = courses.stream().map(course1 -> course1.getId())
+                    .collect(Collectors.toList());
+            return courseIds;
+
+        } catch (Exception e) {
+            return null;
+        }
+
+    }
+
+    /**
      * Adds a grade to the repository.
      *
      * @param request -  a grade request object containing all

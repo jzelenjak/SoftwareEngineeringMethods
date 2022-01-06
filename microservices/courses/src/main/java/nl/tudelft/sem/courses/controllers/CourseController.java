@@ -10,6 +10,7 @@ import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.communication.MultiCourseRequest;
+import nl.tudelft.sem.courses.communication.EditionsResponse;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.services.CourseService;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -159,6 +161,30 @@ public class CourseController {
 
             // Return the JSON object as string
             return json.toString();
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
+    }
+
+    /**
+     * Endpoint takes course id as input.
+     * It gives back list of course ids for
+     * courses which have the same course code
+     * as the course in the input.
+     *
+     * @param courseId - The id of input course.
+     * @return - List of courses with matching course code.
+     */
+    @GetMapping("/get-all-editions")
+    public EditionsResponse getAllEditionsOfCourse(@RequestParam Long courseId,
+                                                   @RequestHeader HttpHeaders httpHeaders) {
+        Jws<Claims> webToken = isAuthorized(httpHeaders);
+        if(checkIfLecturerOrAdmin(webToken)) {
+            List<Long> courseIds = courseService.getAllEditionsOfCourse(courseId);
+            if (courseIds == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Failed to get course editions");
+            }
+            return new EditionsResponse(courseIds);
         }
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
