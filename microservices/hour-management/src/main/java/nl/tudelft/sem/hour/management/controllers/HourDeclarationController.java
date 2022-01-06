@@ -2,6 +2,8 @@ package nl.tudelft.sem.hour.management.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -14,6 +16,7 @@ import nl.tudelft.sem.hour.management.services.NotificationService;
 import nl.tudelft.sem.hour.management.services.StatisticsService;
 import nl.tudelft.sem.hour.management.validation.AsyncAuthValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncCourseTimeValidator;
+import nl.tudelft.sem.hour.management.validation.AsyncDeclarationValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncHiringValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncLecturerValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator;
@@ -95,7 +98,8 @@ public class HourDeclarationController {
                         new AsyncRoleValidator(gatewayConfig, jwtUtils,
                                 Set.of(Roles.ADMIN, Roles.STUDENT)),
                         new AsyncCourseTimeValidator(gatewayConfig),
-                        new AsyncHiringValidator(gatewayConfig, jwtUtils)
+                        new AsyncHiringValidator(gatewayConfig, jwtUtils),
+                        new AsyncDeclarationValidator(jwtUtils, hourDeclarationRequest)
                 ).build();
 
         return head.validate(headers, hourDeclarationRequest.toJson()).flatMap((valid) -> {
@@ -103,7 +107,7 @@ public class HourDeclarationController {
             long declarationId = hourDeclarationRepository.save(hourDeclaration).getDeclarationId();
             return createInfoResponse(
                     String.format("Declaration with id %s has been successfully saved.",
-                    declarationId));
+                            declarationId));
         });
     }
 
