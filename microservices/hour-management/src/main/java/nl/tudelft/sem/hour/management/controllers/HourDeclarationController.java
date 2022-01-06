@@ -95,7 +95,7 @@ public class HourDeclarationController {
                         new AsyncRoleValidator(gatewayConfig, jwtUtils,
                                 Set.of(Roles.ADMIN, Roles.STUDENT)),
                         new AsyncCourseTimeValidator(gatewayConfig),
-                        new AsyncHiringValidator(gatewayConfig)
+                        new AsyncHiringValidator(gatewayConfig, jwtUtils)
                 ).build();
 
         return head.validate(headers, hourDeclarationRequest.toJson()).flatMap((valid) -> {

@@ -170,6 +170,8 @@ public class HourDeclarationControllerTest {
         String contract = String.format(Locale.ROOT,
                 "{\"studentId\": %d, \"courseId\": %d, \"maxHours\": %f}", 1, 1, 15.0);
 
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setBody(responseBody.toString())
@@ -212,6 +214,8 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testPostDeclarationInvalid() throws Exception {
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+
         mockMvc.perform(post(declarationPath)
                         .contentType(MediaType.APPLICATION_JSON_VALUE)
                         .content("")
@@ -221,6 +225,8 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testPostDeclarationInvalidCourseTime() throws Exception {
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(404));
 
@@ -238,6 +244,8 @@ public class HourDeclarationControllerTest {
     void testPostDeclarationInvalidContract() throws Exception {
         JsonObject responseBody = configureCourseResponseBody(
                 ZonedDateTime.now().minusWeeks(1L), ZonedDateTime.now().plusWeeks(1L));
+
+        when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
