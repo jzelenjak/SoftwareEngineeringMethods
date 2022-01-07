@@ -85,7 +85,7 @@ public class AsyncHiringValidatorTest {
 
     @Test
     void testValidate() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10, "A");
         AsyncHiringValidator validator = new AsyncHiringValidator(gatewayConfig, jwtUtils);
 
         mockWebServer.enqueue(new MockResponse()
@@ -111,7 +111,7 @@ public class AsyncHiringValidatorTest {
         when(jwtUtils.getRole(jwsMock)).thenReturn(AsyncRoleValidator.Roles.ADMIN.name());
 
         // Configure test objects
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 12, 10);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 12, 10, "B");
         AsyncHiringValidator validator = new AsyncHiringValidator(gatewayConfig, jwtUtils);
 
         // Check the state
@@ -124,7 +124,7 @@ public class AsyncHiringValidatorTest {
 
     @Test
     void testValidateInvalidContract() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 12, 10);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 12, 10, "C");
         AsyncHiringValidator validator = new AsyncHiringValidator(gatewayConfig, jwtUtils);
 
         mockWebServer.enqueue(new MockResponse()
@@ -145,7 +145,7 @@ public class AsyncHiringValidatorTest {
 
     @Test
     void testValidateNegativeHours() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 20, 0);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 20, 0, "D");
         AsyncHiringValidator validator = new AsyncHiringValidator(gatewayConfig, jwtUtils);
 
         mockWebServer.enqueue(new MockResponse()
@@ -167,7 +167,7 @@ public class AsyncHiringValidatorTest {
 
     @Test
     void testValidateMoreThanMaxHours() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 3, 999);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 3, 999, "E");
         AsyncHiringValidator validator = new AsyncHiringValidator(gatewayConfig, jwtUtils);
 
         mockWebServer.enqueue(new MockResponse()
@@ -189,7 +189,7 @@ public class AsyncHiringValidatorTest {
 
     @Test
     void testValidateEqualToMaxHours() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 15);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 15, "F");
         AsyncHiringValidator validator = new AsyncHiringValidator(gatewayConfig, jwtUtils);
 
         mockWebServer.enqueue(new MockResponse()

@@ -37,6 +37,9 @@ public class HourDeclaration {
     @Column(name = "declared_hours")
     private double declaredHours;
 
+    @Column(name = "description")
+    private String description;
+
     @Column(name = "declaration_date", columnDefinition = "TIMESTAMP")
     private ZonedDateTime declarationDate;
 
@@ -50,6 +53,7 @@ public class HourDeclaration {
         this.studentId = hourDeclarationRequest.getStudentId();
         this.courseId = hourDeclarationRequest.getCourseId();
         this.declaredHours = hourDeclarationRequest.getDeclaredHours();
+        this.description = hourDeclarationRequest.getDescription();
 
         this.approved = false;
         this.declarationDate = ZonedDateTime.now();
@@ -69,6 +73,7 @@ public class HourDeclaration {
         this.studentId = hourDeclarationRequest.getStudentId();
         this.courseId = hourDeclarationRequest.getCourseId();
         this.declaredHours = hourDeclarationRequest.getDeclaredHours();
+        this.description = hourDeclarationRequest.getDescription();
 
         this.approved = approved;
         this.declarationDate = declarationDate;
@@ -83,15 +88,12 @@ public class HourDeclaration {
             return false;
         }
         HourDeclaration that = (HourDeclaration) o;
-        return getDeclarationId() == that.getDeclarationId()
-                && getStudentId() == that.getStudentId()
-                && getCourseId() == that.getCourseId()
-                && Double.compare(that.getDeclaredHours(), getDeclaredHours()) == 0;
+        return getDeclarationId() == that.getDeclarationId();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getDeclarationId(), getStudentId(), getCourseId(), getDeclaredHours());
+        return Objects.hash(getDeclarationId());
     }
 }
 

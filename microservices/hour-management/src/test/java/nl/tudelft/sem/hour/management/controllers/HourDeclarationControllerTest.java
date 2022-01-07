@@ -90,11 +90,11 @@ public class HourDeclarationControllerTest {
     private final transient Long userId = 1234L;
 
     private final transient HourDeclarationRequest hourDeclarationRequest =
-            new HourDeclarationRequest(userId, 5678, 1);
+            new HourDeclarationRequest(userId, 5678, 1, "de");
     private final transient HourDeclarationRequest hourDeclarationRequestSameStudent =
-            new HourDeclarationRequest(userId, 567812, 12);
+            new HourDeclarationRequest(userId, 567812, 12, "nl");
     private final transient HourDeclarationRequest hourDeclarationRequestNew =
-            new HourDeclarationRequest(userId, 567812, 12);
+            new HourDeclarationRequest(userId, 567812, 12, "tr");
 
     private final transient HourDeclaration hourDeclarationUnapproved = new HourDeclaration(1,
             hourDeclarationRequest, false, testDate);
@@ -569,9 +569,9 @@ public class HourDeclarationControllerTest {
         // Create test declarations
         long courseId = 1337;
         Set<HourDeclaration> declarations = Stream.of(
-                new HourDeclarationRequest(1234, courseId, 10.0),
-                new HourDeclarationRequest(1235, courseId, 5.0),
-                new HourDeclarationRequest(1234, courseId, 16.5)
+                new HourDeclarationRequest(1234, courseId, 10.0, "de"),
+                new HourDeclarationRequest(1235, courseId, 5.0, "nl"),
+                new HourDeclarationRequest(1234, courseId, 16.5, "tr")
         ).map(HourDeclaration::new).collect(Collectors.toSet());
 
         // Store all test declarations

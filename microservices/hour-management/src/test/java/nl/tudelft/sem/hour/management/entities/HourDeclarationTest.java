@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 import org.junit.jupiter.api.Test;
@@ -13,13 +12,11 @@ public class HourDeclarationTest {
 
     private final transient ZonedDateTime dateTime = ZonedDateTime.now();
     private final transient HourDeclarationRequest hourDeclarationRequest =
-            new HourDeclarationRequest(1234, 5678, 10.5);
+            new HourDeclarationRequest(1234, 5678, 10.5, "de");
     private final transient HourDeclarationRequest hourDeclarationRequest1 =
-            new HourDeclarationRequest(4321, 5678, 10.5);
+            new HourDeclarationRequest(4321, 5678, 10.5, "nl");
     private final transient HourDeclarationRequest hourDeclarationRequest2 =
-            new HourDeclarationRequest(1234, 8765, 10.5);
-    private final transient HourDeclarationRequest hourDeclarationRequest3 =
-            new HourDeclarationRequest(1234, 5678, 0.1);
+            new HourDeclarationRequest(1234, 8765, 10.5, "tr");
 
     @Test
     public void testConstructor() {
@@ -55,20 +52,11 @@ public class HourDeclarationTest {
 
     @Test
     public void testEqualsNotEqual() {
-        HourDeclaration declaration1 = new HourDeclaration(1, hourDeclarationRequest,
+        HourDeclaration declaration1 = new HourDeclaration(1, hourDeclarationRequest1,
                 false, dateTime);
-        HourDeclaration declaration2 = new HourDeclaration(2, hourDeclarationRequest,
-                false, dateTime);
-        HourDeclaration declaration3 = new HourDeclaration(1, hourDeclarationRequest1,
-                false, dateTime);
-        HourDeclaration declaration4 = new HourDeclaration(1, hourDeclarationRequest2,
-                false, dateTime);
-        HourDeclaration declaration5 = new HourDeclaration(1, hourDeclarationRequest3,
+        HourDeclaration declaration2 = new HourDeclaration(2, hourDeclarationRequest2,
                 false, dateTime);
         assertThat(declaration1).isNotEqualTo(declaration2);
-        assertThat(declaration1).isNotEqualTo(declaration3);
-        assertThat(declaration1).isNotEqualTo(declaration4);
-        assertThat(declaration1).isNotEqualTo(declaration5);
     }
 
     @Test

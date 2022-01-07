@@ -47,7 +47,7 @@ public class AsyncDeclarationValidatorTest {
     @Test
     public void testConstructor() {
         // Configure request used for testing
-        HourDeclarationRequest request = new HourDeclarationRequest(42, 1337, 10.5);
+        HourDeclarationRequest request = new HourDeclarationRequest(42, 1337, 10.5, "A");
 
         // Construct validator instance
         AsyncDeclarationValidator validator = new AsyncDeclarationValidator(jwtUtils, request);
@@ -62,7 +62,7 @@ public class AsyncDeclarationValidatorTest {
         mockRole(Roles.ADMIN);
 
         // Configure request used for testing
-        HourDeclarationRequest request = new HourDeclarationRequest(42, 1337, 10.5);
+        HourDeclarationRequest request = new HourDeclarationRequest(42, 1337, 10.5, "B");
 
         // Construct validator instance
         AsyncDeclarationValidator validator = new AsyncDeclarationValidator(jwtUtils, request);
@@ -79,7 +79,7 @@ public class AsyncDeclarationValidatorTest {
         mockRole(Roles.STUDENT);
 
         // Configure request used for testing
-        HourDeclarationRequest request = new HourDeclarationRequest(studentId, 1337, 10.5);
+        HourDeclarationRequest request = new HourDeclarationRequest(studentId, 1337, 10.5, "C");
 
         // Construct validator instance
         AsyncDeclarationValidator validator = new AsyncDeclarationValidator(jwtUtils, request);
@@ -96,7 +96,7 @@ public class AsyncDeclarationValidatorTest {
         mockRole(Roles.STUDENT);
 
         // Configure request used for testing
-        HourDeclarationRequest request = new HourDeclarationRequest(studentId, 1337, 10.5);
+        HourDeclarationRequest request = new HourDeclarationRequest(studentId, 1337, 10.5, "D");
 
         // Construct validator instance
         AsyncDeclarationValidator validator = new AsyncDeclarationValidator(jwtUtils, request);
