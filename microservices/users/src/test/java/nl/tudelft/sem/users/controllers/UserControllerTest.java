@@ -1,9 +1,11 @@
 package nl.tudelft.sem.users.controllers;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -11,73 +13,91 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import java.security.Key;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import javax.crypto.spec.SecretKeySpec;
+import java.util.concurrent.TimeUnit;
+import nl.tudelft.sem.jwt.JwtUtils;
+import nl.tudelft.sem.users.config.GatewayConfig;
 import nl.tudelft.sem.users.entities.User;
 import nl.tudelft.sem.users.entities.UserRole;
-import nl.tudelft.sem.users.services.UserService;
+import nl.tudelft.sem.users.repositories.UserRepository;
+import okhttp3.HttpUrl;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
-
-
-@WebMvcTest(controllers = UserController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class UserControllerTest {
-    private final transient ObjectMapper mapper = new ObjectMapper();
+
+    @Autowired
+    private transient UserRepository userRepository;
 
     @Autowired
     private transient MockMvc mockMvc;
 
+    private transient MockWebServer mockWebServer;
+
     @MockBean
-    private transient UserService userService;
+    private transient GatewayConfig gatewayConfig;
 
-    private final transient String utf8Str = "uft-8";
+    @MockBean
+    private transient JwtUtils jwtUtils;
 
-    private final transient String secretKeyString =
-            "nbvfrtyujhghgdvagsdfsdgadflgpprqoewjfmanvxcmiq"
-                    + "ertyuisgnsdfasdfayuiokjhfgsfsgfgfhgdgsfgs";
+    @Mock
+    private transient Jws<Claims> jwsMock;
 
-    private final transient Key secretKey = new SecretKeySpec(secretKeyString.getBytes(),
-            SignatureAlgorithm.HS256.getJcaName());
 
     // Some constants for JSON fields
     private static final transient String USERID = "userId";
     private static final transient String USERNAME = "username";
+    private static final transient String FIRSTNAME = "firstName";
+    private static final transient String LASTNAME = "lastName";
     private static final transient String ROLE = "role";
-    private static final transient String BEARER = "Bearer ";
-
+    private static final transient String UTF8 = "uft-8";
 
     // Constants for APIs
     private static final transient String REGISTER_API = "/api/users/register";
-    private static final transient String BY_USERNAME = "/api/users/by_username";
-    private static final transient String BY_USER_ID_API = "/api/users/by_userid";
-    private static final transient String BY_ROLE = "/api/users/by_role";
     private static final transient String CHANGE_ROLE_API = "/api/users/change_role";
+    private static final transient String CHANGE_FIRST_NAME_API = "/api/users/change_first_name";
+    private static final transient String CHANGE_LAST_NAME_API = "/api/users/change_last_name";
     private static final transient String DELETE_API = "/api/users/delete";
 
+    // Common used data constants
+    private final transient String username = "sbar";
+    private final transient String firstNameStudent = "Sasha";
+    private final transient String newFirstName = "Stan";
+    private final transient String lastNameStudent = "Bar";
+    private final transient String newLastName = "Lee";
+    private final transient String jwt = "Bearer someValidJwt";
 
 
     /**
      * Helper methods.
-    */
+     */
 
     private String createJson(String... kvPairs) {
-        ObjectNode node = mapper.createObjectNode();
+        ObjectNode node = new ObjectMapper().createObjectNode();
 
         for (int i = 0; i < kvPairs.length; i += 2) {
             node.put(kvPairs[i], kvPairs[i + 1]);
@@ -85,224 +105,147 @@ class UserControllerTest {
         return node.toString();
     }
 
-
-    private String createToken(long userId, String role, Date date, long validityInMinutes) {
-        Claims claims = Jwts.claims().setSubject(String.valueOf(userId));
-        claims.put(ROLE, role);
-        Date validity = new Date(date.getTime() + validityInMinutes * 60000);
-        return Jwts.builder()
-                .setClaims(claims)
-                .setIssuedAt(date)
-                .setExpiration(validity)
-                .signWith(secretKey)
-                .compact();
+    void configureGateway(String path) {
+        HttpUrl url = mockWebServer.url(path);
+        Mockito.when(gatewayConfig.getHost()).thenReturn(url.host());
+        Mockito.when(gatewayConfig.getPort()).thenReturn(url.port());
     }
 
-    public Jws<Claims> validateAndParseClaims(String token) {
-        try {
-            Jws<Claims> claims =
-                    Jwts
-                        .parserBuilder()
-                        .setSigningKey(secretKey)
-                        .build()
-                        .parseClaimsJws(token);
-
-            Long.parseLong(claims.getBody().getSubject());
-            return claims;
-        } catch (Exception e) {
-            return null;
-        }
+    private void configureJwsMock(String roleToReturn) {
+        Mockito.when(jwtUtils.resolveToken(Mockito.any())).thenReturn("");
+        Mockito.when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(jwsMock);
+        Mockito.when(jwtUtils.getRole(Mockito.any())).thenReturn(roleToReturn);
     }
 
-    /**
-     * Helper methods to mock userService and verify interactions with it.
-     * Used to reduce code duplication in the test class
-     */
-
-    private void mockRegister(String username, String firstName, String lastName, long toReturn) {
-        if (toReturn == -1) {
-            Mockito
-                .when(userService.registerUser(username, firstName, lastName))
-                .thenThrow(DataIntegrityViolationException.class);
-        } else {
-            Mockito
-                .when(userService.registerUser(username, firstName, lastName))
-                .thenReturn(toReturn);
-        }
-    }
-
-    private void verifyRegister(String username, String firstName, String lastName, int times) {
-        Mockito
-            .verify(userService, Mockito.times(times))
-            .registerUser(username, firstName, lastName);
-    }
-
-    private void mockGetByUsername(String netId, User userToReturn) {
-        if (userToReturn == null) {
-            Mockito
-                .when(userService.getUserByNetId(netId))
-                .thenReturn(Optional.empty());
-        } else {
-            Mockito
-                .when(userService.getUserByNetId(netId))
-                .thenReturn(Optional.of(userToReturn));
-        }
-    }
-
-    private void verifyGetByUsername(String netId, int times) {
-        Mockito
-            .verify(userService, Mockito.times(times))
-            .getUserByNetId(netId);
-    }
-
-    private void mockGetByUserId(long userId, User userToReturn) {
-        if (userToReturn == null) {
-            Mockito
-                .when(userService.getUserByUserId(userId))
-                .thenReturn(Optional.empty());
-        } else {
-            Mockito
-                .when(userService.getUserByUserId(userId))
-                .thenReturn(Optional.of(userToReturn));
-        }
-    }
-
-    private void verifyGetByUserId(long userId, int times) {
-        Mockito
-            .verify(userService, Mockito.times(times))
-            .getUserByUserId(userId);
-    }
-
-    private void mockGetByRole(UserRole role, List<User> usersToReturn) {
-        Mockito
-            .when(userService.getUsersByRole(role))
-            .thenReturn(usersToReturn);
-    }
-
-    private void verifyGetByRole(UserRole role, int times) {
-        Mockito
-            .verify(userService, Mockito.times(times))
-            .getUsersByRole(role);
-    }
-
-    private void mockChangeRole(long userId, UserRole newRole, UserRole requester, boolean result) {
-        Mockito
-            .when(userService.changeRole(userId, newRole, requester))
-            .thenReturn(result);
-    }
-
-    private void verifyChangeRole(long userId, UserRole newRole, UserRole requester, int times) {
-        Mockito
-            .verify(userService, Mockito.times(times))
-            .changeRole(userId, newRole, requester);
-    }
-
-    private void mockDeleteByUserId(long userId, UserRole requesterRole, boolean result) {
-        Mockito
-            .when(userService.deleteUserByUserId(userId, requesterRole))
-            .thenReturn(result);
-    }
-
-    private void verifyDeleteByUserId(long userId, UserRole requester, int times) {
-        Mockito
-                .verify(userService, Mockito.times(times))
-                .deleteUserByUserId(userId, requester);
-    }
 
     /**
      * Helper methods for configuring MockMVC.
      */
 
-    private ResultActions mockMvcRegister(String path, String json) throws Exception {
-        return mockMvc
-                .perform(post(path)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json)
-                        .characterEncoding(utf8Str));
+    private ResultActions mockMvcRegister(String json) throws Exception {
+        return mockMvc.perform(post(REGISTER_API).contentType(MediaType.APPLICATION_JSON)
+                .content(json).characterEncoding(UTF8));
     }
 
-    private ResultActions mockMvcGetByUsername(String path, String json) throws Exception {
-        return mockMvc
-                .perform(get(path)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json)
-                        .characterEncoding(utf8Str));
+    private ResultActions mockMvcGetByUsername(String username) throws Exception {
+        return mockMvc.perform(get("/api/users/by_username").header(HttpHeaders.AUTHORIZATION, jwt)
+                                    .queryParam("username", username));
     }
 
-    private ResultActions mockMvcGetByUserId(String path, String json) throws Exception {
-        return mockMvc
-                .perform(get(path)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json)
-                        .characterEncoding(utf8Str));
+    private ResultActions mockMvcGetByUserId(String userId) throws Exception {
+        return mockMvc.perform(get("/api/users/by_userid").header(HttpHeaders.AUTHORIZATION, jwt)
+                                    .queryParam("userId", userId));
     }
 
-    private ResultActions mockMvcGetByRole(String path, String json) throws Exception {
-        return mockMvc
-                .perform(get(path)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json)
-                        .characterEncoding(utf8Str));
+    private ResultActions mockMvcGetByRole(String role) throws Exception {
+        return mockMvc.perform(get("/api/users/by_role").header(HttpHeaders.AUTHORIZATION, jwt)
+                                    .queryParam("role", role));
     }
 
-    private ResultActions mockMvcChangeRole(String path, String json,
-                                            String token) throws Exception {
-        return mockMvc
-                .perform(put(path)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json)
-                        .header(HttpHeaders.AUTHORIZATION, token)
-                        .characterEncoding(utf8Str));
+    private ResultActions mockMvcGetByFirstName(String firstName) throws Exception {
+        return mockMvc.perform(get("/api/users/by_first_name")
+                .header(HttpHeaders.AUTHORIZATION, jwt)
+                .queryParam(FIRSTNAME, firstName));
     }
 
-    private ResultActions mockMvcDeleteByUserId(String path, String json,
-                                                String token) throws Exception {
-        return mockMvc
-                .perform(delete(path)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json)
-                        .header(HttpHeaders.AUTHORIZATION, token)
-                        .characterEncoding(utf8Str));
+    private ResultActions mockMvcGetByLastName(String lastName) throws Exception {
+        return mockMvc.perform(get("/api/users/by_last_name")
+                .header(HttpHeaders.AUTHORIZATION, jwt)
+                .queryParam(LASTNAME, lastName));
     }
+
+    private ResultActions mockMvcChangeRole(String json) throws Exception {
+        return mockMvc.perform(put(CHANGE_ROLE_API).contentType(MediaType.APPLICATION_JSON)
+                .content(json).header(HttpHeaders.AUTHORIZATION, jwt)
+                .characterEncoding(UTF8));
+    }
+
+    private ResultActions mockMvcChangeFirstName(String json) throws Exception {
+        return mockMvc.perform(put(CHANGE_FIRST_NAME_API).contentType(MediaType.APPLICATION_JSON)
+                .content(json).header(HttpHeaders.AUTHORIZATION, jwt)
+                .characterEncoding(UTF8));
+    }
+
+    private ResultActions mockMvcChangeLastName(String json) throws Exception {
+        return mockMvc.perform(put(CHANGE_LAST_NAME_API).contentType(MediaType.APPLICATION_JSON)
+                .content(json).header(HttpHeaders.AUTHORIZATION, jwt)
+                .characterEncoding(UTF8));
+    }
+
+    private ResultActions mockMvcDeleteByUserId(String userId) throws Exception {
+        return mockMvc.perform(delete(DELETE_API).header(HttpHeaders.AUTHORIZATION, jwt)
+                                    .queryParam("userId", userId));
+    }
+
+    private void assertRecordedRequestNull() throws InterruptedException {
+        Assertions.assertThat(mockWebServer.takeRequest(1, TimeUnit.SECONDS)).isNull();
+    }
+
+    private void assertRecordedRequestWithJwt(RecordedRequest recordedRequest, HttpMethod method) {
+        assertRecordedRequestNoJwt(recordedRequest, method);
+        Assertions.assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo(jwt);
+    }
+
+    private void assertRecordedRequestNoJwt(RecordedRequest recordedRequest, HttpMethod method) {
+        Assertions.assertThat(recordedRequest).isNotNull();
+        Assertions.assertThat(recordedRequest.getMethod()).isEqualTo(method.name());
+    }
+
+
+    @BeforeEach
+    void setup() throws IOException {
+        mockWebServer = new MockWebServer();
+        mockWebServer.start();
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        mockWebServer.shutdown();
+    }
+
 
     /**
      * Tests for registerUser method.
      */
 
     @Test
-    void registerUserAlreadyExistsTest() throws Exception {
-        String uname = "S.Bar@student.tudelft.nl";
-        String fname = "Sasha";
-        String lname = "Bar";
-        String pass = "123";
-        mockRegister(uname, fname, lname, -1);
-        mockMvcRegister(REGISTER_API, createJson(USERNAME, uname, "firstName",
-                    fname, "lastName", lname, "password", pass))
-                .andExpect(status().isConflict());
+    void testRegisterUserAlreadyExistsLocally() throws Exception {
+        configureGateway(REGISTER_API);
+        userRepository.save(new User(username, firstNameStudent,
+                lastNameStudent, UserRole.STUDENT));
 
-        verifyRegister(uname, fname, lname, 1);
+        String json = createJson(USERNAME, username, FIRSTNAME, firstNameStudent,
+                "lastName", lastNameStudent, "password", "123");
+        mockMvcRegister(json).andExpect(status().isConflict()).andExpect(content().string(""));
+        assertRecordedRequestNull();
     }
 
     @Test
-    void registerUserSuccessTest() throws Exception {
-        String uname = "S.Bar@student.tudelft.nl";
-        String fname = "Sasha";
-        String lname = "Bar";
-        String pass = "123";
-        mockRegister(uname, fname, lname, 3443546L);
-        String res = mockMvcRegister(REGISTER_API,
-                            createJson(USERNAME, uname, "firstName",
-                                fname, "lastName", lname, "password", pass))
-                    .andExpect(status().isOk())
-                    .andReturn()
-                    .getResponse()
-                    .getContentAsString();
-        String userIdStr = new ObjectMapper().readTree(res).get("userId").asText();
-        Assertions
-                .assertThat(Long.parseLong(userIdStr))
-                .isEqualTo(3443546L);
+    void testRegisterUserAlreadyExistsFailureInAuth() throws Exception {
+        configureGateway("/api/auth/register");
+        mockWebServer.enqueue(new MockResponse().setResponseCode(409));
 
-        verifyRegister(uname, fname, lname, 1);
+        MvcResult mvcResult = mockMvcRegister(createJson(USERNAME, username,
+                FIRSTNAME, firstNameStudent, "lastName", lastNameStudent,
+                "password", "123")).andReturn();
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(""));
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertRecordedRequestNoJwt(recordedRequest, HttpMethod.POST);
+    }
+
+    @Test
+    void testRegisterUserSuccessful() throws Exception {
+        configureGateway("/api/auth/register");
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+        MvcResult mvcRes = mockMvcRegister(createJson(USERNAME, username,
+                FIRSTNAME, firstNameStudent, LASTNAME, lastNameStudent,
+                "password", "1234")).andReturn();
+        mockMvc.perform(asyncDispatch(mvcRes)).andExpect(status().isOk());
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertRecordedRequestNoJwt(recordedRequest, HttpMethod.POST);
     }
 
 
@@ -310,39 +253,28 @@ class UserControllerTest {
      * Tests for getByUsername method.
      */
 
-
     @Test
-    void getByUsernameNotFoundTest() throws Exception {
-        String uname = "B.Bob@student.tudelft.nl";
-
-        mockGetByUsername(uname, null);
-        mockMvcGetByUsername(BY_USERNAME, createJson(USERNAME, uname))
-                .andExpect(status().isNotFound());
-
-        verifyGetByUsername(uname, 1);
+    void testGetByUsernameStudentsMustBeForbidden() throws Exception {
+        configureJwsMock(UserRole.STUDENT.name());
+        mockMvcGetByUsername(username).andExpect(status().isForbidden());
     }
 
     @Test
-    void getByUsernameFoundTest() throws Exception {
-        String uname = "B.Bob@student.tudelft.nl";
-        User user = new User(uname, "Boob", "Bob", UserRole.STUDENT);
-        user.setUserId(5545365L);
+    void testGetByUsernameNotFound() throws Exception {
+        configureJwsMock(UserRole.LECTURER.name());
+        mockMvcGetByUsername(username).andExpect(status().isNotFound());
+    }
 
-        mockGetByUsername(uname, user);
-        String res = mockMvcGetByUsername(BY_USERNAME,
-                    createJson(USERNAME, uname))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+    @Test
+    void testGetByUsernameFound() throws Exception {
+        configureJwsMock(UserRole.ADMIN.name());
+        User user = userRepository.save(new User(username, firstNameStudent,
+                lastNameStudent, UserRole.STUDENT));
 
-        User received = mapper.readValue(res, User.class);
-
-        Assertions
-                .assertThat(received)
-                .isEqualTo(user);
-
-        verifyGetByUsername(uname, 1);
+        String result = mockMvcGetByUsername(username).andExpect(status().isOk()).andReturn()
+                .getResponse().getContentAsString();
+        User received = new ObjectMapper().readValue(result, User.class);
+        Assertions.assertThat(received).isEqualTo(user);
     }
 
 
@@ -350,39 +282,29 @@ class UserControllerTest {
      * Tests for getByUserId method.
      */
 
-
     @Test
-    void getByUserIdNotFoundTest() throws Exception {
-        long userId = 4536894L;
-
-        mockGetByUserId(userId, null);
-        mockMvcGetByUserId(BY_USER_ID_API, createJson(USERID, String.valueOf(userId)))
-                .andExpect(status().isNotFound());
-
-        verifyGetByUserId(userId, 1);
+    void testGetByUserIdStudentsMustBeForbidden() throws Exception {
+        configureJwsMock(UserRole.STUDENT.name());
+        mockMvcGetByUserId(String.valueOf(4242442L)).andExpect(status().isForbidden());
     }
 
     @Test
-    void getByUserIdFoundTest() throws Exception {
-        long userId = 4536894L;
-        User user = new User("rrandom@tudelft.nl", "rand", "random", UserRole.LECTURER);
-        user.setUserId(userId);
+    void testGetByUserIdNotFound() throws Exception {
+        configureJwsMock(UserRole.LECTURER.name());
+        mockMvcGetByUserId(String.valueOf(4567899L)).andExpect(status().isNotFound());
+    }
 
-        mockGetByUserId(userId, user);
-        String res = mockMvcGetByUserId(BY_USER_ID_API,
-                        createJson(USERID, String.valueOf(userId)))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+    @Test
+    void testGetByUserIdFound() throws Exception {
+        configureJwsMock(UserRole.ADMIN.name());
+        User user = userRepository.save(new User(username, firstNameStudent,
+                lastNameStudent, UserRole.LECTURER));
+        long userId = user.getUserId();
 
-        User received = mapper.readValue(res, User.class);
-
-        Assertions
-                .assertThat(received)
-                .isEqualTo(user);
-
-        verifyGetByUserId(userId, 1);
+        String res = mockMvcGetByUserId(String.valueOf(userId)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        User received = new ObjectMapper().readValue(res, User.class);
+        Assertions.assertThat(received).isEqualTo(user);
     }
 
 
@@ -390,46 +312,111 @@ class UserControllerTest {
      * Tests for getByRole method.
      */
 
-
     @Test
-    void getByRoleNotFoundTest() throws Exception {
-        List<User> users = new ArrayList<>();
-
-        mockGetByRole(UserRole.CANDIDATE_TA, users);
-
-        mockMvcGetByRole(BY_ROLE, createJson(ROLE, UserRole.CANDIDATE_TA.name()))
-                .andExpect(status().isNotFound());
-
-        verifyGetByRole(UserRole.CANDIDATE_TA, 1);
+    void testGetByRoleStudentsMustBeForbidden() throws Exception {
+        configureJwsMock(UserRole.STUDENT.name());
+        mockMvcGetByRole(UserRole.ADMIN.name()).andExpect(status().isForbidden());
     }
 
     @Test
-    void getByRoleFoundTest() throws Exception {
-        List<User> users = List.of(
-                new User("abcdef@student.tudelft.nl", "abc", "def", UserRole.STUDENT),
-                new User("defghi@student.tudelft.nl", "def", "ghi", UserRole.STUDENT),
-                new User("ghijkl@student.tudelft.nl", "ghi", "jkl", UserRole.STUDENT)
-        );
-        users.get(0).setUserId(4389775L);
-        users.get(1).setUserId(3485664L);
-        users.get(2).setUserId(2365449L);
+    void testGetByRoleNotFound() throws Exception {
+        configureJwsMock(UserRole.LECTURER.name());
+        mockMvcGetByRole(UserRole.ADMIN.name()).andExpect(status().isNotFound());
+    }
 
-        mockGetByRole(UserRole.STUDENT, users);
+    @Test
+    void testGetByRoleFound() throws Exception {
+        configureJwsMock(UserRole.ADMIN.name());
 
-        String res = mockMvcGetByRole(BY_ROLE, createJson(ROLE,
-                UserRole.STUDENT.name()))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+        List<User> users = new ArrayList<>();
+        users.add(userRepository.save(new User(username, firstNameStudent,
+                lastNameStudent, UserRole.STUDENT)));
+        users.add(userRepository.save(new User("...", firstNameStudent,
+                lastNameStudent, UserRole.STUDENT)));
+        users.add(userRepository.save(new User("..", "ghi", "jkl", UserRole.STUDENT)));
+        userRepository.save(new User(".", firstNameStudent, lastNameStudent, UserRole.LECTURER));
 
-        List<User> received = mapper.readValue(res, new TypeReference<List<User>>(){});
+        String res = mockMvcGetByRole(UserRole.STUDENT.name()).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
 
-        Assertions
-                .assertThat(received)
-                .isEqualTo(users);
+        List<User> received = new ObjectMapper().readValue(res, new TypeReference<List<User>>(){});
+        Assertions.assertThat(received).isEqualTo(users);
+    }
 
-        verifyGetByRole(UserRole.STUDENT, 1);
+
+    /**
+     * Tests for getByFirstName method.
+     */
+
+    @Test
+    void testGetByFirstNameStudentsMustBeForbidden() throws Exception {
+        configureJwsMock(UserRole.STUDENT.name());
+        mockMvcGetByFirstName("Andy").andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetByFirstNameNotFound() throws Exception {
+        configureJwsMock(UserRole.ADMIN.name());
+        // First name should not exist (very unlikely)
+        mockMvcGetByFirstName("Ahfoefbfpqo").andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetByFirstNameFound() throws Exception {
+        configureJwsMock(UserRole.ADMIN.name());
+
+        List<User> users = new ArrayList<>();
+        users.add(userRepository.save(new User(username, firstNameStudent,
+                lastNameStudent, UserRole.STUDENT)));
+        users.add(userRepository.save(new User("skok", firstNameStudent,
+                "Kok", UserRole.STUDENT)));
+        users.add(userRepository.save(new User("swater", firstNameStudent,
+                "Water", UserRole.STUDENT)));
+        userRepository.save(new User("sbar1", "Stefan", lastNameStudent, UserRole.STUDENT));
+
+        String res = mockMvcGetByFirstName(firstNameStudent).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        List<User> received = new ObjectMapper().readValue(res, new TypeReference<>(){});
+        Assertions.assertThat(received).isEqualTo(users);
+    }
+
+
+    /**
+     * Tests for getByLastName method.
+     */
+
+    @Test
+    void testGetByLastNameStudentsMustBeForbidden() throws Exception {
+        configureJwsMock(UserRole.STUDENT.name());
+        mockMvcGetByLastName("Lee").andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetByLastNameNotFound() throws Exception {
+        configureJwsMock(UserRole.ADMIN.name());
+        // Last name should not exist (very unlikely)
+        mockMvcGetByLastName("Ahfoefbfpqo").andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetByLastNameFound() throws Exception {
+        configureJwsMock(UserRole.ADMIN.name());
+
+        List<User> users = new ArrayList<>();
+        users.add(userRepository.save(new User(username, firstNameStudent,
+                lastNameStudent, UserRole.STUDENT)));
+        users.add(userRepository.save(new User("bbar", "Bob",
+                lastNameStudent, UserRole.STUDENT)));
+        users.add(userRepository.save(new User("cbar", "Charlie",
+                lastNameStudent, UserRole.STUDENT)));
+        userRepository.save(new User("blee", "Bruce", "Lee", UserRole.LECTURER));
+
+        String res = mockMvcGetByLastName(lastNameStudent).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        List<User> received = new ObjectMapper().readValue(res, new TypeReference<>(){});
+        Assertions.assertThat(received).isEqualTo(users);
     }
 
 
@@ -437,80 +424,158 @@ class UserControllerTest {
      * Tests for changeRole method.
      */
 
-
     @Test
-    void changeRoleInvalidTokenTest() throws Exception {
-        String token = createToken(3456445L,
-                UserRole.STUDENT.name(), new Date(), 15);
-        String badToken = "oupps" + token;
-        String prefixedBadToken = BEARER + badToken;
+    void testChangeRoleInvalidOrExpiredToken() throws Exception {
+        configureGateway(CHANGE_ROLE_API);
+        Mockito.when(jwtUtils.resolveToken(Mockito.any())).thenReturn("");
+        Mockito.when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(null);
 
+        String json = new ObjectMapper().createObjectNode().put(USERID, 5422341L)
+                            .put(ROLE, UserRole.STUDENT.name()).toString();
 
-        mockMvcChangeRole(CHANGE_ROLE_API,
-                createJson(USERID, String.valueOf(5422341L), ROLE,
-                        UserRole.TA.name()), prefixedBadToken)
-                .andExpect(status().isUnauthorized());
-
-        verifyChangeRole(5422341L, UserRole.TA, UserRole.STUDENT, 0);
+        mockMvcChangeRole(json).andExpect(status().isForbidden());
+        assertRecordedRequestNull();
     }
 
     @Test
-    void changeRoleTokenDoesNotStartWithBearerTest() throws Exception {
-        String token = createToken(3456445L,
-                UserRole.STUDENT.name(), new Date(), 15);
-        String prefixedToken = "Prefix " + token;
+    void testChangeRoleTokenDoesNotStartWithBearer() throws Exception {
+        configureGateway(CHANGE_ROLE_API);
+        Mockito.when(jwtUtils.resolveToken(Mockito.any())).thenReturn(null);
 
+        String json = new ObjectMapper().createObjectNode().put(USERID, 3456774L)
+                            .put(ROLE, UserRole.STUDENT.name()).toString();
 
-        mockMvcChangeRole(CHANGE_ROLE_API,
-                createJson(USERID, String.valueOf(3456774L), ROLE,
-                        UserRole.TA.name()), prefixedToken)
-                .andExpect(status().isBadRequest());
-
-        verifyChangeRole(3456774L, UserRole.TA, UserRole.STUDENT, 0);
+        mockMvcChangeRole(json).andExpect(status().isUnauthorized());
+        assertRecordedRequestNull();
     }
 
     @Test
-    void changeRoleExpiredTest() throws Exception {
-        String token = createToken(5456445L,
-                UserRole.ADMIN.name(), new Date(), 0);
-        String prefixedToken = BEARER + token;
+    void testChangeRoleStudentsMustBeForbidden() throws Exception {
+        configureGateway(CHANGE_ROLE_API);
+        configureJwsMock(UserRole.STUDENT.name());
 
+        String json = new ObjectMapper().createObjectNode().put(USERID, 2376889L)
+                            .put(ROLE, UserRole.LECTURER.name()).toString();
 
-        mockMvcChangeRole(CHANGE_ROLE_API,
-                createJson(USERID, String.valueOf(4536654L), ROLE,
-                        UserRole.TA.name()), prefixedToken)
-                .andExpect(status().isUnauthorized());
-
-        verifyChangeRole(4536654L, UserRole.TA, UserRole.ADMIN, 0);
+        mockMvcChangeRole(json).andExpect(status().isForbidden());
+        assertRecordedRequestNull();
     }
 
     @Test
-    void changeRoleUnauthorizedTest() throws Exception {
-        String token = createToken(5456445L,
-                UserRole.TA.name(), new Date(), 3000);
-        String prefixedToken = BEARER + token;
+    void testChangeRoleLecturersMustBeForbidden() throws Exception {
+        configureGateway(CHANGE_ROLE_API);
+        configureJwsMock(UserRole.LECTURER.name());
 
-        mockChangeRole(2376889L, UserRole.TA, UserRole.TA, false);
-        mockMvcChangeRole(CHANGE_ROLE_API,
-                createJson(USERID, String.valueOf(2376889L), ROLE,
-                        UserRole.TA.name()), prefixedToken)
-                .andExpect(status().isUnauthorized());
+        String json = new ObjectMapper().createObjectNode().put(USERID, 2376889L)
+                            .put(ROLE, UserRole.LECTURER.name()).toString();
 
-        verifyChangeRole(2376889L, UserRole.TA, UserRole.TA, 1);
+        mockMvcChangeRole(json).andExpect(status().isForbidden());
+        assertRecordedRequestNull();
     }
 
     @Test
-    void changeRoleSuccessfulTest() throws Exception {
-        String token = createToken(3756849L,
-                UserRole.ADMIN.name(), new Date(), 20);
+    void testChangeRoleFailureAtAuth() throws Exception {
+        configureGateway(CHANGE_ROLE_API);
+        configureJwsMock(UserRole.ADMIN.name());
+        mockWebServer.enqueue(new MockResponse().setResponseCode(403));
 
-        mockChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, true);
-        mockMvcChangeRole(CHANGE_ROLE_API,
-                createJson(USERID, String.valueOf(5465321L), ROLE,
-                        UserRole.LECTURER.name()), BEARER + token)
-                .andExpect(status().isOk());
+        User user = userRepository.save(new User(username, firstNameStudent,
+                lastNameStudent, UserRole.STUDENT));
+        String json = new ObjectMapper().createObjectNode().put(USERID, user.getUserId())
+                            .put(ROLE, UserRole.LECTURER.name()).toString();
 
-        verifyChangeRole(5465321L, UserRole.LECTURER, UserRole.ADMIN, 1);
+        MvcResult mvcResult = mockMvcChangeRole(json).andReturn();
+        mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isForbidden());
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertRecordedRequestWithJwt(recordedRequest, HttpMethod.PUT);
+    }
+
+    @Test
+    void testChangeRoleSuccessful() throws Exception {
+        configureGateway(CHANGE_ROLE_API);
+        configureJwsMock(UserRole.ADMIN.name());
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+
+        User user = userRepository.save(new User(username, firstNameStudent,
+                lastNameStudent, UserRole.STUDENT));
+        String json = new ObjectMapper().createObjectNode().put(USERID, user.getUserId())
+                            .put(ROLE, UserRole.ADMIN.name()).toString();
+
+        MvcResult mvcResult = mockMvcChangeRole(json).andReturn();
+        mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isOk());
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertRecordedRequestWithJwt(recordedRequest, HttpMethod.PUT);
+    }
+
+
+    /**
+     * Tests for changeFirstName method.
+     */
+    @Test
+    void testChangeFirstNameStudentsMustBeForbidden() throws Exception {
+        configureGateway(CHANGE_FIRST_NAME_API);
+        configureJwsMock(UserRole.STUDENT.name());
+
+        String json = new ObjectMapper().createObjectNode().put(USERID, 19350204L)
+                .put(FIRSTNAME, firstNameStudent).toString();
+
+        mockMvcChangeFirstName(json).andExpect(status().isForbidden());
+        assertRecordedRequestNull();
+    }
+
+    @Test
+    void testChangeFirstNameSuccessful() throws Exception {
+        configureGateway(CHANGE_FIRST_NAME_API);
+        configureJwsMock(UserRole.ADMIN.name());
+
+        User user = userRepository.save(new User(username, firstNameStudent,
+                lastNameStudent, UserRole.STUDENT));
+        final long userId = user.getUserId();
+        String json = new ObjectMapper().createObjectNode().put(USERID, userId)
+                .put(FIRSTNAME, newFirstName).toString();
+
+        mockMvcChangeFirstName(json).andExpect(status().isOk());
+
+        Optional<User> optionalUser = this.userRepository.findByUserId(userId);
+        assert optionalUser.isPresent();
+        Assertions.assertThat(optionalUser.get().getFirstName()).isEqualTo(newFirstName);
+
+        this.userRepository.deleteById(userId);
+    }
+
+    /**
+     * Tests for changeLastName method.
+     */
+    @Test
+    void testChangeLastNameStudentsMustBeForbidden() throws Exception {
+        configureGateway(CHANGE_LAST_NAME_API);
+        configureJwsMock(UserRole.STUDENT.name());
+
+        String json = new ObjectMapper().createObjectNode().put(USERID, 19350204L)
+                .put(LASTNAME, lastNameStudent).toString();
+
+        mockMvcChangeLastName(json).andExpect(status().isForbidden());
+        assertRecordedRequestNull();
+    }
+
+    @Test
+    void testChangeLastNameSuccessful() throws Exception {
+        configureGateway(CHANGE_LAST_NAME_API);
+        configureJwsMock(UserRole.ADMIN.name());
+
+        User user = userRepository.save(new User(username, firstNameStudent,
+                lastNameStudent, UserRole.STUDENT));
+        final long userId = user.getUserId();
+        String json = new ObjectMapper().createObjectNode().put(USERID, userId)
+                .put(LASTNAME, newLastName).toString();
+
+        mockMvcChangeLastName(json).andExpect(status().isOk());
+
+        Optional<User> optionalUser = this.userRepository.findByUserId(userId);
+        assert optionalUser.isPresent();
+        Assertions.assertThat(optionalUser.get().getLastName()).isEqualTo(newLastName);
+
+        this.userRepository.deleteById(userId);
     }
 
 
@@ -518,45 +583,50 @@ class UserControllerTest {
      * Tests for deleteByUserId method.
      */
 
-
     @Test
-    void deleteByUserIdUnauthorizedTest() throws Exception {
-        long userId = 5768009L;
-        User user = new User("rrandom@tudelft.nl", "rand",
-                "random", UserRole.STUDENT);
-        user.setUserId(userId);
+    void testDeleteByUserIdStudentsMustBeForbidden() throws Exception {
+        configureGateway(DELETE_API);
+        configureJwsMock(UserRole.STUDENT.name());
 
-        String token = createToken(3006445L,
-                UserRole.STUDENT.name(), new Date(), 25);
-
-        mockDeleteByUserId(userId, UserRole.STUDENT, false);
-        mockGetByUserId(userId, user);
-        mockMvcDeleteByUserId(DELETE_API, createJson(USERID,
-                    String.valueOf(userId)), BEARER + token)
-                .andExpect(status().isUnauthorized());
-
-        verifyDeleteByUserId(userId, UserRole.STUDENT, 1);
-        verifyGetByUserId(userId, 1);
-
+        mockMvcDeleteByUserId("123435").andExpect(status().isForbidden());
+        assertRecordedRequestNull();
     }
 
     @Test
-    void deleteByUserIdSuccessfulTest() throws Exception {
-        long userId = 2345345L;
-        User user = new User("rrr@tudelft.nl", "r", "rr", UserRole.STUDENT);
-        user.setUserId(userId);
+    void testDeleteByUserIdLecturersMustBeForbidden() throws Exception {
+        configureGateway(DELETE_API);
+        configureJwsMock(UserRole.LECTURER.name());
 
-        String token = createToken(6545332L,
-                UserRole.ADMIN.name(), new Date(), 20);
+        mockMvcDeleteByUserId("123435").andExpect(status().isForbidden());
+        assertRecordedRequestNull();
+    }
 
-        mockDeleteByUserId(userId, UserRole.ADMIN, true);
-        mockGetByUserId(userId, user);
-        mockMvcDeleteByUserId(DELETE_API, createJson(USERID,
-                String.valueOf(userId)), BEARER + token)
-                .andExpect(status().isOk());
+    @Test
+    void testDeleteByUserIdFailureAtAuth() throws Exception {
+        configureGateway(DELETE_API);
+        configureJwsMock(UserRole.ADMIN.name());
+        mockWebServer.enqueue(new MockResponse().setResponseCode(403));
+        User user = userRepository.save(new User(username, firstNameStudent,
+                lastNameStudent, UserRole.STUDENT));
 
-        verifyDeleteByUserId(userId, UserRole.ADMIN, 1);
-        verifyGetByUserId(userId, 1);
+        MvcResult mvcResult =  mockMvcDeleteByUserId("" + user.getUserId()).andReturn();
+        mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isForbidden());
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertRecordedRequestWithJwt(recordedRequest, HttpMethod.DELETE);
+    }
+
+    @Test
+    void testDeleteByUserIdSuccessful() throws Exception {
+        configureGateway(DELETE_API);
+        configureJwsMock(UserRole.ADMIN.name());
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200));
+        User user = userRepository.save(new User(username, firstNameStudent,
+                lastNameStudent, UserRole.STUDENT));
+
+        MvcResult mvcResult = mockMvcDeleteByUserId("" + user.getUserId()).andReturn();
+        mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isOk());
+        RecordedRequest recordedRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+        assertRecordedRequestWithJwt(recordedRequest, HttpMethod.DELETE);
     }
 
 
@@ -564,22 +634,40 @@ class UserControllerTest {
      * Tests for edge cases or exceptions.
      */
 
-
     @Test
-    void missingValuesInJsonTest() throws Exception {
-        mockMvcGetByUserId(BY_USER_ID_API, createJson("ID", String.valueOf(4432894L)))
-                .andExpect(status().isBadRequest());
+    void testNotNumber() throws Exception {
+        configureJwsMock(UserRole.ADMIN.name());
+        mockMvcGetByUserId("nan").andExpect(status().isBadRequest());
     }
 
     @Test
-    void corruptedJsonTest() throws Exception {
-        mockMvcGetByUserId(BY_USER_ID_API, "hehehe")
-                .andExpect(status().isBadRequest());
+    void testMissingValuesInJson() throws Exception {
+        mockMvcRegister(createJson("ID", "4432894")).andExpect(status().isBadRequest());
+    }
+
+
+    @Test
+    void testInvalidRole() throws Exception {
+        configureJwsMock(UserRole.LECTURER.name());
+        mockMvcGetByRole("MODERATOR").andExpect(status().isBadRequest());
+    }
+
+
+    /**
+     * Remaining tests for 100% coverage.
+     */
+
+    @Test
+    void testGatewayConfigHost() {
+        GatewayConfig config = new GatewayConfig();
+        config.setHost("google.com");
+        Assertions.assertThat(config.getHost()).isEqualTo("google.com");
     }
 
     @Test
-    void notNumberTest() throws Exception {
-        mockMvcGetByUserId(BY_USER_ID_API, createJson("ID", "nan"))
-                .andExpect(status().isBadRequest());
+    void testGatewayConfigPort() {
+        GatewayConfig config = new GatewayConfig();
+        config.setPort(8089);
+        Assertions.assertThat(config.getPort()).isEqualTo(8089);
     }
 }

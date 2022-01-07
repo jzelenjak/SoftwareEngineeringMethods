@@ -146,5 +146,17 @@ public class JwtTokenProvider {
 
         return this.authService.loadUserByUserId(userId).getUsername();
     }
+
+    /**
+     * Gets the username from the parsed JWS claims.
+     * NB! Assumes that the token from which the claims have been parsed is valid.
+     *     Call validateAndParseClaims method above first.
+     *
+     * @param claims    parsed JWS claims.
+     * @return the userId from the parsed JWS claims.
+     */
+    public long getUserId(Jws<Claims> claims) {
+        return Long.parseLong(claims.getBody().getSubject());
+    }
 }
 

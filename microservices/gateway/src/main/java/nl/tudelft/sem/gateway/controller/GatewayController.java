@@ -1,10 +1,8 @@
 package nl.tudelft.sem.gateway.controller;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import nl.tudelft.sem.gateway.discovery.Registration;
 import nl.tudelft.sem.gateway.exceptions.MonoForwardingException;
-import nl.tudelft.sem.gateway.exceptions.MonoForwardingExceptionHandler;
 import nl.tudelft.sem.gateway.service.DiscoveryRegistrarService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -111,22 +109,20 @@ public class GatewayController {
                 .method(HttpMethod.valueOf(request.getMethod()))
                 .uri(destination)
                 .body(Mono.justOrEmpty(body), String.class)
-                .headers(headers::addAll)
+                .headers(header -> header.addAll(headers))
                 .exchange()
-                .flatMap(response ->
-                        response.bodyToMono(String.class).flatMap(responseBody -> {
+                .flatMap(response -> response.bodyToMono(String.class)
+                        .switchIfEmpty(Mono.just(""))
+                        .flatMap(responseBody -> {
                             var responseHeaders = response.headers().asHttpHeaders();
 
                             if (response.statusCode() != HttpStatus.OK) {
-                                return Mono.error(new MonoForwardingException(response.statusCode(),
-                                        responseHeaders, responseBody));
+                                return Mono.error(new MonoForwardingException(
+                                        response.statusCode(), responseHeaders, responseBody));
                             }
                             return Mono.just(new ResponseEntity<>(responseBody, responseHeaders,
                                     response.statusCode()));
-                        }).switchIfEmpty(Mono.just(ResponseEntity
-                                .status(response.statusCode())
-                                .headers(response.headers().asHttpHeaders())
-                                .build()))
+                        })
                 );
     }
 

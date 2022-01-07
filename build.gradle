@@ -9,13 +9,17 @@ buildscript {
     }
 }
 
-subprojects {
-    // Ignore microservice and libs folders, since they are technically not projects
-    if (name == 'microservices' || name == 'libs') return
-
+allprojects {
     repositories {
         mavenCentral()
     }
+
+    apply plugin: 'jacoco'
+}
+
+subprojects {
+    // Ignore microservice and libs folders, since they are technically not projects
+    if (name == 'microservices' || name == 'libs') return
 
     // General/Spring
     apply plugin: 'java'
@@ -28,7 +32,6 @@ subprojects {
 
     // Testing/Coverage
     apply plugin: 'pmd'
-    apply plugin: 'jacoco'
     apply plugin: 'info.solidsoft.pitest'
 
     // Java version
@@ -123,5 +126,25 @@ subprojects {
         threads = 4
         outputFormats = ['XML', 'HTML']
         timestampedReports = false
+    }
+}
+
+tasks.register("codeCoverageReport", JacocoReport) {
+    // (https://docs.gradle.org/6.4.1/samples/sample_jvm_multi_project_with_code_coverage.html)
+    // Task derived from an official gradle example. Responsible for aggregating the code coverage reports.
+    subprojects { subproject ->
+        subproject.plugins.withType(JacocoPlugin).configureEach {
+            subproject.tasks.matching({ t -> t.extensions.findByType(JacocoTaskExtension) }).configureEach { testTask ->
+                sourceSets subproject.sourceSets.main
+                executionData(testTask)
+
+                rootProject.tasks.codeCoverageReport.dependsOn(testTask)
+            }
+        }
+    }
+
+    // Output html (used to extract coverage percentage)
+    reports {
+        html.required
     }
 }

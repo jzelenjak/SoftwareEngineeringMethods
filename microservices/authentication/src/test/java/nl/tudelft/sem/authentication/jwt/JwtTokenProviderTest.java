@@ -82,7 +82,7 @@ class JwtTokenProviderTest {
 
     @Test
     @WithMockUser(username = "amogus", password = "NoFraudAllowed")
-    void createAndResolveValidTokenTest() throws Exception {
+    void testCreateAndResolveValidToken() throws Exception {
         String jwt = jwtTokenProvider.createToken(1738290L, UserRole.STUDENT, new Date());
         String jwtPrefixed = PREFIX + jwt;
 
@@ -112,6 +112,7 @@ class JwtTokenProviderTest {
                 "Decoded subject does not match the original one");
         Assertions.assertEquals(UserRole.STUDENT.name(), jwtTokenProvider.getRole(claimsJws),
                 "Decoded role does not match the original one");
+        Assertions.assertEquals(1738290L, jwtTokenProvider.getUserId(claimsJws));
 
         this.userDataRepository.deleteById(username);
     }
@@ -120,7 +121,7 @@ class JwtTokenProviderTest {
 
     @Test
     @WithMockUser(username = "admin1", password = "NoFraudAllowed1")
-    void createAndResolveInValidTokenExpiredTest() throws Exception {
+    void testCreateAndResolveInvalidTokenExpired() throws Exception {
         Date date = new Date(new Date().getTime() - 10 * 60000);
         String jwt = jwtTokenProvider.createToken(9577681L, UserRole.ADMIN, date);
         String jwtPrefixed = PREFIX + jwt;
@@ -151,7 +152,7 @@ class JwtTokenProviderTest {
     }
 
     @Test
-    void createAndResolveInValidTokenZeroValidityTest() throws Exception {
+    void testCreateAndResolveInvalidTokenZeroValidity() throws Exception {
         ReflectionTestUtils.setField(jwtTokenProvider, VALIDITY_IN_MINUTES, 0);
 
         String jwt = jwtTokenProvider.createToken(9048182L, UserRole.ADMIN, new Date());
@@ -162,6 +163,8 @@ class JwtTokenProviderTest {
 
         this.userDataRepository.save(new UserData(username, password, UserRole.ADMIN, 9048182L));
 
+        // Wait just 10 ms to avoid flaky tests
+        Thread.sleep(10);
         HttpServletRequest request =
                 this.mockMvc
                         .perform(get(LOGIN_API_PATH)
@@ -184,7 +187,7 @@ class JwtTokenProviderTest {
 
     @Test
     @WithMockUser(username = "admin3", password = "NoFraudAllowed3")
-    void resolveTokenNotStartsWithBearerTest() throws Exception {
+    void testResolveTokenWithNoBearerPrefix() throws Exception {
         String jwt = jwtTokenProvider.createToken(1047399L, UserRole.ADMIN, new Date());
         String username = "admin3";
         String password = "NoFraudAllowed3";

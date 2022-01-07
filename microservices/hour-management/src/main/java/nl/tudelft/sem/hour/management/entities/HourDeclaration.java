@@ -1,6 +1,6 @@
 package nl.tudelft.sem.hour.management.entities;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -10,12 +10,14 @@ import javax.persistence.Id;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
+@ToString
 public class HourDeclaration {
 
     @Id
@@ -36,7 +38,7 @@ public class HourDeclaration {
     private double declaredHours;
 
     @Column(name = "declaration_date", columnDefinition = "TIMESTAMP")
-    private LocalDateTime declarationDate;
+    private ZonedDateTime declarationDate;
 
     /**
      * Construct an HourDeclaration DOA instance.
@@ -50,7 +52,7 @@ public class HourDeclaration {
         this.declaredHours = hourDeclarationRequest.getDeclaredHours();
 
         this.approved = false;
-        this.declarationDate = LocalDateTime.now();
+        this.declarationDate = ZonedDateTime.now();
     }
 
     /**
@@ -62,7 +64,7 @@ public class HourDeclaration {
      * @param declarationDate date of declaration
      */
     public HourDeclaration(long declarationId, HourDeclarationRequest hourDeclarationRequest,
-                           boolean approved, LocalDateTime declarationDate) {
+                           boolean approved, ZonedDateTime declarationDate) {
         this.declarationId = declarationId;
         this.studentId = hourDeclarationRequest.getStudentId();
         this.courseId = hourDeclarationRequest.getCourseId();
@@ -90,18 +92,6 @@ public class HourDeclaration {
     @Override
     public int hashCode() {
         return Objects.hash(getDeclarationId(), getStudentId(), getCourseId(), getDeclaredHours());
-    }
-
-    @Override
-    public String toString() {
-        return "HourDeclaration{"
-                + "declarationId=" + declarationId
-                + ", studentId=" + studentId
-                + ", courseId=" + courseId
-                + ", approved=" + approved
-                + ", declaredHours=" + declaredHours
-                + ", declarationDate=" + declarationDate
-                + '}';
     }
 }
 

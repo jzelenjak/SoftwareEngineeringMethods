@@ -4,7 +4,9 @@ package nl.tudelft.sem.courses.entities;
 
 
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -30,23 +32,26 @@ public class Course {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id")
+    @Column(name = "course_id")
     private long id;
 
 
-    @Column(name = "course_id")
-    public String courseId;
+    @Column(name = "course_code")
+    public String courseCode;
 
 
     @Column(name = "start_date")
-    private LocalDateTime startDate;
+    private ZonedDateTime startDate;
 
     @Column(name = "grades")
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     public Set<Grade> grades;
 
     @Column(name = "finish_date")
-    public LocalDateTime finishDate;
+    public ZonedDateTime finishDate;
+
+    @Column(name = "number_of_students")
+    public int numStudents;
 
 
 
@@ -55,12 +60,14 @@ public class Course {
      * generated when the entity is created.
      * This course ID can be changed later.
      *
-     * @param courseId - Course ID in a string format
+     * @param courseCode - Course ID in a string format
      */
-    public Course(String courseId, LocalDateTime startDate, LocalDateTime finishDate) {
-        this.courseId = courseId;
+    public Course(String courseCode, ZonedDateTime startDate,
+                  ZonedDateTime finishDate, int numStudents) {
+        this.courseCode = courseCode;
         this.startDate = startDate;
         this.finishDate = finishDate;
+        this.numStudents = numStudents;
         grades = new HashSet<>();
     }
 
@@ -71,13 +78,15 @@ public class Course {
      * when creating the course in this constructor.
      * This course ID can be changed later. Mainly used for testing purposes.
      *
-     * @param courseId - Course ID in a string format
+     * @param courseCode - Course ID in a string format
      */
-    public Course(long id, String courseId, LocalDateTime startDate, LocalDateTime finishDate) {
+    public Course(long id, String courseCode, ZonedDateTime startDate,
+                  ZonedDateTime finishDate, int numStudents) {
         this.id = id;
-        this.courseId = courseId;
+        this.courseCode = courseCode;
         this.startDate = startDate;
         this.finishDate = finishDate;
+        this.numStudents = numStudents;
         grades = new HashSet<>();
     }
 
@@ -91,21 +100,36 @@ public class Course {
             return false;
         }
         Course course = (Course) o;
-        return courseId.equals(course.courseId) && id == course.id
-                && startDate.equals(course.startDate)
-                && finishDate.equals(course.finishDate);
+        return id == course.id || courseCode.equals(course.courseCode)
+                && datesEqual(startDate, course.startDate)
+                && datesEqual(finishDate, course.finishDate)
+                && numStudents == course.numStudents;
+    }
+
+    /**
+     * Custom equals method for two ZonedDateTime.
+     * Only compares year, month and day.
+     *
+     * @param date1 - The first date
+     * @param date2 - The secon date
+     * @return - true if equals else false.
+     */
+    public boolean datesEqual(ZonedDateTime date1, ZonedDateTime date2) {
+        return date1.getYear() == date2.getYear()
+                && date1.getMonth() == date2.getMonth()
+                && date1.getDayOfMonth() == date2.getDayOfMonth();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(courseId, grades, id);
+        return Objects.hash(id);
     }
 
 
     @Override
     public String toString() {
         return "Course{"
-                + "courseID='" + courseId + '\''
+                + "course code='" + courseCode + '\''
                 + ", users=" + grades.toString()
                 + '}';
     }

@@ -7,300 +7,106 @@ import nl.tudelft.sem.users.entities.User;
 import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.repositories.UserRepository;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.annotation.DirtiesContext;
 
+@SpringBootTest
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class UserServiceTest {
+    @Autowired
     private transient UserRepository userRepository;
 
+    @Autowired
     private transient UserService userService;
 
-    private final transient String netId = "amogus@student.tudelft.nl";
-    private final transient long userId = 4558965L;
-    private final transient User user = new User(netId, "a", "mogus", UserRole.TA);
-
-    @Mock
-    private transient User userMock;
-
-    @BeforeEach
-    void setUp() {
-        userRepository = Mockito.mock(UserRepository.class);
-        userService = new UserService(userRepository);
-    }
-
-    /**
-     * A helper method to give Mockito rules for mocking findByUsername method.
-     *
-     * @param username      the username of the user
-     * @param userToReturn  the user that is to be returned
-     */
-    private void mockFindByUsername(String username, User userToReturn) {
-        if (userToReturn == null) {
-            Mockito
-                .when(userRepository.findByUsername(username))
-                .thenReturn(Optional.empty());
-        } else {
-            Mockito
-                .when(userRepository.findByUsername(username))
-                .thenReturn(Optional.of(userToReturn));
-        }
-    }
-
-    /**
-     * A helper method to verify that a mock has been called for findByUsername method.
-     *
-     * @param username      the username with which the mock is expected to have been called
-     */
-    private void verifyFindByUsername(String username) {
-        Mockito
-            .verify(userRepository, Mockito.times(1))
-            .findByUsername(username);
-    }
-
-
-    /**
-     * A helper method to give Mockito rules for mocking save method.
-     *
-     * @param userToSave      the user to be saved
-     * @param userToReturn    the user to be returned
-     */
-    private void mockSave(User userToSave, User userToReturn) {
-        Mockito
-            .when(userRepository.save(userToSave))
-            .thenReturn(userToReturn);
-    }
-
-    /**
-     * A helper method to verify that a mock has been called for save method.
-     *
-     * @param user          the user with which the mock is expected to have been called
-     * @param expectedTimes the number of times the mock is expected to have been called
-     */
-    private void verifySave(User user, int expectedTimes) {
-        Mockito
-            .verify(userRepository, Mockito.times(expectedTimes))
-            .save(user);
-    }
-
-
-    /**
-     * A helper method to give Mockito rules for mocking findByUserId method.
-     *
-     * @param userId        the user ID of the user
-     * @param userToReturn  the user that is to be returned
-     */
-    private void mockFindByUserId(long userId, User userToReturn) {
-        if (userToReturn == null) {
-            Mockito
-                .when(userRepository.findByUserId(userId))
-                .thenReturn(Optional.empty());
-        } else {
-            Mockito
-                .when(userRepository.findByUserId(userId))
-                .thenReturn(Optional.of(userToReturn));
-        }
-    }
-
-    /**
-     * A helper method to verify that a mock has been called for findByUserId method.
-     *
-     * @param userId the user ID with which the mock is expected to have been called
-     */
-    private void verifyFindByUserId(long userId) {
-        Mockito
-            .verify(userRepository, Mockito.times(1))
-            .findByUserId(userId);
-    }
-
+    private final transient String username = "amogus@student.tudelft.nl";
+    private final transient String firstName = "Stan";
+    private final transient String lastName = "Lee";
 
     /**
      * Tests for registerUser method.
      */
 
     @Test
-    void registerUserNetIdNullTest() {
+    void testRegisterUserUsernameNull() {
         Assertions
             .assertThatThrownBy(() ->
-                this.userService.registerUser(null, "Amogus", "Amogusson"))
+                    this.userService.registerUser(null, "Amogus", "Amogusson"))
             .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifySave(userMock, 0);
     }
 
     @Test
-    void registerUserNetIdBlankTest() {
+    void testRegisterUserUsernameBlank() {
         Assertions
             .assertThatThrownBy(() ->
-                userService.registerUser("    ", "Amogus", "Amogussen"))
+                    userService.registerUser("    ", "Amogus", "Amogussen"))
             .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifySave(userMock, 0);
     }
 
     @Test
-    void registerUserNetIdEmptyTest() {
+    void testRegisterUserUsernameAlreadyExists() {
+        this.userRepository.save(new User(username, "a", "mogus", UserRole.STUDENT));
+
         Assertions
-            .assertThatThrownBy(() ->
-                userService.registerUser("", "Amogus", "Amogussan"))
+            .assertThatThrownBy(() -> userService.registerUser(username, "amo", "gus"))
             .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifySave(userMock, 0);
     }
 
     @Test
-    void registerUserNetIdAlreadyExistsTest() {
-        mockFindByUsername(netId, user);
-
+    void testRegisterUserFirstNameNull() {
         Assertions
-            .assertThatThrownBy(() ->
-                userService.registerUser(netId, "amo", "gus"))
+            .assertThatThrownBy(() -> this.userService.registerUser(username, null, "ogus"))
             .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifyFindByUsername(netId);
-        verifySave(userMock, 0);
     }
 
     @Test
-    void registerUserFirstNameNullTest() {
-        mockFindByUsername(netId, null);
-
+    void testRegisterUserFirstNameBlank() {
         Assertions
-            .assertThatThrownBy(() ->
-                this.userService.registerUser(netId, null, "ogus"))
+            .assertThatThrownBy(() -> this.userService.registerUser(username, "", "ogus"))
             .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifyFindByUsername(netId);
-        verifySave(userMock, 0);
     }
 
     @Test
-    void registerUserFirstNameEmptyTest() {
-        mockFindByUsername(netId, null);
-
+    void testRegisterUserLastNameNull() {
         Assertions
-            .assertThatThrownBy(() ->
-                this.userService.registerUser(netId, "", "ogus"))
+            .assertThatThrownBy(() -> this.userService.registerUser(username, "amog", null))
             .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifyFindByUsername(netId);
-        verifySave(userMock, 0);
     }
 
     @Test
-    void registerUserFirstNameBlankTest() {
-        mockFindByUsername(netId, null);
-
+    void testRegisterUserLastNameBlank() {
         Assertions
-            .assertThatThrownBy(() ->
-                this.userService.registerUser(netId, "      ", "ogus"))
+            .assertThatThrownBy(() -> this.userService.registerUser(username, "amog", " "))
             .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifyFindByUsername(netId);
-        verifySave(userMock, 0);
     }
 
     @Test
-    void registerUserLastNameNullTest() {
-        mockFindByUsername(netId, null);
-
-        Assertions
-                .assertThatThrownBy(() ->
-                        this.userService.registerUser(netId, "amog", null))
-                .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifyFindByUsername(netId);
-        verifySave(userMock, 0);
-    }
-
-    @Test
-    void registerUserLastNameEmptyTest() {
-        mockFindByUsername(netId, null);
-
-        Assertions
-                .assertThatThrownBy(() ->
-                        this.userService.registerUser(netId, "amog", ""))
-                .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifyFindByUsername(netId);
-        verifySave(userMock, 0);
-    }
-
-    @Test
-    void registerUserLastNameBlankTest() {
-        mockFindByUsername(netId, null);
-
-        Assertions
-                .assertThatThrownBy(() ->
-                        this.userService.registerUser(netId, "amog", "    "))
-                .isInstanceOf(DataIntegrityViolationException.class);
-
-        verifyFindByUsername(netId);
-        verifySave(userMock, 0);
-    }
-
-    @Test
-    void registerUserSuccessfulTest() {
-        User savedUser =
-                new User(user.getUsername(), user.getFirstName(), user.getLastName(), UserRole.TA);
-        savedUser.setUserId(3453211L);
-
-        mockFindByUsername(netId, null);
-        mockSave(user, savedUser);
-
-
-        long id = userService
-                .registerUser(user.getUsername(), user.getFirstName(), user.getLastName());
-
-        Assertions
-            .assertThat(id)
-            .isEqualTo(3453211L);
-
-        verifyFindByUsername(netId);
-        verifySave(user, 1);
+    void testRegisterUserSuccessful() {
+        long id = userService.registerUser("oh", "my", "God");
+        Assertions.assertThat(id).isGreaterThan(0L);
     }
 
 
     /**
-     * Tests for getUserByNetId method.
+     * Tests for getUserByUsername method.
      */
 
 
     @Test
-    void getUserByNetIdFoundTest() {
-        String netId = "impostor@tudelft.nl";
-        User userFromRepo =
-                new User(netId, "i", "mpostor", UserRole.ADMIN);
-        userFromRepo.setUserId(5325965L);
+    void testGetUserByUsernameFound() {
+        String username = "impostor@tudelft.nl";
+        User userFromRepo = userRepository.save(new User(username, "i", "mpostor", UserRole.ADMIN));
+        Optional<User> userOptional = userService.getUserByUsername(username);
 
-        mockFindByUsername(netId, userFromRepo);
-
-        Optional<User> userOptional = userService.getUserByNetId(netId);
-
-        Assertions
-            .assertThat(userOptional)
-            .isPresent()
-            .get()
-            .isEqualTo(userFromRepo);
-
-        verifyFindByUsername(netId);
+        Assertions.assertThat(userOptional).isPresent().get().isEqualTo(userFromRepo);
     }
 
     @Test
-    void getUserByNetIdNotFoundTest() {
-        String netId = "susimpostor@tudelft.nl";
-
-        mockFindByUsername(netId, null);
-
-        Optional<User> userOptional = userService.getUserByNetId(netId);
-
-        Assertions
-                .assertThat(userOptional)
-                .isEmpty();
-
-        verifyFindByUsername(netId);
+    void testGetUserByUsernameNotFound() {
+        Assertions.assertThat(userService.getUserByUsername("susimpostor@tudelft.nl")).isEmpty();
     }
 
 
@@ -309,38 +115,19 @@ class UserServiceTest {
      */
 
     @Test
-    void getUserByUserIdFoundTest() {
-        long userId = 4324235L;
-        User userFromRepo =
-                new User("notimpostor@tudelft.nl", "not", "impostor", UserRole.ADMIN);
-        userFromRepo.setUserId(userId);
-
-        mockFindByUserId(userId, userFromRepo);
-
-        Optional<User> userOptional = userService.getUserByUserId(userId);
+    void testGetUserByUserIdFound() {
+        User user = userRepository.save(new User(username, "bbb", "ccc", UserRole.STUDENT));
+        long userId = user.getUserId();
 
         Assertions
-            .assertThat(userOptional)
-            .isPresent()
-            .get()
-            .isEqualTo(userFromRepo);
-
-        verifyFindByUserId(userId);
+            .assertThat(userService.getUserByUserId(userId)).isPresent().get().isEqualTo(user);
     }
 
     @Test
-    void getUserByUserIdNotFoundTest() {
-        long userId = 3412235L;
+    void testGetUserByUserIdNotFound() {
+        Optional<User> userOptional = userService.getUserByUserId(3412235L);
 
-        mockFindByUserId(userId, null);
-
-        Optional<User> userOptional = userService.getUserByUserId(userId);
-
-        Assertions
-            .assertThat(userOptional)
-            .isEmpty();
-
-        verifyFindByUserId(userId);
+        Assertions.assertThat(userOptional).isEmpty();
     }
 
 
@@ -349,47 +136,20 @@ class UserServiceTest {
      */
 
     @Test
-    void getUsersByRoleFoundTest() {
-        String lastName = "sus";
-        List<User> usersFromRepo =
-                List.of(
-                    new User("redsus@tudelft.nl", "red", lastName, UserRole.LECTURER),
-                    new User("greensus@tudelft.nl", "green", lastName, UserRole.LECTURER),
-                    new User("bluesus@tudelft.nl", "blue", lastName, UserRole.LECTURER),
-                    new User("yellowsus@tudelft.nl", "yellow", lastName, UserRole.LECTURER)
-                );
-        Mockito
-            .when(userRepository.findAllByRole(UserRole.LECTURER))
-            .thenReturn(usersFromRepo);
-
-        List<User> users = userService.getUsersByRole(UserRole.LECTURER);
+    void testGetUsersByRoleFound() {
+        List<User> usersFromRepo = new ArrayList<>();
+        usersFromRepo.add(userRepository.save(new User("u1", "f1", "l1", UserRole.LECTURER)));
+        usersFromRepo.add(userRepository.save(new User("u2", "f2", "l2", UserRole.LECTURER)));
+        usersFromRepo.add(userRepository.save(new User("u3", "f3", "l3", UserRole.LECTURER)));
+        userRepository.save(new User("u4", "f4", "l4", UserRole.ADMIN));
 
         Assertions
-            .assertThat(users)
-            .isEqualTo(usersFromRepo);
-
-        Mockito
-            .verify(userRepository, Mockito.times(1))
-            .findAllByRole(UserRole.LECTURER);
+            .assertThat(userService.getUsersByRole(UserRole.LECTURER)).isEqualTo(usersFromRepo);
     }
 
     @Test
-    void getUsersByRoleNotFoundTest() {
-        List<User> usersFromRepo = new ArrayList<>();
-
-        Mockito
-            .when(userRepository.findAllByRole(UserRole.ADMIN))
-            .thenReturn(usersFromRepo);
-
-        List<User> users = userService.getUsersByRole(UserRole.ADMIN);
-
-        Assertions
-            .assertThat(users)
-            .isEmpty();
-
-        Mockito
-            .verify(userRepository, Mockito.times(1))
-            .findAllByRole(UserRole.ADMIN);
+    void testGetUsersByRoleNotFound() {
+        Assertions.assertThat(userService.getUsersByRole(UserRole.ADMIN)).isEmpty();
     }
 
 
@@ -398,151 +158,88 @@ class UserServiceTest {
      */
 
     @Test
-    void changeRoleOnlyAdminsAndLecturersCanChangeRolesTest() {
+    void testChangeRoleUserNotFound() {
         Assertions
-            .assertThat(userService.changeRole(userId, UserRole.STUDENT, UserRole.TA))
+            .assertThat(userService.changeRole(63452L, UserRole.STUDENT))
             .isFalse();
-
-        verifySave(userMock, 0);
     }
 
     @Test
-    void changeRoleOnlyAdminCanMakeOthersAnAdminFalseTest() {
-        Assertions
-            .assertThat(userService.changeRole(userId, UserRole.ADMIN, UserRole.LECTURER))
-            .isFalse();
-
-        verifySave(userMock, 0);
-    }
-
-    @Test
-    void changeRoleOnlyAdminCanMakeOthersAnAdminTrueTest() {
-        User userFromRepo = new User(netId, "add", "ddd", UserRole.LECTURER);
-        userFromRepo.setUserId(userId);
-
-        User userSaved = new User(userFromRepo.getUsername(),
-                userFromRepo.getFirstName(), userFromRepo.getLastName(), UserRole.CANDIDATE_TA);
-        userSaved.setUserId(userId);
-
-        mockFindByUserId(userId, userFromRepo);
-        mockSave(userSaved, userSaved);
+    void testChangeRoleSuccessful() {
+        User user = userRepository.save(new User(username, "ngl", "blob", UserRole.STUDENT));
+        long userId = user.getUserId();
 
         Assertions
-            .assertThat(userService.changeRole(userId, UserRole.ADMIN, UserRole.ADMIN))
+            .assertThat(userService.changeRole(userId, UserRole.LECTURER))
             .isTrue();
+        Optional<User> savedUser = userService.getUserByUserId(userId);
+        Assertions.assertThat(savedUser).isPresent();
+        Assertions.assertThat(savedUser.get().getRole()).isEqualTo(UserRole.LECTURER);
+    }
 
-        verifyFindByUserId(userId);
-        verifySave(userSaved, 1);
+    /**
+     * Tests for changeFirstName method.
+     */
+
+    @Test
+    void testChangeFirstNameUserNotFound() {
+        Assertions
+                .assertThat(userService.changeFirstName(63452L, firstName))
+                .isFalse();
     }
 
     @Test
-    void changeRoleOnlyAdminCanMakeOthersA_LecturerFalseTest() {
-        Assertions
-            .assertThat(userService.changeRole(userId, UserRole.LECTURER, UserRole.LECTURER))
-            .isFalse();
+    void testChangeFirstNameSuccessful() {
+        User user = userRepository.save(new User(username, "Sad", lastName, UserRole.STUDENT));
+        long userId = user.getUserId();
 
-        verifySave(userMock, 0);
+        Assertions
+                .assertThat(userService.changeFirstName(userId, firstName))
+                .isTrue();
+        Optional<User> savedUser = userService.getUserByUserId(userId);
+        Assertions.assertThat(savedUser).isPresent();
+        Assertions.assertThat(savedUser.get().getFirstName()).isEqualTo(firstName);
+    }
+
+    /**
+     * Tests for changeLastName method.
+     */
+
+    @Test
+    void testChangeLastNameUserNotFound() {
+        Assertions
+                .assertThat(userService.changeLastName(63452L, lastName))
+                .isFalse();
     }
 
     @Test
-    void changeRoleOnlyAdminCanMakeOthersA_LecturerTrueTest() {
-        User userFromRepo = new User(netId, "ammmmmm", "ogggggus", UserRole.TA);
-        userFromRepo.setUserId(userId);
-
-        User userSaved = new User(userFromRepo.getUsername(),
-                userFromRepo.getFirstName(), userFromRepo.getLastName(), UserRole.LECTURER);
-        userSaved.setUserId(userId);
-
-        mockFindByUserId(userId, userFromRepo);
-        mockSave(userSaved, userSaved);
+    void testChangeLastNameSuccessful() {
+        User user = userRepository.save(new User(username, firstName, "Lie", UserRole.STUDENT));
+        long userId = user.getUserId();
 
         Assertions
-            .assertThat(userService.changeRole(userId, UserRole.LECTURER, UserRole.ADMIN))
-            .isTrue();
-
-        verifySave(userSaved, 1);
-        verifyFindByUserId(userId);
-    }
-
-    @Test
-    void changeRoleOnlyAdminCanDowngradeAnotherAdminFalseTest() {
-        UserRole requesterRole = UserRole.LECTURER;
-
-        User userFromRepo = new User(netId, "amogu", "s", UserRole.ADMIN);
-        userFromRepo.setUserId(userId);
-
-        mockFindByUserId(userId, userFromRepo);
-
-        Assertions
-            .assertThat(userService.changeRole(userId, UserRole.STUDENT, requesterRole))
-            .isFalse();
-
-        verifyFindByUserId(userId);
-        verifySave(userMock, 0);
-    }
-
-    @Test
-    void changeRoleOnlyAdminCanDowngradeAnotherAdminTrueTest() {
-        User userFromRepo = new User(netId, "amoguuuuu", "sssss", UserRole.ADMIN);
-        userFromRepo.setUserId(userId);
-
-        User userSaved = new User(userFromRepo.getUsername(), userFromRepo.getFirstName(),
-                userFromRepo.getLastName(), UserRole.STUDENT);
-        userSaved.setUserId(userId);
-
-        mockFindByUserId(userId, userFromRepo);
-        mockSave(userSaved, userSaved);
-
-        Assertions
-            .assertThat(userService.changeRole(userId, UserRole.STUDENT, UserRole.ADMIN))
-            .isTrue();
-
-        verifyFindByUserId(userId);
-        verifySave(userSaved, 1);
-    }
-
-    @Test
-    void changeRoleFromStudentToCandidateTaSuccessfulTest() {
-        User userFromRepo = new User("nglblob@tudelft.nl", "ngl", "blob", UserRole.STUDENT);
-        userFromRepo.setUserId(userId);
-
-        User userSaved = new User("nglblob@tudelft.nl", "ngl", "blob", UserRole.CANDIDATE_TA);
-        userSaved.setUserId(userId);
-
-        mockFindByUserId(userId, userFromRepo);
-        mockSave(userSaved, userSaved);
-
-        Assertions
-            .assertThat(userService.changeRole(userId, UserRole.CANDIDATE_TA, UserRole.ADMIN))
-            .isTrue();
-
-        verifyFindByUserId(userId);
-        verifySave(userSaved, 1);
+                .assertThat(userService.changeLastName(userId, lastName))
+                .isTrue();
+        Optional<User> savedUser = userService.getUserByUserId(userId);
+        Assertions.assertThat(savedUser).isPresent();
+        Assertions.assertThat(savedUser.get().getLastName()).isEqualTo(lastName);
     }
 
     /**
      * Tests for deleteUserByUserId method.
      */
 
-
     @Test
-    void deleteUserByUserIdNotAdminTest() {
-        Assertions
-            .assertThat(userService.deleteUserByUserId(userId, UserRole.LECTURER))
-            .isFalse();
-        Mockito
-            .verify(userRepository, Mockito.times(0))
-            .deleteByUserId(Mockito.anyLong());
+    void testDeleteUserByUserIdUserNotFound() {
+        Assertions.assertThat(userService.deleteUserByUserId(4242442L)).isFalse();
     }
 
     @Test
-    void deleteUserByUserIdSuccessfulTest() {
-        Assertions
-            .assertThat(userService.deleteUserByUserId(userId, UserRole.ADMIN))
-            .isTrue();
+    void testDeleteUserByUserIdSuccessful() {
+        User user = userRepository.save(new User("blob@tudelft.nl", "b", "lob", UserRole.STUDENT));
+        long userId = user.getUserId();
 
-        Mockito
-            .verify(userRepository, Mockito.times(1))
-            .deleteByUserId(userId);
+        Assertions.assertThat(userService.deleteUserByUserId(userId)).isTrue();
+        Assertions.assertThat(userService.getUserByUserId(userId)).isEmpty();
     }
 }
