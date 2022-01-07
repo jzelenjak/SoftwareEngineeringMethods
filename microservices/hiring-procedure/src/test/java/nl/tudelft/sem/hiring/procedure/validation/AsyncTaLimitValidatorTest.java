@@ -12,9 +12,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
-import nl.tudelft.sem.hiring.procedure.entities.Application;
-import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
-import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
+import nl.tudelft.sem.hiring.procedure.entities.Submission;
+import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
+import nl.tudelft.sem.hiring.procedure.services.SubmissionService;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
@@ -47,7 +47,7 @@ public class AsyncTaLimitValidatorTest {
     private transient GatewayConfig gatewayConfigMock;
 
     @MockBean
-    private transient ApplicationService applicationServiceMock;
+    private transient SubmissionService submissionServiceMock;
 
     @Autowired
     private transient CourseInfoResponseCache cache;
@@ -88,7 +88,7 @@ public class AsyncTaLimitValidatorTest {
 
     @Test
     public void testConstructor() {
-        AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
+        AsyncTaLimitValidator validator = new AsyncTaLimitValidator(submissionServiceMock,
                 cache, 1337);
         assertNotNull(validator);
     }
@@ -97,7 +97,7 @@ public class AsyncTaLimitValidatorTest {
     public void testValidatePreciselyEnoughTas() throws InterruptedException {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
+        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(submissionServiceMock,
                 cache, courseId);
 
         // Current hiring statistics
@@ -106,15 +106,15 @@ public class AsyncTaLimitValidatorTest {
 
         // Configure mocks
         LocalDateTime now = LocalDateTime.now();
-        Application application = new Application(42, courseId, now);
-        application.setStatus(ApplicationStatus.ACCEPTED);
-        List<Application> applications =
-                new java.util.ArrayList<>(Collections.nCopies(currentTaCount, application));
+        Submission submission = new Submission(42, courseId, now);
+        submission.setStatus(SubmissionStatus.ACCEPTED);
+        List<Submission> submissions =
+                new java.util.ArrayList<>(Collections.nCopies(currentTaCount, submission));
 
         // Add one rejected application to make sure it is not counted
-        application.setStatus(ApplicationStatus.REJECTED);
-        applications.add(application);
-        when(applicationServiceMock.getApplicationsForCourse(courseId)).thenReturn(applications);
+        submission.setStatus(SubmissionStatus.REJECTED);
+        submissions.add(submission);
+        when(submissionServiceMock.getSubmissionsForCourse(courseId)).thenReturn(submissions);
 
         // Construct the json object used for testing
         JsonObject json = new JsonObject();
@@ -139,7 +139,7 @@ public class AsyncTaLimitValidatorTest {
     public void testValidateCeilStudentTaRatio() throws InterruptedException {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
+        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(submissionServiceMock,
                 cache, courseId);
 
         // Current hiring statistics
@@ -148,10 +148,10 @@ public class AsyncTaLimitValidatorTest {
 
         // Configure mocks
         LocalDateTime now = LocalDateTime.now();
-        Application application = new Application(42, courseId, now);
-        application.setStatus(ApplicationStatus.ACCEPTED);
-        when(applicationServiceMock.getApplicationsForCourse(courseId)).thenReturn(
-                Collections.nCopies(currentTaCount, application));
+        Submission submission = new Submission(42, courseId, now);
+        submission.setStatus(SubmissionStatus.ACCEPTED);
+        when(submissionServiceMock.getSubmissionsForCourse(courseId)).thenReturn(
+                Collections.nCopies(currentTaCount, submission));
 
         // Construct the json object used for testing
         JsonObject json = new JsonObject();
@@ -176,7 +176,7 @@ public class AsyncTaLimitValidatorTest {
     public void testValidateTooManyTas() throws InterruptedException {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
+        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(submissionServiceMock,
                 cache, courseId);
 
         // Current hiring statistics
@@ -185,10 +185,10 @@ public class AsyncTaLimitValidatorTest {
 
         // Configure mocks
         LocalDateTime now = LocalDateTime.now();
-        Application application = new Application(42, courseId, now);
-        application.setStatus(ApplicationStatus.ACCEPTED);
-        when(applicationServiceMock.getApplicationsForCourse(courseId)).thenReturn(
-                Collections.nCopies(currentTaCount, application));
+        Submission submission = new Submission(42, courseId, now);
+        submission.setStatus(SubmissionStatus.ACCEPTED);
+        when(submissionServiceMock.getSubmissionsForCourse(courseId)).thenReturn(
+                Collections.nCopies(currentTaCount, submission));
 
         // Construct the json object used for testing
         JsonObject json = new JsonObject();
@@ -213,7 +213,7 @@ public class AsyncTaLimitValidatorTest {
     public void testValidateCourseDoesNotExist() throws InterruptedException {
         // Construct validator instance and courseId object
         final long courseId = 1337;
-        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(applicationServiceMock,
+        final AsyncTaLimitValidator validator = new AsyncTaLimitValidator(submissionServiceMock,
                 cache, courseId);
 
         // Enqueue a response

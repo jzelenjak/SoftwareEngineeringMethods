@@ -14,10 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
-import nl.tudelft.sem.hiring.procedure.entities.Application;
-import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
+import nl.tudelft.sem.hiring.procedure.entities.Submission;
+import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
-import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
+import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncRoleValidator;
 import nl.tudelft.sem.jwt.JwtUtils;
@@ -45,7 +45,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @AutoConfigureMockMvc
 public class RecommendationControllerTest {
     @Autowired
-    private transient ApplicationRepository repo;
+    private transient SubmissionRepository repo;
 
     @MockBean
     private transient JwtUtils jwtUtils;
@@ -170,9 +170,9 @@ public class RecommendationControllerTest {
     @Test
     void testGradeStrategy() throws Exception {
         // Applicants No88, No81, No86; Course with courseId 23
-        this.repo.save(new Application(88, 23L, time));
-        this.repo.save(new Application(81, 23L, time));
-        this.repo.save(new Application(86, 23L, time));
+        this.repo.save(new Submission(88, 23L, time));
+        this.repo.save(new Submission(81, 23L, time));
+        this.repo.save(new Submission(86, 23L, time));
 
         String json = new ObjectMapper().writeValueAsString(Map.of(88L, 9.1, 86L, 8.2));
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(json));
@@ -188,9 +188,9 @@ public class RecommendationControllerTest {
     @Test
     void testHoursStrategy() throws Exception {
         // Applicants No36,37,38; Course with courseId 6666 (same code as 6665)
-        this.repo.save(new Application(36L, 6666L, time));
-        this.repo.save(new Application(37L, 6666L, time));
-        this.repo.save(new Application(38L, 6666L, time));
+        this.repo.save(new Submission(36L, 6666L, time));
+        this.repo.save(new Submission(37L, 6666L, time));
+        this.repo.save(new Submission(38L, 6666L, time));
 
         configureJwsMock(AsyncRoleValidator.Roles.LECTURER);
 
@@ -326,8 +326,8 @@ public class RecommendationControllerTest {
                 int applications = sc.nextInt();
                 sc.nextLine();
                 for (int j = 0; j < applications; ++j) {
-                    Application appl = new Application(sc.nextLong(), sc.nextLong(), time);
-                    appl.setStatus(ApplicationStatus.valueOf(sc.next()));
+                    Submission appl = new Submission(sc.nextLong(), sc.nextLong(), time);
+                    appl.setStatus(SubmissionStatus.valueOf(sc.next()));
                     this.repo.save(appl);
                 }
                 sc.nextLine();

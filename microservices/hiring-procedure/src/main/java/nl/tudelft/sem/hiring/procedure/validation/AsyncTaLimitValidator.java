@@ -2,8 +2,8 @@ package nl.tudelft.sem.hiring.procedure.validation;
 
 import com.google.gson.JsonParser;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
-import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
-import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
+import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
+import nl.tudelft.sem.hiring.procedure.services.SubmissionService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -14,7 +14,7 @@ public class AsyncTaLimitValidator extends AsyncBaseValidator {
     // There should be at most one TA per 20 students
     public static final int MIN_STUDENTS_PER_TA = 20;
 
-    private final transient ApplicationService applicationService;
+    private final transient SubmissionService submissionService;
 
     private final transient CourseInfoResponseCache courseInfoCache;
 
@@ -23,12 +23,12 @@ public class AsyncTaLimitValidator extends AsyncBaseValidator {
     /**
      * Constructor of the TA limit validator class.
      *
-     * @param applicationService The application service.
+     * @param submissionService The application service.
      * @param courseId           Is the ID of the course.
      */
-    public AsyncTaLimitValidator(ApplicationService applicationService,
+    public AsyncTaLimitValidator(SubmissionService submissionService,
                                  CourseInfoResponseCache courseInfoCache, long courseId) {
-        this.applicationService = applicationService;
+        this.submissionService = submissionService;
         this.courseInfoCache = courseInfoCache;
         this.courseId = courseId;
     }
@@ -42,9 +42,9 @@ public class AsyncTaLimitValidator extends AsyncBaseValidator {
 
                     // Retrieve the necessary data to perform the validation
                     long numberOfStudents = response.get("numberOfStudents").getAsLong();
-                    long currentTaCount = applicationService.getApplicationsForCourse(courseId)
+                    long currentTaCount = submissionService.getSubmissionsForCourse(courseId)
                             .stream()
-                            .filter(app -> app.getStatus() == ApplicationStatus.ACCEPTED)
+                            .filter(app -> app.getStatus() == SubmissionStatus.ACCEPTED)
                             .count();
 
                     // Check if the number of TAs does not exceed the limit for this course.

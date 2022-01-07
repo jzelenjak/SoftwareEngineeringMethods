@@ -3,7 +3,7 @@ package nl.tudelft.sem.hiring.procedure.recommendation.strategies;
 import java.util.List;
 import java.util.stream.Collectors;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
-import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
+import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -14,14 +14,14 @@ import reactor.core.publisher.Mono;
  * based of the total number of times they have been selected as a TA for any course.
  */
 public class TotalTimesSelectedStrategy implements RecommendationStrategy {
-    private final transient ApplicationRepository repo;
+    private final transient SubmissionRepository repo;
 
     /**
      * Instantiates a new TotalTimesSelectedStrategy object.
      *
      * @param repo the TA application repository
      */
-    public TotalTimesSelectedStrategy(ApplicationRepository repo) {
+    public TotalTimesSelectedStrategy(SubmissionRepository repo) {
         this.repo = repo;
     }
 

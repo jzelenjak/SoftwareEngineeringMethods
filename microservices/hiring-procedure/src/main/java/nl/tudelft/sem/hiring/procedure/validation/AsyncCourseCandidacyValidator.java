@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import nl.tudelft.sem.hiring.procedure.entities.Application;
-import nl.tudelft.sem.hiring.procedure.services.ApplicationService;
+import nl.tudelft.sem.hiring.procedure.entities.Submission;
+import nl.tudelft.sem.hiring.procedure.services.SubmissionService;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.http.HttpHeaders;
@@ -28,7 +28,7 @@ public class AsyncCourseCandidacyValidator extends AsyncBaseValidator {
 
     private final transient JwtUtils jwtUtils;
 
-    private final transient ApplicationService applicationService;
+    private final transient SubmissionService submissionService;
 
     private final transient GatewayConfig gatewayConfig;
 
@@ -40,14 +40,14 @@ public class AsyncCourseCandidacyValidator extends AsyncBaseValidator {
      * Constructor of the AsyncCourseCandidacyValidator class.
      *
      * @param jwtUtils           JWT utility library.
-     * @param applicationService The application service.
+     * @param submissionService The application service.
      * @param gatewayConfig      is the gateway configuration.
      * @param courseId           is the course ID.
      */
-    public AsyncCourseCandidacyValidator(JwtUtils jwtUtils, ApplicationService applicationService,
+    public AsyncCourseCandidacyValidator(JwtUtils jwtUtils, SubmissionService submissionService,
                                          GatewayConfig gatewayConfig, long courseId) {
         this.jwtUtils = jwtUtils;
-        this.applicationService = applicationService;
+        this.submissionService = submissionService;
         this.gatewayConfig = gatewayConfig;
         this.courseId = courseId;
         this.webClient = WebClient.create();
@@ -62,9 +62,9 @@ public class AsyncCourseCandidacyValidator extends AsyncBaseValidator {
 
         // Compose the body for the request
         JsonObject requestBody = new JsonObject();
-        List<Long> courseIds = applicationService.getUnreviewedApplicationsForUser(userId)
+        List<Long> courseIds = submissionService.getUnreviewedSubmissionsForUser(userId)
                 .stream()
-                .map(Application::getCourseId)
+                .map(Submission::getCourseId)
                 .collect(Collectors.toList());
 
         // Add the course ID since we have to use it for validation
