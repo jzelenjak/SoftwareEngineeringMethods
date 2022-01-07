@@ -15,13 +15,18 @@ import io.jsonwebtoken.Jws;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.EditionsResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
+import nl.tudelft.sem.courses.communication.RecommendationRequest;
 import nl.tudelft.sem.courses.controllers.CourseController;
 import nl.tudelft.sem.courses.entities.Course;
+import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.TeachesRepository;
 import nl.tudelft.sem.jwt.JwtUtils;
@@ -59,6 +64,7 @@ public class CourseControllerTest {
     private static final String createGradePath = "/api/courses/create/grade";
     private static final String assignLecturerPath = "/api/courses/assign/lecturer/1/1";
     private static final String allEditionsPath = "/api/courses/get-all-editions";
+    private static final String multipleUserGrades = "/api/courses/statistics/user-grade";
     private static final ZonedDateTime date = ZonedDateTime.now();
     private static final CourseRequest courseRequest = new CourseRequest(courseCode,
             date, date, 1);
@@ -297,6 +303,78 @@ public class CourseControllerTest {
         mockMvc.perform(get(allEditionsPath + "?courseId=1")
                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                 .content(objectMapper.writeValueAsString(courseRequest)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetMultipleUserGradesValid() throws Exception{
+        //create a course
+        MvcResult mvcResult = mockMvc.perform(post(createCoursePath)
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(courseRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+        String content1 = mvcResult.getResponse().getContentAsString();
+        Course course = objectMapper.readValue(content1, Course.class);
+
+        GradeRequest gradeRequest1 = new GradeRequest(course.getId(), 7.6F, 1);
+        GradeRequest gradeRequest2 = new GradeRequest(course.getId(), 9.9F, 2);
+        GradeRequest gradeRequest3 = new GradeRequest(course.getId(), 2.0F, 3);
+        GradeRequest gradeRequest4 = new GradeRequest(course.getId(), 7.0F, 4);
+
+        List<GradeRequest> requests = Arrays.asList(gradeRequest1, gradeRequest2,
+                gradeRequest3, gradeRequest4);
+        for(GradeRequest request: requests) {
+            mockMvc.perform(post(createGradePath)
+                    .header(HttpHeaders.AUTHORIZATION, "")
+                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                    .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk());
+        }
+        RecommendationRequest request = new RecommendationRequest();
+        request.setCourseId(1);
+        request.setAmount(2);
+        request.setUserIds(Arrays.asList(1L, 2L, 3L, 4L));
+        request.setMinGrade(7);
+
+        MvcResult mvcResultGrades = mockMvc.perform(get(multipleUserGrades)
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andReturn();
+        String resultContent = mvcResultGrades.getResponse().getContentAsString();
+        Map<Long, Float> result = objectMapper.readValue(resultContent, new TypeReference<Map<Long, Float>>() {});
+        Map<Long, Float> expectedResult = new LinkedHashMap<>();
+        expectedResult.put(gradeRequest2.getUserId(), gradeRequest2.getGrade());
+        expectedResult.put(gradeRequest1.getUserId(), gradeRequest1.getGrade());
+
+        Assert.assertEquals(expectedResult, result);
+    }
+
+    @Test
+    void testGetMultipleUserGradesNoRequestBody() throws Exception{
+        RecommendationRequest request = null;
+
+        mockMvc.perform(get(multipleUserGrades)
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetMultipleUserGradesUnauthorized() throws Exception {
+        RecommendationRequest request = new RecommendationRequest();
+        request.setCourseId(1);
+        request.setAmount(2);
+        request.setUserIds(Arrays.asList(1L, 2L, 3L, 4L));
+        request.setMinGrade(7);
+
+        mockMvc.perform(get(multipleUserGrades)
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
     }
 

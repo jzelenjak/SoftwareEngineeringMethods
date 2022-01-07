@@ -1,11 +1,18 @@
 package nl.tudelft.sem.courses.services;
 
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.GradeRequest;
+import nl.tudelft.sem.courses.communication.RecommendationRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.entities.Teaches;
@@ -187,6 +194,32 @@ public class CourseService {
         } catch (Exception e) {
             return null;
         }
+
+    }
+
+    public Map<Long, Float> getMultipleUserGrades(RecommendationRequest recommendationRequest) {
+        if (recommendationRequest == null) {
+            return null;
+        }
+        Long courseId = recommendationRequest.getCourseId();
+
+        List<Map.Entry<Long, Float>> list = new ArrayList<>();
+        for (Long userId : recommendationRequest.getUserIds()) {
+            Grade grade = getGrade(userId,courseId);
+            if (grade != null && grade.getGradeValue() >= recommendationRequest.getMinGrade()) {
+                Map.Entry entry = new AbstractMap.SimpleEntry(userId, grade.getGradeValue());
+                list.add(entry);
+            }
+        }
+        list.sort(Map.Entry.comparingByValue());
+        Collections.reverse(list);
+        list = list.subList(0, recommendationRequest.getAmount());
+        Map<Long, Float> result = new LinkedHashMap<>();
+        for(Map.Entry<Long, Float> entry : list) {
+            result.put(entry.getKey(), entry.getValue());
+        }
+
+        return result;
 
     }
 

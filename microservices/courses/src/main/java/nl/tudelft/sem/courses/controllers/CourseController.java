@@ -6,11 +6,14 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.communication.MultiCourseRequest;
 import nl.tudelft.sem.courses.communication.EditionsResponse;
+import nl.tudelft.sem.courses.communication.RecommendationRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.services.CourseService;
@@ -185,6 +188,21 @@ public class CourseController {
                         "Failed to get course editions");
             }
             return new EditionsResponse(courseIds);
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
+    }
+
+    @GetMapping("/statistics/user-grade")
+    public Map<Long, Float> getMultipleUserGrades(@RequestBody RecommendationRequest recommendationRequest,
+                                                   @RequestHeader HttpHeaders httpHeaders) {
+        Jws<Claims> webToken = isAuthorized(httpHeaders);
+        if(checkIfLecturerOrAdmin(webToken)) {
+            Map<Long, Float> userGrades = courseService.getMultipleUserGrades(recommendationRequest);
+            if (userGrades == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Failed to get user grades");
+            }
+            return userGrades;
         }
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
