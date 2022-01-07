@@ -46,11 +46,11 @@ Endpoint for withdrawing submissions. The header of the request should contain t
 POST /api/hiring-procedure/reject?submissionId=<...>
 ```
 
-Endpoint for rejecting an submission that is associated to the provided ID. The header of the request should contain the JWT of the user's session. Only users with the **admin** or **lecturer** role are permitted to access this endpoint.
+Endpoint for rejecting a submission that is associated to the provided ID. The header of the request should contain the JWT of the user's session. Only users with the **admin** or **lecturer** role are permitted to access this endpoint.
 
-| Query parameter | Value                               |
-| --------------- | ----------------------------------- |
-| submissionId   | The ID of the submission to reject |
+| Query parameter | Value                              |
+| --------------- | ---------------------------------- |
+| submissionId    | The ID of the submission to reject |
 
 | Response code          | Reason                                       |
 | ---------------------- | -------------------------------------------- |
@@ -64,22 +64,21 @@ Endpoint for rejecting an submission that is associated to the provided ID. The 
 ## Hire
 
 ```
-POST /api/hiring-procedure/hire-TA?userId=<...>&courseId=<...>
+POST /api/hiring-procedure/hire-TA?submissionId=<...>
 ```
 
 Endpoint for hiring a candidate TA for a specific course. The header of the request should contain the JWT of the user's session. Only users with **admin** or **lecturer** permissions have access.
 
-| Query parameter | Value                                              |
-| --------------- | -------------------------------------------------- |
-| userId          | The ID of the user associated to the submission   |
-| courseId        | The ID of the course associated to the submission |
+| Query parameter | Value                              |
+| --------------- | ---------------------------------- |
+| submissionId    | The ID of the submission to reject |
 
-| Response code          | Reason                                                       |
-| ---------------------- | ------------------------------------------------------------ |
-| 200 OK                 | Successful completion                                        |
-| 403 FORBIDDEN          | User is not permitted to access the endpoint, or no submission was found |
-| 404 NOT FOUND          | Course or user does not exist                                |
-| 405 METHOD NOT ALLOWED | Submission has been processed already                       |
+| Response code          | Reason                                       |
+| ---------------------- | -------------------------------------------- |
+| 200 OK                 | Successful completion                        |
+| 403 FORBIDDEN          | User is not permitted to access the endpoint |
+| 404 NOT FOUND          | Course or user does not exist                |
+| 405 METHOD NOT ALLOWED | Submission has been processed already        |
 
 ---
 

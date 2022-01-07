@@ -214,7 +214,7 @@ public class RecommendationControllerTest {
      */
     @Test
     void testRecommendTaMustBeForbidden() throws Exception {
-        configureJwsMock(AsyncRoleValidator.Roles.TA);
+        configureJwsMock(AsyncRoleValidator.Roles.STUDENT);
 
         MvcResult mvcResult = this.mockMvc.perform(post(RECOMMEND_URL)
             .header(HttpHeaders.AUTHORIZATION, "jwt")).andReturn();

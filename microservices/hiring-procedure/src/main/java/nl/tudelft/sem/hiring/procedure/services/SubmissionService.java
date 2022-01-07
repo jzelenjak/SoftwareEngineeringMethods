@@ -135,44 +135,33 @@ public class SubmissionService {
      * Checks whether a user is a viable candidate to that course. This is the case when they have
      * applied and their submission is "in progress".
      *
-     * @param userId   The ID of the user to be checked
-     * @param courseId The ID of the course for which the user should be checked
+     * @param submissionId is the ID of the submission that needs to be checked.
      * @return true if the user is a viable candidate, false otherwise
      */
-    public boolean checkCandidate(long userId, long courseId) {
-        List<Submission> submissions = submissionRepository
-                .findAllByUserIdAndAndCourseId(userId, courseId);
-        for (Submission submission : submissions) {
-            if (submission.getSubmissionDate().getYear() == LocalDateTime.now().getYear()) {
-                return submission.getStatus() == SubmissionStatus.IN_PROGRESS;
-            }
-        }
-        return false;
+    public boolean checkCandidate(long submissionId) {
+        Optional<Submission> submission = submissionRepository.findById(submissionId);
+        return submission
+                .filter(value -> value.getStatus() == SubmissionStatus.IN_PROGRESS)
+                .isPresent();
     }
 
     /**
-     * Function for setting the status of the most recent submission of a user to a course to
-     * "Accepted".
+     * Function for setting the status of a submission to "Accepted".
      *
-     * @param userId   The ID of the user to be hired
-     * @param courseId The ID of the course that the user should be hired to
+     * @param submissionId is the id of the submission to be accepted.
      */
-    public void hire(long userId, long courseId) {
-        List<Submission> submissions = submissionRepository
-                .findAllByUserIdAndAndCourseId(userId, courseId);
-        for (Submission submission : submissions) {
-            if (submission.getSubmissionDate().getYear() == LocalDateTime.now().getYear()) {
-                submission.setStatus(SubmissionStatus.ACCEPTED);
-                submissionRepository.save(submission);
-            }
-        }
+    public void hire(long submissionId) {
+        submissionRepository.findById(submissionId).ifPresent(submission -> {
+            submission.setStatus(SubmissionStatus.ACCEPTED);
+            submissionRepository.save(submission);
+        });
     }
 
     /**
      * Method for setting the maximum amount of allowed contractual hours for a submission.
      *
      * @param submissionId The ID of the submission for which to change the maximum allowed hours
-     * @param maxHours      The amount to which to update
+     * @param maxHours     The amount to which to update
      * @throws NoSuchElementException when a submission with that associated id does not exist.
      */
     public void setMaxHours(long submissionId, int maxHours) throws NoSuchElementException {
@@ -209,7 +198,7 @@ public class SubmissionService {
      * Method for setting the rating of an approved submission.
      *
      * @param submissionId The ID of the submission for which to set the rating
-     * @param rating        The value of the rating
+     * @param rating       The value of the rating
      * @throws IllegalStateException  if the submission has not been approved
      * @throws NoSuchElementException if a submission with those parameters does not exist.
      */
