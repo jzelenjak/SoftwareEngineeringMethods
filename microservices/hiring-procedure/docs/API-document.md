@@ -36,28 +36,28 @@ Endpoint for withdrawing submissions. The header of the request should contain t
 | ---------------------- | --------------------------------------------------------- |
 | 200 OK                 | Successful completion                                     |
 | 403 FORBIDDEN          | User is not permitted to access the endpoint              |
-| 405 METHOD NOT ALLOWED | Application does not exist, or has been processed already |
+| 405 METHOD NOT ALLOWED | Submission does not exist, or has been processed already |
 
 ---
 
 ## Reject
 
 ```
-POST /api/hiring-procedure/reject?applicationId=<...>
+POST /api/hiring-procedure/reject?submissionId=<...>
 ```
 
 Endpoint for rejecting an submission that is associated to the provided ID. The header of the request should contain the JWT of the user's session. Only users with the **admin** or **lecturer** role are permitted to access this endpoint.
 
 | Query parameter | Value                               |
 | --------------- | ----------------------------------- |
-| applicationId   | The ID of the submission to reject |
+| submissionId   | The ID of the submission to reject |
 
 | Response code          | Reason                                       |
 | ---------------------- | -------------------------------------------- |
 | 200 OK                 | Successful completion                        |
 | 403 FORBIDDEN          | User is not permitted to access the endpoint |
-| 404 NOT FOUND          | Application does not exist                   |
-| 405 METHOD NOT ALLOWED | Application has been processed already       |
+| 404 NOT FOUND          | Submission does not exist                   |
+| 405 METHOD NOT ALLOWED | Submission has been processed already       |
 
 ---
 
@@ -79,7 +79,7 @@ Endpoint for hiring a candidate TA for a specific course. The header of the requ
 | 200 OK                 | Successful completion                                        |
 | 403 FORBIDDEN          | User is not permitted to access the endpoint, or no submission was found |
 | 404 NOT FOUND          | Course or user does not exist                                |
-| 405 METHOD NOT ALLOWED | Application has been processed already                       |
+| 405 METHOD NOT ALLOWED | Submission has been processed already                       |
 
 ---
 
@@ -162,14 +162,14 @@ Endpoint for requesting a template contract. The header of the request should co
 ## Set Max Hours
 
 ```
-POST  /api/hiring-procedure/set-max-hours?applicationId=<...>
+POST  /api/hiring-procedure/set-max-hours?submissionId=<...>
 ```
 
 Endpoint for setting the maximum allowed contractual hours for an submission. The header of the request should contain the JWT of the user's session. Only lecturers and admins are allowed to use this endpoint.
 
 | Query parameter | Value                                                       |
 | --------------- | ----------------------------------------------------------- |
-| applicationId   | The ID of the submission for which to change the max hours |
+| submissionId   | The ID of the submission for which to change the max hours |
 
 **Expected body format**:
 
@@ -229,14 +229,14 @@ Endpoint for getting the maximum allowed contractual hours for an submission. Th
 ## Rate
 
 ```
-POST  /api/hiring-procedure/rate?applicationId=<...>
+POST  /api/hiring-procedure/rate?submissionId=<...>
 ```
 
 Endpoint for rating a TA. The header of the request should contain the JWT of the user's session. Only lecturers and admins are allowed to use this endpoint.
 
 | Query parameter | Value                                                       |
 | --------------- | ----------------------------------------------------------- |
-| applicationId   | The ID of the submission that will be rated                |
+| submissionId   | The ID of the submission that will be rated                |
 
 **Expected body format**:
 
