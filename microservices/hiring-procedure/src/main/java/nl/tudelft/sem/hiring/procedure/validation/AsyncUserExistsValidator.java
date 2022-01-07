@@ -37,13 +37,11 @@ public class AsyncUserExistsValidator extends AsyncBaseValidator {
 
     @Override
     public Mono<Boolean> validate(HttpHeaders headers, String body) {
-        JsonObject json = new JsonObject();
-        json.addProperty("userId", userId);
         return webClient.get()
                 .uri(UriComponentsBuilder.newInstance().scheme("http")
                         .host(gatewayConfig.getHost())
                         .port(gatewayConfig.getPort())
-                        .pathSegment("api", "users", "by-userid")
+                        .pathSegment("api", "users", "by_userid")
                         .queryParam("userId", userId)
                         .toUriString())
                 .header(HttpHeaders.AUTHORIZATION, headers.getFirst(HttpHeaders.AUTHORIZATION))

@@ -39,22 +39,22 @@ public class AsyncRoleValidatorTest {
     @Test
     public void testConstructorProvideSet() {
         AsyncRoleValidator validator =
-                new AsyncRoleValidator(jwtUtils, Set.of(Roles.TA));
+                new AsyncRoleValidator(jwtUtils, Set.of(Roles.STUDENT));
         assertNotNull(validator);
 
-        assertEquals(validator.getAuthorizedRoles(), Set.of(Roles.TA));
+        assertEquals(validator.getAuthorizedRoles(), Set.of(Roles.STUDENT));
     }
 
     @Test
     public void testValidate() {
         when(jwtUtils.resolveToken("Bearer VALIDVALIDVALID")).thenReturn("VALIDVALIDVALID");
         when(jwtUtils.validateAndParseClaims("VALIDVALIDVALID")).thenReturn(jwsMock);
-        when(jwtUtils.getRole(jwsMock)).thenReturn("TA");
+        when(jwtUtils.getRole(jwsMock)).thenReturn("STUDENT");
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer VALIDVALIDVALID");
         AsyncRoleValidator validator =
-                new AsyncRoleValidator(jwtUtils, Set.of(Roles.ADMIN, Roles.TA));
+                new AsyncRoleValidator(jwtUtils, Set.of(Roles.ADMIN, Roles.STUDENT));
 
         Mono<Boolean> result = validator.validate(headers, "");
 
@@ -69,8 +69,7 @@ public class AsyncRoleValidatorTest {
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer INVALIDINVALID");
-        AsyncRoleValidator validator =
-                new AsyncRoleValidator(jwtUtils, Set.of(Roles.ADMIN, Roles.TA));
+        AsyncRoleValidator validator = new AsyncRoleValidator(jwtUtils, Set.of(Roles.ADMIN));
 
         Mono<Boolean> result = validator.validate(headers, "");
 
