@@ -19,7 +19,10 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
@@ -557,6 +560,52 @@ public class HourDeclarationControllerTest {
                         .header(HttpHeaders.AUTHORIZATION, ""))
                 .andReturn();
 
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getAllUnapprovedForCourse() throws Exception {
+        // Create test declarations
+        long courseId = 1337;
+        Set<HourDeclaration> declarations = Stream.of(
+                new HourDeclarationRequest(1234, courseId, 10.0),
+                new HourDeclarationRequest(1235, courseId, 5.0),
+                new HourDeclarationRequest(1234, courseId, 16.5)
+        ).map(HourDeclaration::new).collect(Collectors.toSet());
+
+        // Store all test declarations
+        hourDeclarationRepository.saveAll(declarations);
+
+        // Perform the request for the specified course
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/unapproved/"
+                        + courseId)
+                        .header(HttpHeaders.AUTHORIZATION, ""))
+                .andReturn();
+
+        // Determine the expected result
+        List<HourDeclaration> expectedResponseBody = hourDeclarationRepository
+                .findByCourseIdAndApproved(courseId, false);
+
+        // Wait for response and check if it matches the result
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string(objectMapper.writeValueAsString(expectedResponseBody)));
+    }
+
+    @Test
+    void testGetAllUnapprovedDeclarationsForCourseEmpty() throws Exception {
+        // Course for which no declaration exists
+        long courseId = 1337;
+        hourDeclarationRepository.deleteAll();
+
+        // Perform the request for the specified course
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/unapproved/"
+                + courseId)
+                        .header(HttpHeaders.AUTHORIZATION, ""))
+                .andReturn();
+
+        // Verify that there are no declarations for the specified course -> bad request
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isBadRequest());
     }

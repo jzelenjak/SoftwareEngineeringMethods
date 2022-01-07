@@ -6,7 +6,7 @@
 GET  /api/hour-management/declaration
 ```
 
-Endpoint for fetching all stored declarations. This includes both approved, and unapproved declarations. This endpoint requires **admin** or **lecturer** privileges.
+Endpoint for fetching all stored declarations. This includes both approved, and unapproved declarations. This endpoint requires **admin** privileges.
 
 Upon calling this endpoint, a list of declaration objects is returned in a JSON format. See the example below.
 
@@ -65,7 +65,37 @@ The *id* used within the path is the ID of the declaration.
 GET  /api/hour-management/declaration/unapproved
 ```
 
-Endpoint used for fetching *all* unapproved hour declarations. Only **admins** and **lecturers** have permission to access this endpoint. The response object is similar to that of the `/api/hour-management/declaration` endpoint;
+Endpoint used for fetching *all* unapproved hour declarations. Only **admins** have permission to access this endpoint. The response object is similar to that of the `/api/hour-management/declaration` endpoint;
+
+```json
+[
+    {
+        "declarationId": 12345,
+        "studentId": 54321,
+        "courseId": 78910,
+        "approved": true,
+        "declaredHours": 10.5,
+        "declarationData": "<date>"
+    },
+    {
+        "...": "..."
+    }
+]
+```
+
+| Response code | Reason                                       |
+| ------------- | -------------------------------------------- |
+| 200 OK        | Successful completion                        |
+| 404 NOT FOUND | No unapproved declarations in the system     |
+| 403 FORBIDDEN | User is not permitted to access the endpoint |
+
+---
+
+```
+GET  /api/hour-management/declaration/unapproved/{courseId}
+```
+
+Endpoint used for fetching *all* unapproved hour declarations for a particular course. Only **admins** and **lecturers** have permission to access this endpoint. The response object is similar to that of the `/api/hour-management/declaration` endpoint;
 
 ```json
 [

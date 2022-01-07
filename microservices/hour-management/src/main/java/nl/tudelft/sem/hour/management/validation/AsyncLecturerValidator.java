@@ -64,7 +64,7 @@ public class AsyncLecturerValidator extends AsyncBaseValidator {
                 .exchange()
                 .flatMap(response -> {
                     if (response.statusCode().isError()) {
-                        return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
                                 "Lecturer not associated to course"));
                     }
 

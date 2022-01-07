@@ -17,6 +17,8 @@ public interface HourDeclarationRepository extends JpaRepository<HourDeclaration
 
     List<HourDeclaration> findByApproved(boolean approved);
 
+    List<HourDeclaration> findByCourseIdAndApproved(long courseId, boolean approved);
+
     @Query("SELECT SUM(declaredHours) FROM HourDeclaration "
             + "WHERE studentId = :studentId AND courseId = :courseId")
     Optional<Double> aggregateHoursFor(@Param("studentId") long studentId,

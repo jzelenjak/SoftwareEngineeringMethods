@@ -35,7 +35,7 @@ public class AsyncDeclarationValidatorTest {
     private transient HttpHeaders httpHeaders;
 
     @BeforeEach
-    public void setupEach() {
+    void setupEach() {
         // Header mock to simulate authorization header
         when(httpHeaders.getFirst(HttpHeaders.AUTHORIZATION)).thenReturn(BEARER_TOKEN);
 
