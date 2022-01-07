@@ -57,7 +57,7 @@ public class TeachesTest {
 
 
     @Test
-    public void equalsNull() {
+    public void testEqualsNull() {
         Teaches teaches  = new Teaches(10, 3);
         Teaches teaches2 = null;
         boolean isEqual = teaches.equals(teaches2);
@@ -65,7 +65,7 @@ public class TeachesTest {
     }
 
     @Test
-    public void equalsSameObject() {
+    public void testEqualsSameObject() {
         Teaches teaches  = new Teaches(10, 3);
         boolean isEqual = teaches.equals(courseId);
         Assert.assertFalse(isEqual);
@@ -73,14 +73,14 @@ public class TeachesTest {
 
 
     @Test
-    public void equalsnotSameClass() {
+    public void testEqualsnotSameClass() {
         Teaches teaches  = new Teaches(10, 3);
         boolean isEqual = teaches.equals(teaches);
         Assert.assertTrue(isEqual);
     }
 
     @Test
-    public void teachesPkTest() {
+    public void testTeachesPkTest() {
         TeachesPk pk = new TeachesPk(1L, 1L);
         Assert.assertNotNull(pk);
     }

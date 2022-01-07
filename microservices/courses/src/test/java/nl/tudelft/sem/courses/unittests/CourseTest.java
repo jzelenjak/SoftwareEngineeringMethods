@@ -20,7 +20,7 @@ public class CourseTest {
 
 
     @Test
-    public void testingConstructorBig() {
+    public void testConstructorBig() {
         assertNotNull(course);
         //testing the getters and setters
 
@@ -34,7 +34,7 @@ public class CourseTest {
 
 
     @Test
-    public void testingConstructorSmall() {
+    public void testConstructorSmall() {
         assertNotNull(course);
         //testing the getters and setters
         int hashcode = course.hashCode();
@@ -47,7 +47,7 @@ public class CourseTest {
     }
 
     @Test
-    public void testingEquals() {
+    public void testEquals() {
 
         String course2Code = "CSE2225";
         ZonedDateTime time = ZonedDateTime.now();
@@ -61,7 +61,7 @@ public class CourseTest {
     }
 
     @Test
-    public void testingToString() {
+    public void testToString() {
         String testString = "Course{"
                 + "course code='" + courseCode + '\''
                 + ", users=" + "[]"
@@ -71,14 +71,14 @@ public class CourseTest {
 
 
     @Test
-    public void testingEqualsNotSameClass() {
+    public void testEqualsNotSameClass() {
         boolean result = course.equals(LocalDate.now());
         assertFalse(result);
 
     }
 
     @Test
-    public void startDatesAreDifferent() {
+    public void testEqualstartDatesAreDifferent() {
         String course2Code = "CSE2225";
         ZonedDateTime time = ZonedDateTime.now();
 
@@ -91,7 +91,7 @@ public class CourseTest {
     }
 
     @Test
-    public void oneObjectIsNull() {
+    public void testEqualsOneObjectIsNull() {
         Course course = new Course(1, courseCode, date, date, 1);
         Course course2 = null;
         boolean result = course.equals(course2);
@@ -99,7 +99,7 @@ public class CourseTest {
     }
 
     @Test
-    public void startDatesSameEndDatesDifferent() {
+    public void testEqualsStartDatesSameEndDatesDifferent() {
         Course course = new Course(1, courseCode, date, date, 1);
         Course course2 = new Course(2, courseCode, date,
                 ZonedDateTime.parse("2007-12-03T10:15:30+01:00[Europe/Paris]"), 1);
@@ -108,7 +108,7 @@ public class CourseTest {
     }
 
     @Test
-    public void coursesAreEqual() {
+    public void testEqualsCoursesAreEqual() {
         Course course = new Course(1, courseCode, date, date, 1);
         Course course2 = new Course(2, courseCode, date, date, 1);
         boolean result = course.equals(course2);
@@ -116,7 +116,7 @@ public class CourseTest {
     }
 
     @Test
-    public void numberOfStudentsDifferent() {
+    public void testEqualsNumberOfStudentsDifferent() {
         Course course = new Course(1, courseCode, date, date, 1);
         Course course2 = new Course(2, courseCode, date, date, 2);
         boolean result = course.equals(course2);
@@ -124,13 +124,13 @@ public class CourseTest {
     }
 
     @Test
-    public void testDateEqualsMethod() {
+    public void testEqualsDateEqualsMethod() {
         boolean result = course.datesEqual(date, date);
         assertTrue(result);
     }
 
     @Test
-    public void testDatesDaysAreNotEqual() {
+    public void testEqualsDatesDaysAreNotEqual() {
         ZonedDateTime time = ZonedDateTime.parse("2021-12-03T10:15:30+01:00[Europe/Paris]");
         boolean result = course.datesEqual(date, time);
         assertFalse(result);
@@ -142,6 +142,4 @@ public class CourseTest {
         boolean result = course.datesEqual(date, time);
         assertFalse(result);
     }
-
-
 }
