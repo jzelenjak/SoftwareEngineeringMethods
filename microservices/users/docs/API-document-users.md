@@ -12,7 +12,7 @@ The information with respect to the user is placed in the body of the request. T
 
 ```json
 {
-	"username" : "amogus@student.tudelft.nl",
+	"username" : "aimpostor",
 	"password" : "amogusamogus",
 	"firstName" : "Amogus",
 	"lastName" : "Impostor"
@@ -39,7 +39,7 @@ Upon calling this endpoint, the generated user ID is returned in a JSON format. 
 ## Fetch users
 
 ```
-GET     /api/users/by_username?username=amogus@student.tudelft.nl
+GET     /api/users/by_username?username=aimpostor
 ```
 
 Endpoint for getting a user by the username. This endpoint requires **admin** or **lecturer** privileges.
@@ -49,7 +49,7 @@ Upon calling this endpoint, a user object is returned in a JSON format. See the 
 ```json
 {
 	"userId" : 4242442,
-	"username" :"amogus@student.tudelft.nl",
+	"username" :"aimpostor",
 	"firstName" :"Amogus",
 	"lastName" : "Impostor",
 	"role" : "STUDENT"
@@ -72,12 +72,12 @@ The *username* used in the query string is the username of the user.
 GET     /api/users/by_userid?userId=4242442
 ```
 
-Endpoint for getting a user by the userId. This endpoint requires **admin** or **lecturer** privileges. The response object is similar to that of the `/api/users/by_username?username=amogus@student.tudelft.nl` endpoint.
+Endpoint for getting a user by the userId. This endpoint requires **admin** or **lecturer** privileges. The response object is similar to that of the `/api/users/by_username?username=aimpostor` endpoint.
 
 ```json
 {
 	"userId" : 4242442,
-	"username" :"amogus@student.tudelft.nl",
+	"username" :"aimpostor",
 	"firstName" :"Amogus",
 	"lastName" : "Impostor",
 	"role" : "STUDENT"
@@ -96,6 +96,72 @@ The *userId* used in the query string is the user ID of the user.
 
 ---
 
+```
+GET     /api/users/by_first_name?firstName=Amogus
+```
+
+Endpoint for getting users by the first name. This endpoint requires **admin** privileges. The response object is similar to that of the `/api/users/by_username?username=aimpostor` endpoint.
+
+```json
+[
+  {
+	"userId" : 4242442,
+	"username" :"aimpostor",
+	"firstName" :"Amogus",
+	"lastName" : "Impostor",
+	"role" : "STUDENT"
+  },
+  {
+    "..." : "..."
+  }
+]
+```
+
+The *firstName* used in the query string is the first name of a user.
+
+| Response code    | Reason                                                 |
+|------------------|--------------------------------------------------------|
+| 200 OK           | Successful completion                                  |
+| 400 BAD REQUEST  | Invalid request format                                 |
+| 401 UNAUTHORIZED | JWT token is missing or does not start with 'Bearer '  |
+| 403 FORBIDDEN    | The operation is forbidden for the requester           |
+| 404 NOT FOUND    | No users with the specified first name have been found |
+
+---
+
+```
+GET     /api/users/by_last_name?lastName=Impostor
+```
+
+Endpoint for getting users by the last name. This endpoint requires **admin** privileges. The response object is similar to that of the `/api/users/by_username?username=aimpostor` endpoint.
+
+```json
+[
+  {
+	"userId" : 4242442,
+	"username" :"aimpostor",
+	"firstName" :"Amogus",
+	"lastName" : "Impostor",
+	"role" : "STUDENT"
+  },
+  {
+    "..." : "..."
+  }
+]
+```
+
+The *lastName* used in the query string is the last name of a user.
+
+| Response code    | Reason                                                |
+|------------------|-------------------------------------------------------|
+| 200 OK           | Successful completion                                 |
+| 400 BAD REQUEST  | Invalid request format                                |
+| 401 UNAUTHORIZED | JWT token is missing or does not start with 'Bearer ' |
+| 403 FORBIDDEN    | The operation is forbidden for the requester          |
+| 404 NOT FOUND    | No users with the specified last name have been found |
+
+---
+
 
 ```
 GET    /api/users/by_role?role=STUDENT
@@ -109,7 +175,7 @@ Upon calling this endpoint, a list of user objects is returned in a JSON format.
 [
 	{
 		"userId" : 4242442,
-		"username" : "amogus@student.tudelft.nl",
+		"username" : "aimpostor",
 		"firstName" : "Amogus",
 		"lastName" : "Impostor",
 		"role" : "STUDENT"
@@ -132,7 +198,7 @@ The *role* used in the query string is the role of the user (can also be lower-c
 
 ---
 
-## Change Role
+## Changing users
 
 ```
 PUT    /api/users/change_role
@@ -155,6 +221,52 @@ Endpoint for changing the role of a user. This endpoint requires **admin** privi
 | 403 FORBIDDEN    | The operation is forbidden for the requester                                 |
 | 404 NOT FOUND    | The user with the specified user ID has not been found                       |
 | 4xx              | Error while changing the role of the user in the authentication microservice |
+
+---
+
+```
+PUT    /api/users/change_first_name
+```
+
+Endpoint for changing the first name of a user. This endpoint requires **admin** privileges. The information with respect to changing the first name is placed in the body of the request. This request body should look similar to the JSON object below. Note that the username will remain the same.
+
+```json
+{
+	"userId" : 4242442,
+	"firstName" : "AmogusAmogus"
+}
+```
+
+| Response code    | Reason                                                                       |
+|------------------|------------------------------------------------------------------------------|
+| 200 OK           | Successful completion                                                        |
+| 400 BAD REQUEST  | Invalid request format                                                       |
+| 401 UNAUTHORIZED | JWT token is missing or does not start with 'Bearer '                        |
+| 403 FORBIDDEN    | The operation is forbidden for the requester                                 |
+| 404 NOT FOUND    | The user with the specified user ID has not been found                       |
+
+---
+
+```
+PUT    /api/users/change_last_name
+```
+
+Endpoint for changing the last name of a user. This endpoint requires **admin** privileges. The information with respect to changing the last name is placed in the body of the request. This request body should look similar to the JSON object below. Note that the username will remain the same.
+
+```json
+{
+	"userId" : 4242442,
+	"lastName" : "Imposter"
+}
+```
+
+| Response code    | Reason                                                                       |
+|------------------|------------------------------------------------------------------------------|
+| 200 OK           | Successful completion                                                        |
+| 400 BAD REQUEST  | Invalid request format                                                       |
+| 401 UNAUTHORIZED | JWT token is missing or does not start with 'Bearer '                        |
+| 403 FORBIDDEN    | The operation is forbidden for the requester                                 |
+| 404 NOT FOUND    | The user with the specified user ID has not been found                       |
 
 ---
 
