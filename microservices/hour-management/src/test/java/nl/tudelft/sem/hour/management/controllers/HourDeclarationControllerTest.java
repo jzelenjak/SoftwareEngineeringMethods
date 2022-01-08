@@ -1,6 +1,8 @@
 package nl.tudelft.sem.hour.management.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.matchesRegex;
+import static org.mockito.ArgumentMatchers.matches;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -8,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,9 +59,9 @@ import reactor.core.publisher.Mono;
 @AutoConfigureMockMvc
 public class HourDeclarationControllerTest {
 
-    private static final String declarationPath = "/api/hour-management/declaration";
+    private static final String declarationPath = "/api/hour-management/declaration/";
 
-    private static final String yourDeclaration = "Your declaration with id";
+    private static final String yourDeclaration = "Your declaration with id ";
 
     private static final String authorization = "Authorization";
 
@@ -163,8 +166,6 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testPostDeclaration() throws Exception {
-        long count = hourDeclarationRepository.count(); // find how many objects are in the repo
-
         JsonObject responseBody = configureCourseResponseBody(
                 ZonedDateTime.now().minusWeeks(1L), ZonedDateTime.now().plusWeeks(1L));
 
@@ -187,17 +188,23 @@ public class HourDeclarationControllerTest {
                         .header(authorization, ""))
                 .andReturn();
 
-        // Expected response object
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("message", "Declaration with id "
-                + (count + 1L) + " has been successfully saved.");
-
         // Wait for response
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andExpect(content().json(jsonObject.toString()));
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.message",
+                        matchesRegex("Declaration with id [0-9]+ has been successfully saved.")));
 
-        Optional<HourDeclaration> saved = hourDeclarationRepository.findById(count + 1L);
+        // Verify that a new declaration was created
+        Long declarationId = Long.valueOf(mvcResult.getResponse().getContentAsString()
+                .replaceAll("[^0-9]", ""));
+
+        // Expected response object
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("message", "Declaration with id "
+                + declarationId + " has been successfully saved.");
+
+        Optional<HourDeclaration> saved = hourDeclarationRepository.findById(declarationId);
 
         assertThat(saved.isEmpty()).isFalse();
         assertThat(saved.get().getStudentId()).isEqualTo(hourDeclarationRequestNew.getStudentId());
@@ -465,7 +472,7 @@ public class HourDeclarationControllerTest {
         HourDeclaration saved = hourDeclarationRepository.save(hourDeclarationUnapproved);
 
         when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
-        when(jwtUtils.getUserId(jwsMock)).thenReturn(saved.getDeclarationId());
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(saved.getStudentId());
 
         // Enqueue response that tells us that the user teaches the course
         // associated to the declaration ID
@@ -518,6 +525,9 @@ public class HourDeclarationControllerTest {
 
     @Test
     void getAllUnapproved() throws Exception {
+        hourDeclarationRepository.save(hourDeclarationUnapproved);
+        hourDeclarationRepository.save(hourDeclarationApproved);
+
         List<HourDeclaration> expectedResponseBody = hourDeclarationRepository
                 .findByApproved(false);
 
@@ -533,8 +543,6 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testGetAllUnapprovedDeclarationsEmpty() throws Exception {
-        hourDeclarationRepository.deleteAll();
-
         MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/unapproved")
                         .header(authorization, ""))
                 .andReturn();
@@ -545,10 +553,15 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testGetAllDeclarationsByStudent() throws Exception {
-        List<HourDeclaration> expectedResponseBody = hourDeclarationRepository
-                .findByStudentId(1234);
+        hourDeclarationRepository.save(hourDeclarationUnapproved);
+        hourDeclarationRepository.save(hourDeclarationApproved);
+        HourDeclaration saved = hourDeclarationRepository.save(hourDeclarationSameStudent);
 
-        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/student/1234")
+        List<HourDeclaration> expectedResponseBody = hourDeclarationRepository
+                .findByStudentId(saved.getStudentId());
+
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/student/"
+                        + saved.getStudentId())
                         .header(authorization, ""))
                 .andReturn();
 
@@ -570,13 +583,18 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testGetAllDeclarationsByStudentUserAccessesTheirOwnDeclarations() throws Exception {
+        hourDeclarationRepository.save(hourDeclarationUnapproved);
+        hourDeclarationRepository.save(hourDeclarationApproved);
+        HourDeclaration saved = hourDeclarationRepository.save(hourDeclarationSameStudent);
+
         List<HourDeclaration> expectedResponseBody = hourDeclarationRepository
-                .findByStudentId(1234);
+                .findByStudentId(saved.getStudentId());
 
         when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
-        when(jwtUtils.getUserId(jwsMock)).thenReturn(1234L);
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(saved.getStudentId());
 
-        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/student/1234")
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/student/"
+                        + saved.getStudentId())
                         .header(authorization, ""))
                 .andReturn();
 
