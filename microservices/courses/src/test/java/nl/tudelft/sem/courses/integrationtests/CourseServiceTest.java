@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import nl.tudelft.sem.courses.communication.CourseRequest;
+import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.communication.RecommendationRequest;
 import nl.tudelft.sem.courses.entities.Course;
@@ -61,10 +62,10 @@ public class CourseServiceTest {
 
     @Test
     void testAddNewCourse() {
-        Course result = courseService.addNewCourses(courseRequest);
+        CourseResponse result = courseService.addNewCourses(courseRequest);
         verify(courseRepository, Mockito.times(1)).save(Mockito.any());
         Assert.assertNotNull(result);
-        Assert.assertTrue(result.getId() >= 0);
+        Assert.assertTrue(result.getCourseId() >= 0);
 
     }
 
@@ -81,13 +82,13 @@ public class CourseServiceTest {
         List<Course> courseList = new ArrayList<>();
         courseList.add(course);
 
-        Course result = courseService.addNewCourses(courseRequest);
+        CourseResponse result = courseService.addNewCourses(courseRequest);
         when(courseRepository.findAllByCourseCode(Mockito.any())).thenReturn(courseList);
 
         verify(courseRepository, Mockito.times(1)).save(Mockito.any());
         Assert.assertNotNull(result);
-        Assert.assertTrue(result.getId() >= 0);
-        Course result2 = courseService.addNewCourses(courseRequest);
+        Assert.assertTrue(result.getCourseId() >= 0);
+        CourseResponse result2 = courseService.addNewCourses(courseRequest);
         Assert.assertNull(result2);
 
     }
@@ -104,19 +105,19 @@ public class CourseServiceTest {
         List<Course> courseList = new ArrayList<>();
         courseList.add(course);
 
-        Course result = courseService.addNewCourses(courseRequest);
+        CourseResponse result = courseService.addNewCourses(courseRequest);
         when(courseRepository.findAllByCourseCode(Mockito.any())).thenReturn(courseList);
 
         //second iteration of adding the course list.
 
         verify(courseRepository, Mockito.times(1)).save(Mockito.any());
         Assert.assertNotNull(result);
-        Assert.assertTrue(result.getId() >= 0);
+        Assert.assertTrue(result.getCourseId() >= 0);
         CourseRequest courseRequest2 = new CourseRequest(courseCode,
                 date, ZonedDateTime.parse("2007-12-03T10:15:30+01:00[Europe/Paris]"), 1);
-        Course result2 = courseService.addNewCourses(courseRequest2);
+        CourseResponse result2 = courseService.addNewCourses(courseRequest2);
         Assert.assertNotNull(result2);
-        Assert.assertTrue(result2.getId() >= 0);
+        Assert.assertTrue(result2.getCourseId() >= 0);
 
     }
     //Now tests for the second service method deleting a course. First we have to add a course.

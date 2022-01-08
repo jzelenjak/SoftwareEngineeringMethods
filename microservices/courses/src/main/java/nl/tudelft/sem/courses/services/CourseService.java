@@ -3,7 +3,6 @@ package nl.tudelft.sem.courses.services;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import nl.tudelft.sem.courses.communication.CourseRequest;
+import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.communication.RecommendationRequest;
 import nl.tudelft.sem.courses.entities.Course;
@@ -53,7 +53,7 @@ public class CourseService {
      * @return long - returns positive number upon successful completion,
      *      otherwise returns -1
      */
-    public Course addNewCourses(CourseRequest request)  {
+    public CourseResponse addNewCourses(CourseRequest request)  {
         List<Course> courses = courseRepository.findAllByCourseCode(request.getCourseCode());
 
         try {
@@ -62,7 +62,7 @@ public class CourseService {
                         request.getFinishDate(), request.getNumStudents());
                 courseRepository.save(newCourse);
                 courseRepository.flush();
-                return newCourse;
+                return new CourseResponse(newCourse);
             } else {
                 Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
                         request.getFinishDate(), request.getNumStudents());
@@ -71,7 +71,7 @@ public class CourseService {
                 } else {
                     courseRepository.save(newCourse);
                     courseRepository.flush();
-                    return newCourse;
+                    return new CourseResponse(newCourse);
                 }
             }
         } catch (Exception e) {
@@ -197,6 +197,17 @@ public class CourseService {
 
     }
 
+    /**
+     * Gives a map of user ids and grades.
+     * Recommendation request object which contains the
+     * following information:
+     * course id
+     * amount
+     * minimum grade
+     * user ids - for the users we want the grades for
+     *
+     * @param recommendationRequest - a request the final
+     */
     public Map<Long, Float> getMultipleUserGrades(RecommendationRequest recommendationRequest) {
         if (recommendationRequest == null) {
             return null;
@@ -213,7 +224,7 @@ public class CourseService {
         Collections.reverse(list);
         list = list.subList(0, recommendationRequest.getAmount());
         Map<Long, Float> result = new LinkedHashMap<>();
-        for(Map.Entry<Long, Float> entry : list) {
+        for (Map.Entry<Long, Float> entry : list) {
             result.put(entry.getKey(), entry.getValue());
         }
 

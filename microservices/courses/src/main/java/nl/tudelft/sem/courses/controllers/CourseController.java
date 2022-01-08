@@ -7,12 +7,11 @@ import io.jsonwebtoken.Jws;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
+import nl.tudelft.sem.courses.communication.EditionsResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.communication.MultiCourseRequest;
-import nl.tudelft.sem.courses.communication.EditionsResponse;
 import nl.tudelft.sem.courses.communication.RecommendationRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
@@ -66,11 +65,11 @@ public class CourseController {
      * @return returns a http success or bad request
      */
     @PostMapping("/create")
-    public Course createNewCourse(@RequestBody CourseRequest request,
+    public CourseResponse createNewCourse(@RequestBody CourseRequest request,
                                   @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webToken = isAuthorized(httpHeaders);
         if (checkIfAdmin(webToken)) {
-            Course result = courseService.addNewCourses(request);
+            CourseResponse result = courseService.addNewCourses(request);
             if (result == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Failed to create new course");
@@ -181,7 +180,7 @@ public class CourseController {
     public EditionsResponse getAllEditionsOfCourse(@RequestParam Long courseId,
                                                    @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if(checkIfLecturerOrAdmin(webToken)) {
+        if (checkIfLecturerOrAdmin(webToken)) {
             List<Long> courseIds = courseService.getAllEditionsOfCourse(courseId);
             if (courseIds == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -192,12 +191,29 @@ public class CourseController {
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
 
+    /**
+     * Endpoint for getting multiple
+     * user grades with specific restrictions.
+     * You must provide a JSON or
+     * Recommendation request object which contains the
+     * following information:
+     * course id
+     * amount
+     * minimum grade
+     * user ids - for the users we want the grades for
+     *
+     *
+     * @param recommendationRequest - recommendation request object
+     * @return a map of user ids as keys and grade as values
+     */
     @GetMapping("/statistics/user-grade")
-    public Map<Long, Float> getMultipleUserGrades(@RequestBody RecommendationRequest recommendationRequest,
-                                                   @RequestHeader HttpHeaders httpHeaders) {
+    public Map<Long, Float> getMultipleUserGrades(
+            @RequestBody RecommendationRequest recommendationRequest,
+            @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if(checkIfLecturerOrAdmin(webToken)) {
-            Map<Long, Float> userGrades = courseService.getMultipleUserGrades(recommendationRequest);
+        if (checkIfLecturerOrAdmin(webToken)) {
+            Map<Long, Float> userGrades = courseService
+                    .getMultipleUserGrades(recommendationRequest);
             if (userGrades == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Failed to get user grades");
@@ -240,7 +256,8 @@ public class CourseController {
     public boolean addGrade(@RequestBody GradeRequest request,
                             @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if (checkIfAdmin(webToken)||(checkIfLecturer(webToken)&&courseService.lecturerTeachesCourse(jwtUtils.getUserId(webToken), request.getCourseId()))) {
+        if (checkIfAdmin(webToken) || (checkIfLecturer(webToken) && courseService
+                .lecturerTeachesCourse(jwtUtils.getUserId(webToken), request.getCourseId()))) {
             if (request == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "No Request was provided");
@@ -413,6 +430,7 @@ public class CourseController {
         String role = jwtUtils.getRole(claimsJws);
         return role.equals("ADMIN");
     }
+
     /**
      * Method checks if role in web token is
      * lecturer.
@@ -425,6 +443,6 @@ public class CourseController {
             return false;
         }
         String role = jwtUtils.getRole(claimsJws);
-        return role.equals("ADMIN");
+        return role.equals("LECTURER");
     }
 }
