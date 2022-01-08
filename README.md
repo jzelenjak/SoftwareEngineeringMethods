@@ -37,15 +37,15 @@ directory and executing the following command:
 ```shell
 # Linux/OSX
 ./create-docker-db.sh
+```
 
+```powershell
 # Windows
 .\create-docker-db.bat
 ```
 
 The second alternative is to create a local postgres setup on port 5432 that is similar to the `docker/init.sql` script.
 This means that it is required to configure the `sem-13a` user and the corresponding databases.
-
-After having finished the setup, you can run a microservice using the following command:
 
 #### Admin account
 
@@ -140,7 +140,7 @@ The following users have contributed to this project.
 | 📸 | Name | Email |
 |---|---|---|
 | <img src="https://secure.gravatar.com/avatar/6831344d0915a958d3922e4bf36159fe?s=400&d=identicon" width="50px"> | Andy Li | b.x.li@student.tudelft.nl |
-| <img src="https://gitlab.ewi.tudelft.nl/uploads/-/system/user/avatar/3100/avatar.png?width=400" width="50px"> | Jegor Zelenjak | A.V.Pacurar-1@student.tudelft.nl |
+| <img src="https://gitlab.ewi.tudelft.nl/uploads/-/system/user/avatar/3100/avatar.png?width=400" width="50px"> | Jegor Zelenjak | J.Zelenjak@student.tudelft.nl |
 | <img src="https://gitlab.ewi.tudelft.nl/uploads/-/system/user/avatar/3586/avatar.png?width=400" width="50px"> | Jeroen Bastenhof | j.bastenhof@student.tudelft.nl |
 | <img src="https://gitlab.ewi.tudelft.nl/uploads/-/system/user/avatar/3545/avatar.png?width=400" width="50px"> | Mehmet Sözüdüz | M.A.Sozuduz@student.tudelft.nl |
 | <img src="https://secure.gravatar.com/avatar/01c95f4b875a5b2334d5d9b0feaa515c?s=400&d=identicon" width="50px"> | Mihnea Toader | m.a.toader-1@student.tudelft.nl |
