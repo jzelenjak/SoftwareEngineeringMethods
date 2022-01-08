@@ -17,7 +17,6 @@ import io.jsonwebtoken.Jws;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -171,9 +170,6 @@ public class HourDeclarationControllerTest {
         JsonObject responseBody = configureCourseResponseBody(
                 ZonedDateTime.now().minusWeeks(1L), ZonedDateTime.now().plusWeeks(1L));
 
-        String contract = String.format(Locale.ROOT,
-                "{\"studentId\": %d, \"courseId\": %d, \"maxHours\": %f}", 1, 1, 15.0);
-
         when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         mockWebServer.enqueue(new MockResponse()
@@ -181,9 +177,10 @@ public class HourDeclarationControllerTest {
                 .setBody(responseBody.toString())
                 .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE));
 
+        Integer contractMaxHours = 15;
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(contract)
+                .setBody(String.valueOf(contractMaxHours))
                 .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE));
 
         MvcResult mvcResult = mockMvc.perform(post(declarationPath)

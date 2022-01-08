@@ -53,8 +53,8 @@ public class AsyncHiringValidator extends AsyncBaseValidator {
                         .scheme("http")
                         .host(getGatewayConfig().getHost())
                         .port(getGatewayConfig().getPort())
-                        .pathSegment("api", "hiring-service", "get-contract")
-                        .queryParam("courseID", parsed.get("courseId"))
+                        .pathSegment("api", "hiring-procedure", "get-max-hours")
+                        .queryParam("courseId", parsed.get("courseId"))
                         .toUriString())
                 .header(HttpHeaders.AUTHORIZATION, headers.getFirst(HttpHeaders.AUTHORIZATION))
                 .exchange()
@@ -64,16 +64,14 @@ public class AsyncHiringValidator extends AsyncBaseValidator {
                                 "Cannot find active contract"));
                     }
 
-                    return response.bodyToMono(String.class).flatMap(json -> {
-                        JsonObject contract = JsonParser.parseString(json).getAsJsonObject();
-
+                    return response.bodyToMono(String.class).flatMap(responseBody -> {
                         if (parsed.get("declaredHours").getAsDouble() <= 0) {
                             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
                                     "Declared hours cannot be negative or 0."));
                         }
 
-                        if (parsed.get("declaredHours").getAsDouble()
-                                > contract.get("maxHours").getAsDouble()) {
+                        int maxHours = Integer.parseInt(responseBody);
+                        if (parsed.get("declaredHours").getAsDouble() > maxHours) {
                             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
                                     "Declared hours cannot exceed the maximum hours "
                                             + "denoted in the contract."));

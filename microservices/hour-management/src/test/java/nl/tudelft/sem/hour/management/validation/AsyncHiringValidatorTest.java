@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
-import java.util.Locale;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
 import nl.tudelft.sem.jwt.JwtUtils;
@@ -39,8 +38,7 @@ public class AsyncHiringValidatorTest {
     private static final String applicationJson = "application/json";
     private static final String get = "GET";
 
-    private static final String contract = String.format(Locale.ROOT,
-            "{\"studentId\": %d, \"courseId\": %d, \"maxHours\": %f}", 1, 1, 15.0);
+    private static final String contractMaxHours = String.valueOf(15);
 
     private transient MockWebServer mockWebServer;
 
@@ -90,7 +88,7 @@ public class AsyncHiringValidatorTest {
 
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(contract)
+                .setBody(contractMaxHours)
                 .addHeader(content, applicationJson));
 
         // check the state
@@ -101,7 +99,7 @@ public class AsyncHiringValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(get, recordedRequest.getMethod());
-        assertEquals("/api/hiring-service/get-contract?courseID=1", recordedRequest.getPath());
+        assertEquals("/api/hiring-procedure/get-max-hours?courseId=1", recordedRequest.getPath());
         assertEquals(token, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
@@ -139,7 +137,7 @@ public class AsyncHiringValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(get, recordedRequest.getMethod());
-        assertEquals("/api/hiring-service/get-contract?courseID=12", recordedRequest.getPath());
+        assertEquals("/api/hiring-procedure/get-max-hours?courseId=12", recordedRequest.getPath());
         assertEquals(token, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
@@ -150,7 +148,7 @@ public class AsyncHiringValidatorTest {
 
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(contract)
+                .setBody(contractMaxHours)
                 .addHeader(content, applicationJson));
 
         // check the state
@@ -161,7 +159,7 @@ public class AsyncHiringValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(get, recordedRequest.getMethod());
-        assertEquals("/api/hiring-service/get-contract?courseID=20", recordedRequest.getPath());
+        assertEquals("/api/hiring-procedure/get-max-hours?courseId=20", recordedRequest.getPath());
         assertEquals(token, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
@@ -172,7 +170,7 @@ public class AsyncHiringValidatorTest {
 
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(contract)
+                .setBody(contractMaxHours)
                 .addHeader(content, applicationJson));
 
         // check the state
@@ -183,7 +181,7 @@ public class AsyncHiringValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(get, recordedRequest.getMethod());
-        assertEquals("/api/hiring-service/get-contract?courseID=3", recordedRequest.getPath());
+        assertEquals("/api/hiring-procedure/get-max-hours?courseId=3", recordedRequest.getPath());
         assertEquals(token, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
@@ -194,7 +192,7 @@ public class AsyncHiringValidatorTest {
 
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
-                .setBody(contract)
+                .setBody(contractMaxHours)
                 .addHeader(content, applicationJson));
 
         // check the state
@@ -205,7 +203,7 @@ public class AsyncHiringValidatorTest {
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
 
         assertEquals(get, recordedRequest.getMethod());
-        assertEquals("/api/hiring-service/get-contract?courseID=1", recordedRequest.getPath());
+        assertEquals("/api/hiring-procedure/get-max-hours?courseId=1", recordedRequest.getPath());
         assertEquals(token, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 

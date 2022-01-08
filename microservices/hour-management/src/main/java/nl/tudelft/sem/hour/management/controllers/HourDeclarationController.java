@@ -86,7 +86,7 @@ public class HourDeclarationController {
      * @param hourDeclarationRequest hour declaration that will be saved
      * @return an informative message about status of request
      */
-    @PostMapping
+    @PostMapping(produces = "application/json")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     Mono<String> declareHours(@RequestHeader HttpHeaders headers,
