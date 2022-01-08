@@ -268,9 +268,9 @@ public class CourseControllerTest {
 
 
         String content = mvcResult.getResponse().getContentAsString();
-        Course course = objectMapper.readValue(content, Course.class);
+        CourseResponse course = objectMapper.readValue(content, CourseResponse.class);
 
-        MvcResult mvcResult1 = mockMvc.perform(get(allEditionsPath + "?courseId=" + course.getId())
+        MvcResult mvcResult1 = mockMvc.perform(get(allEditionsPath + "?courseId=" + course.getCourseId())
                 .header(HttpHeaders.AUTHORIZATION, "")
                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                 .content(objectMapper.writeValueAsString(courseRequest)))
@@ -278,12 +278,12 @@ public class CourseControllerTest {
                 .andReturn();
 
         String content2 = mvcResult2.getResponse().getContentAsString();
-        Course course2 = objectMapper.readValue(content2, Course.class);
+        CourseResponse course2 = objectMapper.readValue(content2, CourseResponse.class);
 
         String resultContent = mvcResult1.getResponse().getContentAsString();
         EditionsResponse response = objectMapper.readValue(resultContent, EditionsResponse.class);
-        Assert.assertEquals(Arrays.asList(course.getId(),
-                course2.getId()), response.getCourseIds());
+        Assert.assertEquals(Arrays.asList(course.getCourseId(),
+                course2.getCourseId()), response.getCourseIds());
 
     }
 
@@ -315,12 +315,12 @@ public class CourseControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
         String content1 = mvcResult.getResponse().getContentAsString();
-        Course course = objectMapper.readValue(content1, Course.class);
+        CourseResponse course = objectMapper.readValue(content1, CourseResponse.class);
 
-        GradeRequest gradeRequest1 = new GradeRequest(course.getId(), 7.6F, 1);
-        GradeRequest gradeRequest2 = new GradeRequest(course.getId(), 9.9F, 2);
-        GradeRequest gradeRequest3 = new GradeRequest(course.getId(), 2.0F, 3);
-        GradeRequest gradeRequest4 = new GradeRequest(course.getId(), 7.0F, 4);
+        GradeRequest gradeRequest1 = new GradeRequest(course.getCourseId(), 7.6F, 1);
+        GradeRequest gradeRequest2 = new GradeRequest(course.getCourseId(), 9.9F, 2);
+        GradeRequest gradeRequest3 = new GradeRequest(course.getCourseId(), 2.0F, 3);
+        GradeRequest gradeRequest4 = new GradeRequest(course.getCourseId(), 7.0F, 4);
 
         List<GradeRequest> requests = Arrays.asList(gradeRequest1, gradeRequest2,
                 gradeRequest3, gradeRequest4);
@@ -388,9 +388,9 @@ public class CourseControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
         String content1 = mvcResult1.getResponse().getContentAsString();
-        Course course = objectMapper.readValue(content1, Course.class);
+        CourseResponse course = objectMapper.readValue(content1, CourseResponse.class);
         //now we check if it has the correct course id.
-        MvcResult mvcResult = mockMvc.perform(get("/api/courses/get/" + course.getId())
+        MvcResult mvcResult = mockMvc.perform(get("/api/courses/get/" + course.getCourseId())
                         .header(HttpHeaders.AUTHORIZATION, ""))
                 .andExpect(status().isOk())
                 .andReturn();
