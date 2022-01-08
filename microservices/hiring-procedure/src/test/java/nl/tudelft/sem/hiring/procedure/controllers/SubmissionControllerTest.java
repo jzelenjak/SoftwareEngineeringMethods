@@ -85,7 +85,7 @@ public class SubmissionControllerTest {
     private static final String NUMBER_OF_STUDENTS = "numberOfStudents";
     private static final String USER_ID_STR = "userId";
     private static final String START_DATE_STR = "startDate";
-    private static final String FINISH_DATE_STR = "finishDate";
+    private static final String FINISH_DATE_STR = "endDate";
     private static final String SUBMISSION_ID_PARAM = "submissionId";
     private static final String PARAM_STARTER = "?";
     private static final String PARAM_CONTINUER = "&";

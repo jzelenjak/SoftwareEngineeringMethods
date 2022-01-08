@@ -7,13 +7,17 @@ import com.google.gson.JsonParser;
 import com.itextpdf.text.DocumentException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
-import java.io.IOException;
+
+import java.io.*;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
+
+import jdk.jfr.ContentType;
 import lombok.Data;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
 import nl.tudelft.sem.hiring.procedure.contracts.Contract;
@@ -32,9 +36,17 @@ import nl.tudelft.sem.hiring.procedure.validation.AsyncTaLimitValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncUserExistsValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncValidator;
 import nl.tudelft.sem.jwt.JwtUtils;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -47,6 +59,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
+
+import javax.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/api/hiring-procedure")
@@ -107,8 +121,7 @@ public class SubmissionController {
         return head.validate(authHeader, "").flatMap(value -> {
             long userId;
             userId = getUserIdFromToken(authHeader);
-
-            if (submissionService.checkSameSubmission(userId, courseId)) {
+            if (!submissionService.checkSameSubmission(userId, courseId)) {
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "User has already applied"));
             }
@@ -292,6 +305,11 @@ public class SubmissionController {
         });
     }
 
+    @GetMapping( value = "/get-help", produces = "image/png")
+    public FileSystemResource getHelp() throws IOException {
+        return new FileSystemResource("E:\\Projects\\SEM\\sem-repo-13a\\microservices\\hiring-procedure\\src\\main\\resources\\index.png");
+    }
+
     /**
      * Endpoint for retrieving the contract of a user, for a course.
      * Current implementation just returns a template contract, to be filled by the TA.
@@ -303,11 +321,17 @@ public class SubmissionController {
      * @param headers  is the list of the request headers
      * @return a byte stream of the contract pdf
      */
-    @GetMapping("get-contract")
-    public Mono<byte[]> getContract(@RequestParam(required = false) Long userId,
-                                    @RequestParam(required = false) String name,
-                                    @RequestParam long courseId,
-                                    @RequestHeader HttpHeaders headers) {
+    @GetMapping(value = "get-contract", produces = "application/pdf")
+    public FileSystemResource getContract(@RequestParam(required = false) Long userId,
+                                              @RequestParam(required = false) String name,
+                                              @RequestParam long courseId,
+                                              @RequestHeader HttpHeaders headers,
+                                              HttpServletResponse response) throws IOException {
+
+        File file = new File("out/" + "index" + ".png");
+        InputStream in = FileUtils.openInputStream(file);
+        return new FileSystemResource("E:\\Projects\\SEM\\sem-repo-13a\\microservices\\hiring-procedure\\out\\1.pdf");
+        /*
         AsyncValidator head = buildVariableValidator(userId);
 
         return head.validate(headers, "").flatMap(value -> {
@@ -320,8 +344,13 @@ public class SubmissionController {
                         COURSE_NOT_FOUND)))
                         .flatMap(info -> {
                     contract.setTaName(name);
-                    return setContractParamsAndGenerate(info, contract, headers, courseId);
-                });
+                            try {
+                                return Mono.just(setContractParamsAndGenerate(info, contract, headers, courseId));
+                            } catch (IOException e) {
+                                return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                                        "Contract generation failed"));
+                            }
+                        });
             }
             Mono<String> userName = getNameFromUserId(userId, token);
             return userName
@@ -333,9 +362,16 @@ public class SubmissionController {
                        .doOnError(e -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                                COURSE_NOT_FOUND)))
                        .flatMap(info ->
-                       setContractParamsAndGenerate(info, contract, headers, courseId));
+                       {
+                           try {
+                               return Mono.just(setContractParamsAndGenerate(info, contract, headers, courseId));
+                           } catch (IOException e) {
+                               return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                                       "Contract generation failed"));
+                           }
+                       });
             });
-        });
+        }).block();*/
     }
 
     /**
@@ -533,7 +569,7 @@ public class SubmissionController {
 
         } else {
             builder.addValidator(new AsyncRoleValidator(jwtUtils,
-                    Set.of(Roles.TA)));
+                    Set.of(Roles.TA, Roles.STUDENT)));
         }
         return builder.build();
     }
@@ -588,17 +624,17 @@ public class SubmissionController {
     }
 
     private ZonedDateTime getEndDateFromInfo(JsonObject info) {
-        return ZonedDateTime.parse(info.get("finishDate").getAsString());
+        return ZonedDateTime.parse(info.get("endDate").getAsString());
     }
 
     private String getCourseCodeFromInfo(JsonObject info) {
         return info.get("courseCode").getAsString();
     }
 
-    private Mono<byte[]> setContractParamsAndGenerate(JsonObject info,
+    private byte[] setContractParamsAndGenerate(JsonObject info,
                                                       Contract contract,
                                                       HttpHeaders headers,
-                                                      Long courseId) {
+                                                      Long courseId) throws IOException {
         String courseCode = getCourseCodeFromInfo(info);
         ZonedDateTime startDate = getStartDateFromInfo(info);
         ZonedDateTime endDate = getEndDateFromInfo(info);
@@ -608,10 +644,16 @@ public class SubmissionController {
         contract.setMaxHours(submissionService.
                 getMaxHours(getUserIdFromToken(headers), courseId));
         try {
-            return Mono.just(contract.generate());
+            String name = LocalDateTime.now().toString();
+            name = name.replace(":", "-");
+            name = name.replace(".", "-");
+            contract.generate(name);
+            File file = new File("out/" + "index" + ".png");
+            InputStream in = new FileInputStream(file);
+            return IOUtils.toByteArray(in);
+            //return Files.readAllBytes(file.toPath());
         } catch (IOException | DocumentException e) {
-            return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Generating contract failed"));
+            throw new IOException("Generating contract failed");
         }
     }
 }

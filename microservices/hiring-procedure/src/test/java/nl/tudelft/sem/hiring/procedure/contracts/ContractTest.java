@@ -25,6 +25,6 @@ public class ContractTest {
     public void generatePdfTest() {
         Contract contract = new Contract("Mihnea", "CSE1215",
                 ZonedDateTime.now(), ZonedDateTime.now(), 100);
-        assertDoesNotThrow(contract::generate);
+        assertDoesNotThrow(() -> contract.generate("name"));
     }
 }

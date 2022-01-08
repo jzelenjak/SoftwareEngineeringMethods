@@ -36,7 +36,7 @@ public class AsyncCourseTimeValidator extends AsyncBaseValidator {
         return courseInfoCache.getCourseInfoResponse(authorization, courseId)
                 .flatMap(responseBody -> {
                     var response = JsonParser.parseString(responseBody).getAsJsonObject();
-                    var start = ZonedDateTime.parse(response.get("startTime").getAsString());
+                    var start = ZonedDateTime.parse(response.get("startDate").getAsString());
 
                     // Check if the course registration period has not ended yet
                     if (ZonedDateTime.now().plus(VALID_DURATION).isAfter(start)) {

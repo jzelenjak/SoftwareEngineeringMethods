@@ -6,11 +6,14 @@ import com.itextpdf.text.pdf.PdfContentByte;
 import com.itextpdf.text.pdf.PdfReader;
 import com.itextpdf.text.pdf.PdfStamper;
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.tomcat.jni.File;
 
 @Getter
 @Setter
@@ -55,11 +58,10 @@ public class Contract {
     /**
      * Method for generating a byte array corresponding to the personalized contract.
      *
-     * @return byte array of the pdf
      * @throws IOException if the resource is not present on the server or other issues
      * @throws DocumentException if PdfStamper does not work
      */
-    public byte[] generate() throws IOException, DocumentException {
+    public void generate(String name) throws IOException, DocumentException {
         URL baseContract;
 
         baseContract = Thread.currentThread().getContextClassLoader()
@@ -73,7 +75,7 @@ public class Contract {
                 BaseFont.HELVETICA, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PdfReader reader = new PdfReader(baseContract); // input PDF
-        PdfStamper stamper = new PdfStamper(reader, outputStream); // output PDF
+        PdfStamper stamper = new PdfStamper(reader, new FileOutputStream("out/" + name + ".pdf")); // output PDF
 
         if (this.taName != null) {
             addText(taName, taPos, stamper, bf);
@@ -90,7 +92,7 @@ public class Contract {
         addText(String.valueOf(maxHours), maxHoursPos, stamper, bf);
 
         stamper.close();
-        return outputStream.toByteArray();
+        return;
     }
 
     private void addText(String text, Position pos, PdfStamper stamper, BaseFont bf) {
