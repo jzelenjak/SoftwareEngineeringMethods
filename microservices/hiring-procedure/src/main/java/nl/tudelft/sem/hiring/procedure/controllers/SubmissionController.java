@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.Data;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
+import nl.tudelft.sem.hiring.procedure.contracts.Contract;
 import nl.tudelft.sem.hiring.procedure.entities.Submission;
 import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
 import nl.tudelft.sem.hiring.procedure.services.NotificationService;
@@ -310,6 +311,11 @@ public class SubmissionController {
             AsyncValidator head = builder.build();
             return head.validate(headers, "").flatMap(value -> {
                 try {
+                    Contract contract = new Contract();
+                    // Get TA name
+                    // Get course start date and end date
+                    // Get course code
+
                     return Mono.just(Thread.currentThread().getContextClassLoader()
                             .getResourceAsStream("templatecontract.pdf").readAllBytes());
                 } catch (IOException e) {
