@@ -238,3 +238,34 @@ The response object gives a map-like structure, where student ids are matched to
 | 200 OK        | Successful completion                                      |
 | 404 NOT FOUND | No statistics found for the specified students and courses |
 | 403 FORBIDDEN | User is not permitted to access the endpoint               |
+
+---
+
+```
+POST /api/hour-management/statistics/aggregation-stats
+```
+
+Endpoint for retrieving the mode, median, and standard deviation of hours worked given a list of student ids and course id. This endpoint is accessible by **admins**, **lecturers**. All requests towards this endpoint require the use of the following body used to request the desired data;
+
+```json
+{
+  "studentIds": [1234, 5678],
+  "courseIds": [4321, 8765]
+}
+```
+
+The response object is an aggregation statistics object that contains the mode, median, and standard deviation.
+
+```json
+{
+  "mode": 12.1,
+  "median": 5,
+  "standardDeviation": 123.551
+}
+```
+
+| Response code | Reason                                                     |
+| ------------- | ---------------------------------------------------------- |
+| 200 OK        | Successful completion                                      |
+| 404 NOT FOUND | No statistics found for the specified students and courses |
+| 403 FORBIDDEN | User is not permitted to access the endpoint               |
