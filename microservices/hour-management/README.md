@@ -25,3 +25,12 @@ Many of the operations inside the microservice operate within Monos, Java's vers
 The validation chain is an integral part of the microservice as it allows easy and extensible validation of users and requests. Currently, each component in the chain explicitly performs a single check, and should the chain be extended in the future, it is recommended to continue keeping the components granular. Each component operations within Mono's and either returns an error or passes along the request to the next component within the chain. If none of the components throw an exception a successful operation flag (boolean True) is returned from the chain.
 
 For the sake of making it easy to construct the chain, a builder has been created as well. This allows each endpoint to easily construct **its own chain**.
+
+## API
+
+A description of the API that is exposed by the hour management microservice can be found in the [`docs/API-document`](docs/API-document.md) document.
+
+## Testing
+
+We have properly tested this microservice using a variety of test frameworks and testing techniques. A document related to this topic can be found in the [`docs/Testing-documentation.md`](docs/Testing-documentation.md) document. This document contains a description of certain test conventions as well as manual/functional tests made with Postman.
+
