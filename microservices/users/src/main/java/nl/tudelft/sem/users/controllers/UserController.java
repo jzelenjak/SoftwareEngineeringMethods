@@ -280,7 +280,10 @@ public class UserController {
         JsonNode jsonNode = new ObjectMapper().readTree(req.getInputStream());
         long userId = parseUserId(parseJsonField(jsonNode, USERID));
         String newFirstName = parseJsonField(jsonNode, FIRSTNAME);
-        this.userService.changeFirstName(userId, newFirstName);
+        if (!this.userService.changeFirstName(userId, newFirstName)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                String.format("No user with userid '%d' found!", userId));
+        }
     }
 
     /**
@@ -299,7 +302,10 @@ public class UserController {
         JsonNode jsonNode = new ObjectMapper().readTree(req.getInputStream());
         long userId = parseUserId(parseJsonField(jsonNode, USERID));
         String newLastName = parseJsonField(jsonNode, LASTNAME);
-        this.userService.changeLastName(userId, newLastName);
+        if (!this.userService.changeLastName(userId, newLastName)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                String.format("No user with userid '%d' found!", userId));
+        }
     }
 
     /**
@@ -338,6 +344,18 @@ public class UserController {
                             .body(createJson("message", "User deleted successfully!")));
                 });
     }
+
+    /**
+     * Teach people not to make sus requests.
+     *
+     * @return a simple yet famous and very important message
+     */
+    @GetMapping("/admin")
+    @ResponseStatus(HttpStatus.NOT_ACCEPTABLE)
+    public @ResponseBody String kindaSus() {
+        return "Kinda sus, ngl!";
+    }
+
 
 
     /*

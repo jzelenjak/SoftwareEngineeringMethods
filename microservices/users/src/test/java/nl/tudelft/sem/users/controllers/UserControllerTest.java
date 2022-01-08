@@ -524,6 +524,17 @@ class UserControllerTest {
     }
 
     @Test
+    void testChangeFirstNameNotFound() throws Exception {
+        configureGateway(CHANGE_FIRST_NAME_API);
+        configureJwsMock(UserRole.ADMIN.name());
+
+        String json = new ObjectMapper().createObjectNode().put(USERID, 6969669L)
+            .put(FIRSTNAME, newFirstName).toString();
+
+        mockMvcChangeFirstName(json).andExpect(status().isNotFound());
+    }
+
+    @Test
     void testChangeFirstNameSuccessful() throws Exception {
         configureGateway(CHANGE_FIRST_NAME_API);
         configureJwsMock(UserRole.ADMIN.name());
@@ -556,6 +567,17 @@ class UserControllerTest {
 
         mockMvcChangeLastName(json).andExpect(status().isForbidden());
         assertRecordedRequestNull();
+    }
+
+    @Test
+    void testChangeLastNameNotFound() throws Exception {
+        configureGateway(CHANGE_LAST_NAME_API);
+        configureJwsMock(UserRole.ADMIN.name());
+
+        String json = new ObjectMapper().createObjectNode().put(USERID, 4242442L)
+            .put(LASTNAME, newLastName).toString();
+
+        mockMvcChangeLastName(json).andExpect(status().isNotFound());
     }
 
     @Test
@@ -656,6 +678,15 @@ class UserControllerTest {
     /**
      * Remaining tests for 100% coverage.
      */
+
+    @Test
+    void testKindaSus() throws Exception {
+        String message = mockMvc.perform(get("/api/users/admin"))
+                .andExpect(status().isNotAcceptable())
+            .andReturn().getResponse().getContentAsString();
+
+        Assertions.assertThat(message).isEqualTo("Kinda sus, ngl!");
+    }
 
     @Test
     void testGatewayConfigHost() {

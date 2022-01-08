@@ -7,11 +7,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import nl.tudelft.sem.hiring.procedure.entities.Application;
+import nl.tudelft.sem.hiring.procedure.entities.Submission;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.HoursStrategy;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.RecommendationStrategy;
-import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
+import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.Dispatcher;
@@ -32,7 +32,7 @@ import org.springframework.web.server.ResponseStatusException;
 @SpringBootTest
 public class HoursStrategyTest {
     @Autowired
-    private transient ApplicationRepository repo;
+    private transient SubmissionRepository repo;
 
     private transient RecommendationStrategy strategy;
 
@@ -118,9 +118,9 @@ public class HoursStrategyTest {
         // Prepare the repository, mockWebServer and gatewayConfig
 
         // Applicants No36,37,38; Course with courseId 6666 (same code as 6665)
-        this.repo.save(new Application(36L, 6666L, time));
-        this.repo.save(new Application(37L, 6666L, time));
-        this.repo.save(new Application(38L, 6666L, time));
+        this.repo.save(new Submission(36L, 6666L, time));
+        this.repo.save(new Submission(37L, 6666L, time));
+        this.repo.save(new Submission(38L, 6666L, time));
 
         String jsonFromCourses = mapper.createObjectNode()
                 .set(COURSE_IDS, mapper.valueToTree(List.of(6666L, 6665L))).toString();
@@ -157,8 +157,8 @@ public class HoursStrategyTest {
         // Prepare the repository, mockWebServer and gatewayConfig
 
         // Applicants No74, No59; Course with courseId 29 (same code as 20)
-        this.repo.save(new Application(74L, 29L, time));
-        this.repo.save(new Application(59L, 29L, time));
+        this.repo.save(new Submission(74L, 29L, time));
+        this.repo.save(new Submission(59L, 29L, time));
 
         mockWebServer.enqueue(new MockResponse().setResponseCode(500));
 
@@ -178,7 +178,7 @@ public class HoursStrategyTest {
         // Prepare the repository, mockWebServer and gatewayConfig
 
         // Applicant No112; Course with courseId 666 (same code as 665)
-        this.repo.save(new Application(112L, 666L, time));
+        this.repo.save(new Submission(112L, 666L, time));
 
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(""));
 
@@ -198,7 +198,7 @@ public class HoursStrategyTest {
         // Prepare the repository, mockWebServer and gatewayConfig
 
         // Applicant No112; Course with courseId 666 (same code as 665)
-        this.repo.save(new Application(112L, 666L, time));
+        this.repo.save(new Submission(112L, 666L, time));
 
         String json = mapper.createObjectNode()
                 .set("courseIDs", mapper.valueToTree(List.of(666L, 665L))).toString();
@@ -220,7 +220,7 @@ public class HoursStrategyTest {
         // Prepare the repository, mockWebServer and gatewayConfig
 
         // Applicant No1234; Course with courseId 555 (same code as 554)
-        this.repo.save(new Application(1234L, 555L, time));
+        this.repo.save(new Submission(1234L, 555L, time));
 
         String json = mapper.createObjectNode().put(COURSE_IDS, "AMOGUS").toString();
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(json));
@@ -241,7 +241,7 @@ public class HoursStrategyTest {
         // Prepare the repository, mockWebServer and gatewayConfig
 
         // Applicant No5432; Course with courseId 532 (same code as 531)
-        this.repo.save(new Application(5432L, 532L, time));
+        this.repo.save(new Submission(5432L, 532L, time));
 
         String json = mapper.createObjectNode()
                 .set(COURSE_IDS, mapper.valueToTree(List.of(532L, 531L))).toString();
@@ -264,7 +264,7 @@ public class HoursStrategyTest {
         // Prepare the repository, mockWebServer and gatewayConfig
 
         // Applicant No80; Course with courseId 8080 (same code as 8088)
-        this.repo.save(new Application(80L, 8080L, time));
+        this.repo.save(new Submission(80L, 8080L, time));
 
         String jsonFromCourses = mapper.createObjectNode()
                 .set(COURSE_IDS, mapper.valueToTree(List.of(8080L, 8088L))).toString();
@@ -287,7 +287,7 @@ public class HoursStrategyTest {
         // Prepare the repository, mockWebServer and gatewayConfig
 
         // Applicant No88; Course with courseId 8088 (same code as 8080)
-        this.repo.save(new Application(88L, 8088L, time));
+        this.repo.save(new Submission(88L, 8088L, time));
 
         String jsonFromCourses = mapper.createObjectNode()
                 .set(COURSE_IDS, mapper.valueToTree(List.of(8088L, 8080L))).toString();
@@ -312,7 +312,7 @@ public class HoursStrategyTest {
         // Prepare the repository, mockWebServer and gatewayConfig
 
         // Applicant No81; Course with courseId 443 (same code as 80)
-        this.repo.save(new Application(81L, 443L, time));
+        this.repo.save(new Submission(81L, 443L, time));
 
         String jsonFromCourses = mapper.createObjectNode()
                 .set(COURSE_IDS, mapper.valueToTree(List.of(443L, 80L))).toString();
