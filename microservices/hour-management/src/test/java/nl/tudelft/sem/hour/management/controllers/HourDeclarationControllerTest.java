@@ -163,6 +163,8 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testPostDeclaration() throws Exception {
+        long count = hourDeclarationRepository.count(); // find how many objects are in the repo
+
         JsonObject responseBody = configureCourseResponseBody(
                 ZonedDateTime.now().minusWeeks(1L), ZonedDateTime.now().plusWeeks(1L));
 
@@ -187,14 +189,14 @@ public class HourDeclarationControllerTest {
 
         // Expected response object
         JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("message", "Declaration with id 3 has been successfully saved.");
+        jsonObject.addProperty("message", "Declaration with id " +(count + 1L) + " has been successfully saved.");
 
         // Wait for response
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(content().json(jsonObject.toString()));
 
-        Optional<HourDeclaration> saved = hourDeclarationRepository.findById(3L);
+        Optional<HourDeclaration> saved = hourDeclarationRepository.findById(count + 1L);
 
         assertThat(saved.isEmpty()).isFalse();
         assertThat(saved.get().getStudentId()).isEqualTo(hourDeclarationRequestNew.getStudentId());
@@ -309,19 +311,21 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testRejectDeclaration() throws Exception {
+        HourDeclaration saved = hourDeclarationRepository.save(hourDeclarationUnapproved);
+
         when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
-        when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(saved.getDeclarationId());
 
         // Enqueue response that tells us that the user teaches the course
         // associated to the declaration ID
         mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value()));
 
         when(notificationService.notify(1234L,
-                "Your declaration with id 1 has been rejected.",
+                "Your declaration with id " + saved.getDeclarationId() + " has been rejected.",
                 ""))
                 .thenReturn(Mono.empty());
 
-        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/1/reject")
+        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/" + saved.getDeclarationId() + "/reject")
                         .header(authorization, ""))
                 .andReturn();
 
@@ -329,7 +333,7 @@ public class HourDeclarationControllerTest {
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk());
 
-        Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository.findById(1L);
+        Optional<HourDeclaration> hourDeclaration = hourDeclarationRepository.findById(saved.getDeclarationId());
 
         // ensures that delete is no longer in system
         assertThat(hourDeclaration.isEmpty()).isTrue();
@@ -342,7 +346,7 @@ public class HourDeclarationControllerTest {
     @Test
     void testRejectDeclarationInvalidId() throws Exception {
         when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
-        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/20/reject")
+        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/9999/reject")
                         .header(authorization, ""))
                 .andReturn();
 
@@ -352,20 +356,22 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testRejectDeclarationNotificationFail() throws Exception {
+        HourDeclaration saved = hourDeclarationRepository.save(hourDeclarationUnapproved);
+
         when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
-        when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(saved.getDeclarationId());
 
         // Enqueue response that tells us that the user teaches the course
         // associated to the declaration ID
         mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value()));
 
         when(notificationService.notify(1234L,
-                "Your declaration with id 1 has been rejected.",
+                "Your declaration with id " + saved.getDeclarationId() + " has been rejected.",
                 ""))
                 .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.CONFLICT,
                         "Failed to register notification")));
 
-        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/1/reject")
+        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/" + saved.getDeclarationId() + "/reject")
                         .header(authorization, ""))
                 .andReturn();
 
@@ -379,14 +385,16 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testRejectDeclarationAlreadyApproved() throws Exception {
+        HourDeclaration saved = hourDeclarationRepository.save(hourDeclarationApproved);
+
         when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
-        when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
+        when(jwtUtils.getUserId(jwsMock)).thenReturn(saved.getDeclarationId());
 
         // Enqueue response that tells us that the user teaches the course
         // associated to the declaration ID
         mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.OK.value()));
 
-        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/2/reject")
+        MvcResult mvcResult = mockMvc.perform(delete("/api/hour-management/declaration/" + saved.getDeclarationId() + "/reject")
                         .header(authorization, ""))
                 .andReturn();
 
@@ -400,6 +408,7 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testApproveDeclaration() throws Exception {
+
         when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(jwtUtils.getUserId(jwsMock)).thenReturn(1L);
 
