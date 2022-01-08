@@ -32,6 +32,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -53,7 +54,7 @@ import reactor.core.publisher.Mono;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 public class HourDeclarationControllerTest {
 
@@ -109,11 +110,6 @@ public class HourDeclarationControllerTest {
         when(gatewayConfig.getHost()).thenReturn(url.host());
         when(gatewayConfig.getPort()).thenReturn(url.port());
 
-        hourDeclarationRepository.deleteAll();
-
-        hourDeclarationRepository.save(hourDeclarationUnapproved);
-        hourDeclarationRepository.save(hourDeclarationApproved);
-
         when(jwtUtils.resolveToken(Mockito.any())).thenReturn("");
         when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(jwsMock);
         when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.ADMIN.name());
@@ -121,6 +117,8 @@ public class HourDeclarationControllerTest {
 
     @AfterEach
     void tearDown() throws IOException {
+        hourDeclarationRepository.deleteAll();
+
         mockWebServer.shutdown();
     }
 
@@ -137,6 +135,9 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testGetAllDeclarations() throws Exception {
+        hourDeclarationRepository.save(hourDeclarationUnapproved);
+        hourDeclarationRepository.save(hourDeclarationApproved);
+
         List<HourDeclaration> expectedResponseBody = hourDeclarationRepository.findAll();
 
         MvcResult mvcResult = mockMvc.perform(get(declarationPath)
@@ -151,8 +152,6 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testGetAllDeclarationsEmpty() throws Exception {
-        hourDeclarationRepository.deleteAll();
-
         MvcResult mvcResult = mockMvc.perform(get(declarationPath)
                         .header(authorization, ""))
                 .andReturn();
@@ -259,9 +258,13 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testGetSpecifiedDeclaration() throws Exception {
-        Optional<HourDeclaration> expectedResponseBody = hourDeclarationRepository.findById(1L);
+        HourDeclaration saved = hourDeclarationRepository.save(hourDeclarationUnapproved);
 
-        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/1")
+        Optional<HourDeclaration> expectedResponseBody = hourDeclarationRepository
+                .findById(saved.getDeclarationId());
+
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/"
+                        + saved.getDeclarationId())
                         .header(authorization, ""))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -285,12 +288,16 @@ public class HourDeclarationControllerTest {
 
     @Test
     void testGetSpecifiedDeclarationUserAccessesTheirOwnDeclarations() throws Exception {
-        Optional<HourDeclaration> expectedResponseBody = hourDeclarationRepository.findById(1L);
+        HourDeclaration saved = hourDeclarationRepository.save(hourDeclarationUnapproved);
+
+        Optional<HourDeclaration> expectedResponseBody = hourDeclarationRepository
+                .findById(saved.getDeclarationId());
 
         when(jwtUtils.getRole(Mockito.any())).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
         when(jwtUtils.getUserId(jwsMock)).thenReturn(1234L);
 
-        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/1")
+        MvcResult mvcResult = mockMvc.perform(get("/api/hour-management/declaration/"
+                        + saved.getDeclarationId())
                         .header(authorization, ""))
                 .andReturn();
 
