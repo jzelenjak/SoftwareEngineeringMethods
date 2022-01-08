@@ -1,10 +1,8 @@
-# CSE2115 - Project (sem-repo-13a)
+# CSE2115 - TA Hiring System (sem-repo-13a)
 
 ![Aggregated coverage](https://gitlab.ewi.tudelft.nl/cse2115/2021-2022/sem-group-13a/sem-repo-13a/badges/main/coverage.svg)
 
----
-
-**Table of contents**
+## Table of contents
 
 1. [About](#about)
 2. [Running](#running)
