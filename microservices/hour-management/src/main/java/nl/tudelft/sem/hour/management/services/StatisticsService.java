@@ -3,10 +3,12 @@ package nl.tudelft.sem.hour.management.services;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Data;
+import nl.tudelft.sem.hour.management.dto.AggregationStatistics;
 import nl.tudelft.sem.hour.management.dto.StudentHoursTuple;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
@@ -48,6 +50,42 @@ public class StatisticsService {
     }
 
     /**
+     * Calculate the total aggregation statistics for the provided set of studentIds and courseIds.
+     *
+     * @param studentIds ids of students to consider
+     * @param courseIds ids of courses to consider
+     * @return total aggregation statistics of specified declarations.
+     *         If there has been a problem, returns an empty optional
+     */
+    public Optional<AggregationStatistics> calculateAggregationStatistics(Set<Long> studentIds,
+                                                                          Set<Long> courseIds) {
+        // Get the required values from repository
+        Collection<HourDeclaration> hourDeclarationCollection
+                = hourDeclarationRepository.findByCourseIdSetAndStudentIdSet(studentIds, courseIds);
+
+        // If empty return an empty optional
+        if (hourDeclarationCollection.isEmpty()) {
+            return Optional.empty();
+        }
+
+        double mean = calculateMean(hourDeclarationCollection);
+
+        // If there has been a problem with values, return an empty optional
+        if (mean == -1) {
+            return Optional.empty();
+        }
+
+        // median/std can return -1 when only they are empty, since that is checked no need
+        double median = calculateMedian(hourDeclarationCollection);
+
+        double standardDeviation = calculateStandardDeviation(mean, hourDeclarationCollection);
+
+
+
+        return Optional.of(new AggregationStatistics(mean, median, standardDeviation));
+    }
+
+    /**
      * Calculates the mean of a collection of declared hours.
      *
      * @param hourDeclarationCollection collection containing hour declarations.
@@ -58,17 +96,16 @@ public class StatisticsService {
 
         // Does not use the getTotalHoursPerStudentPerCourse
         // method to avoid additional repository accesses
-        Optional<Double> result = hourDeclarationCollection
+        OptionalDouble result = hourDeclarationCollection
                 .stream()
-                .map(HourDeclaration::getDeclaredHours)
-                .reduce(Double::sum);
+                .mapToDouble(HourDeclaration::getDeclaredHours)
+                .average();
 
-        // If empty, return a special value
-        if (result.isEmpty()) {
+        if (result.isEmpty() || result.getAsDouble() < 0) {
             return -1;
         }
-
-        return result.get() / hourDeclarationCollection.size();
+        // If empty, return a special value
+        return result.getAsDouble();
     }
 
     /**
@@ -108,15 +145,18 @@ public class StatisticsService {
      */
     public double calculateStandardDeviation(double mean, Collection<HourDeclaration>
             hourDeclarationCollection) {
+        // Calculate the sum term in the std formula
         Optional<Double> result = hourDeclarationCollection
                 .stream()
                 .map(v -> Math.pow(v.getDeclaredHours() - mean, 2.0))
                 .reduce(Double::sum);
 
+        // If empty, return a special value
         if (result.isEmpty()) {
             return -1;
         }
 
+        // Calculate the std and return it
         return Math.sqrt(result.get() / hourDeclarationCollection.size());
     }
 
