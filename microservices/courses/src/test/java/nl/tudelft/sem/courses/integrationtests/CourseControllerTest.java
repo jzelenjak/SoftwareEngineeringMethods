@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.EditionsResponse;
@@ -307,7 +306,7 @@ public class CourseControllerTest {
     }
 
     @Test
-    void testGetMultipleUserGradesValid() throws Exception{
+    void testGetMultipleUserGradesValid() throws Exception {
         //create a course
         MvcResult mvcResult = mockMvc.perform(post(createCoursePath)
                 .header(HttpHeaders.AUTHORIZATION, "")
@@ -325,7 +324,7 @@ public class CourseControllerTest {
 
         List<GradeRequest> requests = Arrays.asList(gradeRequest1, gradeRequest2,
                 gradeRequest3, gradeRequest4);
-        for(GradeRequest request: requests) {
+        for (GradeRequest request : requests) {
             mockMvc.perform(post(createGradePath)
                     .header(HttpHeaders.AUTHORIZATION, "")
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
@@ -345,7 +344,8 @@ public class CourseControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
         String resultContent = mvcResultGrades.getResponse().getContentAsString();
-        Map<Long, Float> result = objectMapper.readValue(resultContent, new TypeReference<Map<Long, Float>>() {});
+        Map<Long, Float> result = objectMapper.readValue(resultContent,
+                new TypeReference<Map<Long, Float>>() {});
         Map<Long, Float> expectedResult = new LinkedHashMap<>();
         expectedResult.put(gradeRequest2.getUserId(), gradeRequest2.getGrade());
         expectedResult.put(gradeRequest1.getUserId(), gradeRequest1.getGrade());
@@ -354,7 +354,7 @@ public class CourseControllerTest {
     }
 
     @Test
-    void testGetMultipleUserGradesNoRequestBody() throws Exception{
+    void testGetMultipleUserGradesNoRequestBody() throws Exception {
         RecommendationRequest request = null;
 
         mockMvc.perform(get(multipleUserGrades)

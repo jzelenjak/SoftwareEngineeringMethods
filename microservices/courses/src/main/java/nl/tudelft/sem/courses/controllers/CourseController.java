@@ -240,7 +240,7 @@ public class CourseController {
     public boolean addGrade(@RequestBody GradeRequest request,
                             @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if (checkIfLecturerOrAdmin(webToken)) {
+        if (checkIfAdmin(webToken)||checkIfLecturer(webToken)&&courseService.lecturerTeachesCourse(jwtUtils.getUserId(webToken), request.getCourseId())) {
             if (request == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "No Request was provided");
@@ -407,6 +407,20 @@ public class CourseController {
      * @return - true if admin else false
      */
     public boolean checkIfAdmin(Jws<Claims> claimsJws) {
+        if (claimsJws == null) {
+            return false;
+        }
+        String role = jwtUtils.getRole(claimsJws);
+        return role.equals("ADMIN");
+    }
+    /**
+     * Method checks if role in web token is
+     * lecturer.
+     *
+     * @param claimsJws - a web token
+     * @return - true if lecturer else false
+     */
+    public boolean checkIfLecturer(Jws<Claims> claimsJws) {
         if (claimsJws == null) {
             return false;
         }

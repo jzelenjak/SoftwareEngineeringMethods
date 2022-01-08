@@ -201,11 +201,9 @@ public class CourseService {
         if (recommendationRequest == null) {
             return null;
         }
-        Long courseId = recommendationRequest.getCourseId();
-
         List<Map.Entry<Long, Float>> list = new ArrayList<>();
         for (Long userId : recommendationRequest.getUserIds()) {
-            Grade grade = getGrade(userId,courseId);
+            Grade grade = getGrade(userId, recommendationRequest.getCourseId());
             if (grade != null && grade.getGradeValue() >= recommendationRequest.getMinGrade()) {
                 Map.Entry entry = new AbstractMap.SimpleEntry(userId, grade.getGradeValue());
                 list.add(entry);
