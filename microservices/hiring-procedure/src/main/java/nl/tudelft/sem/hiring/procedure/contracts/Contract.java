@@ -98,7 +98,7 @@ public class Contract {
 
         over.beginText();
         over.setFontAndSize(bf, fontSize);    // set font and size
-        over.setTextMatrix(pos.getXPos(), pos.getYPos());   // 0,0 is at the bottom left
+        over.setTextMatrix(pos.getPosX(), pos.getPosY());   // 0,0 is at the bottom left
         over.showText(text);  // set text
         over.endText();
     }

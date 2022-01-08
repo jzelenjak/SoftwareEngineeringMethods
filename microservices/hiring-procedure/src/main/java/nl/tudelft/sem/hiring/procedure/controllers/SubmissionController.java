@@ -3,10 +3,13 @@ package nl.tudelft.sem.hiring.procedure.controllers;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.itextpdf.text.DocumentException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -42,6 +45,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -301,43 +305,37 @@ public class SubmissionController {
      */
     @GetMapping("get-contract")
     public Mono<byte[]> getContract(@RequestParam(required = false) Long userId,
+                                    @RequestParam(required = false) String name,
                                     @RequestParam long courseId,
                                     @RequestHeader HttpHeaders headers) {
-        AsyncValidator.Builder builder = AsyncValidator.Builder.newBuilder();
-        builder.addValidator(new AsyncAuthValidator(jwtUtils));
-        if (userId != null) {
-            builder.addValidator(new AsyncRoleValidator(jwtUtils,
-                    Set.of(Roles.LECTURER, Roles.ADMIN)));
-            AsyncValidator head = builder.build();
-            return head.validate(headers, "").flatMap(value -> {
-                try {
-                    Contract contract = new Contract();
-                    // Get TA name
-                    // Get course start date and end date
-                    // Get course code
+        AsyncValidator head = buildVariableValidator(userId);
 
-                    return Mono.just(Thread.currentThread().getContextClassLoader()
-                            .getResourceAsStream("templatecontract.pdf").readAllBytes());
-                } catch (IOException e) {
-                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Resource was not found"));
-                }
+        return head.validate(headers, "").flatMap(value -> {
+            Contract contract = new Contract();
+            String token = headers.getFirst(HttpHeaders.AUTHORIZATION);
+            Mono<JsonObject> courseInfo = getCourseInfoFromCourseId(courseId, token);
+            if (userId == null) {
+                return courseInfo
+                        .doOnError(e -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        COURSE_NOT_FOUND)))
+                        .flatMap(info -> {
+                    contract.setTaName(name);
+                    return setContractParamsAndGenerate(info, contract, headers, courseId);
+                });
+            }
+            Mono<String> userName = getNameFromUserId(userId, token);
+            return userName
+                    .doOnError(e -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            USER_NOT_FOUND)))
+                    .flatMap(retrievedName -> {
+               contract.setTaName(retrievedName);
+               return courseInfo
+                       .doOnError(e -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                               COURSE_NOT_FOUND)))
+                       .flatMap(info ->
+                       setContractParamsAndGenerate(info, contract, headers, courseId));
             });
-        } else {
-            builder.addValidator(new AsyncRoleValidator(jwtUtils,
-                    Set.of(Roles.STUDENT, Roles.TA)));
-            AsyncValidator head = builder.build();
-            return head.validate(headers, "").flatMap(value -> {
-                try {
-                    byte[] contract = Thread.currentThread().getContextClassLoader()
-                            .getResourceAsStream("templatecontract.pdf").readAllBytes();
-                    return Mono.just(contract);
-                } catch (IOException e) {
-                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Resource was not found"));
-                }
-            });
-        }
+        });
     }
 
     /**
@@ -540,4 +538,80 @@ public class SubmissionController {
         return builder.build();
     }
 
+    private Mono<String> getNameFromUserId(Long userId, String token) {
+        return webClient.get()
+                .uri(UriComponentsBuilder.newInstance()
+                        .scheme("http")
+                        .host(gatewayConfig.getHost())
+                        .port(gatewayConfig.getPort())
+                        .pathSegment("api", "users", "by_userid")
+                        .queryParam("userId", userId)
+                        .toUriString())
+                .header(HttpHeaders.AUTHORIZATION, token)
+                .exchange()
+                .flatMap(clientResponse -> {
+                    if (clientResponse.statusCode().isError()) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                USER_NOT_FOUND));
+                    }
+                    return clientResponse.bodyToMono(String.class).flatMap(responseBody -> {
+                        var response = JsonParser.parseString(responseBody).getAsJsonObject();
+                        return Mono.just(
+                                response.get("firstName").getAsString() + response.get("lastName").getAsString());
+                    });
+                });
+    }
+
+    private Mono<JsonObject> getCourseInfoFromCourseId(Long courseId, String token) {
+        return webClient.get()
+                .uri(UriComponentsBuilder.newInstance()
+                        .scheme("http")
+                        .host(gatewayConfig.getHost())
+                        .port(gatewayConfig.getPort())
+                        .pathSegment("api", "courses", "get", courseId.toString())
+                        .toUriString())
+                .header(HttpHeaders.AUTHORIZATION, token)
+                .exchange()
+                .flatMap(clientResponse -> {
+                    if (clientResponse.statusCode().isError()) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                COURSE_NOT_FOUND));
+                    }
+                    return clientResponse.bodyToMono(String.class).flatMap(responseBody -> {
+                        return Mono.just(JsonParser.parseString(responseBody).getAsJsonObject());
+                    });
+                });
+    }
+
+    private ZonedDateTime getStartDateFromInfo(JsonObject info) {
+        return ZonedDateTime.parse(info.get("startDate").getAsString());
+    }
+
+    private ZonedDateTime getEndDateFromInfo(JsonObject info) {
+        return ZonedDateTime.parse(info.get("finishDate").getAsString());
+    }
+
+    private String getCourseCodeFromInfo(JsonObject info) {
+        return info.get("courseCode").getAsString();
+    }
+
+    private Mono<byte[]> setContractParamsAndGenerate(JsonObject info,
+                                                      Contract contract,
+                                                      HttpHeaders headers,
+                                                      Long courseId) {
+        String courseCode = getCourseCodeFromInfo(info);
+        ZonedDateTime startDate = getStartDateFromInfo(info);
+        ZonedDateTime endDate = getEndDateFromInfo(info);
+        contract.setCourseCode(courseCode);
+        contract.setStartDate(startDate);
+        contract.setEndDate(endDate);
+        contract.setMaxHours(submissionService.
+                getMaxHours(getUserIdFromToken(headers), courseId));
+        try {
+            return Mono.just(contract.generate());
+        } catch (IOException | DocumentException e) {
+            return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Generating contract failed"));
+        }
+    }
 }

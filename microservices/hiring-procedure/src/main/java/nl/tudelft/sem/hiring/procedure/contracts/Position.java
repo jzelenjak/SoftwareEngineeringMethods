@@ -4,11 +4,11 @@ import lombok.Data;
 
 @Data
 public class Position {
-    private int xPos;
-    private int yPos;
+    private int posX;
+    private int posY;
 
-    public Position(int xPos, int yPos) {
-        this.xPos = xPos;
-        this.yPos = yPos;
+    public Position(int posX, int posY) {
+        this.posX = posX;
+        this.posY = posY;
     }
 }

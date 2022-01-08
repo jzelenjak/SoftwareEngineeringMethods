@@ -80,15 +80,19 @@ public class SubmissionControllerTest {
     private static final String RESOLVED_TOKEN = "yo";
     private static final String COURSE_ID_PARAM = "courseId=";
     private static final String COURSE_ID_STR = "courseId";
+    private static final String COURSE_CODE_STR = "courseCode";
     private static final String USER_ID_PARAM = "userId=";
     private static final String NUMBER_OF_STUDENTS = "numberOfStudents";
     private static final String USER_ID_STR = "userId";
+    private static final String START_DATE_STR = "startDate";
+    private static final String FINISH_DATE_STR = "finishDate";
     private static final String SUBMISSION_ID_PARAM = "submissionId";
     private static final String PARAM_STARTER = "?";
     private static final String PARAM_CONTINUER = "&";
     private static final String APPLY_API = "/api/hiring-procedure/apply";
     private static final String HIRE_API = "/api/hiring-procedure/hire-TA";
     private static final String GET_HOURS_API = "/api/hiring-procedure/get-max-hours";
+    private static final String GET_CONTRACT_API = "/api/hiring-procedure/get-contract";
     private static final String SET_HOURS_API = "/api/hiring-procedure/set-max-hours";
     private static final String GET_RATING_API = "/api/hiring-procedure/get-rating";
     private static final String SET_RATING_API = "/api/hiring-procedure/rate";
@@ -132,8 +136,8 @@ public class SubmissionControllerTest {
         ZonedDateTime now = ZonedDateTime.now();
         JsonObject json = new JsonObject();
         json.addProperty(COURSE_ID_STR, 0);
-        json.addProperty("courseCode", "");
-        json.addProperty("startDate", now.toString());
+        json.addProperty(COURSE_CODE_STR, "");
+        json.addProperty(START_DATE_STR, now.toString());
         json.addProperty("endData", now.toString());
         json.addProperty(NUMBER_OF_STUDENTS, 0);
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(json.toString()));
@@ -407,7 +411,7 @@ public class SubmissionControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(HIRE_API)
-                        .param("userId", String.valueOf(userId))
+                        .param(USER_ID_STR, String.valueOf(userId))
                         .param("course" + "Id", String.valueOf(courseId))
                         .header(HttpHeaders.AUTHORIZATION, JWT))
                 .andReturn();
@@ -447,7 +451,7 @@ public class SubmissionControllerTest {
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(HIRE_API)
-                        .param("userId", String.valueOf(userId))
+                        .param(USER_ID_STR, String.valueOf(userId))
                         .param("course" + "Id", String.valueOf(courseId))
                         .header(HttpHeaders.AUTHORIZATION, JWT))
                 .andReturn();
@@ -780,11 +784,22 @@ public class SubmissionControllerTest {
     void testGetOwnContractSuccess() throws Exception {
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.TA.name());
+
+        JsonObject json = new JsonObject();
+        json.addProperty("id", courseId);
+        json.addProperty(COURSE_CODE_STR, "CSE1215");
+        json.addProperty(START_DATE_STR, courseStartNextYear.toString());
+        json.addProperty(FINISH_DATE_STR, courseStartNextYear.plusMonths(3).toString());
+        json.addProperty("numStudents", 420);
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(json.toString()));
 
         // Perform the call
-        MvcResult result = mockMvc.perform(get("/api/hiring-procedure/"
-                        + "get-contract?courseId=" + courseId)
+        MvcResult result = mockMvc.perform(get(GET_CONTRACT_API)
+                        .queryParam("name", "JegorSus")
+                        .queryParam(COURSE_ID_STR, String.valueOf(courseId))
                         .header(HttpHeaders.AUTHORIZATION, JWT))
                 .andReturn();
 
@@ -798,14 +813,84 @@ public class SubmissionControllerTest {
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
 
+        JsonObject json1 = new JsonObject();
+        json1.addProperty(USER_ID_STR, userId);
+        json1.addProperty("username", "aimpostor");
+        json1.addProperty("firstName", "Sussy");
+        json1.addProperty("lastName", "Baka");
+        json1.addProperty("role", "STUDENT");
+        JsonObject json2 = new JsonObject();
+        json2.addProperty("id", courseId);
+        json2.addProperty(COURSE_CODE_STR, "CSE1215");
+        json2.addProperty(START_DATE_STR, courseStartNextYear.toString());
+        json2.addProperty(FINISH_DATE_STR, courseStartNextYear.plusMonths(3).toString());
+        json2.addProperty("numStudents", 420);
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(json1.toString()));
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(json2.toString()));
+
         // Perform the call
-        MvcResult result = mockMvc.perform(get("/api/hiring-procedure/"
-                        + "get-contract?userId=" + userId + "&courseId=" + courseId)
-                        .header(HttpHeaders.AUTHORIZATION, JWT))
+        MvcResult result = mockMvc.perform(get(GET_CONTRACT_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
                 .andReturn();
 
         mockMvc.perform(asyncDispatch(result))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetContractNoCourse() throws Exception {
+        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
+        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+        JsonObject json1 = new JsonObject();
+        json1.addProperty(USER_ID_STR, userId);
+        json1.addProperty("username", "aimpostor");
+        json1.addProperty("firstName", "Sussy");
+        json1.addProperty("lastName", "Baka");
+        json1.addProperty("role", "STUDENT");
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody(json1.toString()));
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(404));
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_CONTRACT_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetContractNoUser() throws Exception {
+        when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
+        when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
+
+
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(404));
+
+        // Perform the call
+        MvcResult result = mockMvc.perform(get(GET_CONTRACT_API)
+                .queryParam(USER_ID_STR, String.valueOf(userId))
+                .queryParam(COURSE_ID_STR, String.valueOf(courseId))
+                .header(HttpHeaders.AUTHORIZATION, JWT))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -1304,10 +1389,10 @@ public class SubmissionControllerTest {
             courseInfo.addProperty("courseId", courseId);
 
             ZonedDateTime start = ZonedDateTime.now();
-            courseInfo.addProperty("startDate", start.toString());
+            courseInfo.addProperty(START_DATE_STR, start.toString());
             courseInfo.addProperty("endDate", start.plusMonths(3).toString());
 
-            courseInfo.addProperty("courseCode", RandomStringUtils.random(7));
+            courseInfo.addProperty(COURSE_CODE_STR, RandomStringUtils.random(7));
             courseInfo.addProperty(NUMBER_OF_STUDENTS,
                     ThreadLocalRandom.current().nextInt(50, 500));
 
