@@ -79,7 +79,7 @@ public class SubmissionControllerTest {
     private static final long userId = 521234;
     private static final long submissionId = 1;
     private static final ZonedDateTime courseStartNextYear = ZonedDateTime.now().plusYears(1);
-    private static final String START_TIME = "startTime";
+    private static final String START_TIME = "startDate";
     private static final String BASE_URL = "/";
     private static final String RESOLVED_TOKEN = "yo";
     private static final String COURSE_ID_PARAM = "courseId=";
@@ -157,7 +157,7 @@ public class SubmissionControllerTest {
         // Set mocks
         when(jwtUtils.getUserId(claims)).thenReturn(userId);
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
-        when(submissionService.checkSameSubmission(userId, courseId)).thenReturn(false);
+        when(submissionService.checkSameSubmission(userId, courseId)).thenReturn(true);
 
         // Register listener
         JsonObject json = new JsonObject();
@@ -238,7 +238,7 @@ public class SubmissionControllerTest {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
         when(jwtUtils.getUserId(claims)).thenReturn(userId);
-        when(submissionService.checkSameSubmission(userId, courseId)).thenReturn(true);
+        when(submissionService.checkSameSubmission(userId, courseId)).thenReturn(false);
 
         // Register listener
         JsonObject json = new JsonObject();

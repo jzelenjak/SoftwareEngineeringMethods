@@ -101,10 +101,9 @@ public class SubmissionController {
                 .build();
 
         return head.validate(authHeader, "").flatMap(value -> {
-            long userId;
-            userId = getUserIdFromToken(authHeader);
+            long userId = getUserIdFromToken(authHeader);
 
-            if (submissionService.checkSameSubmission(userId, courseId)) {
+            if (!submissionService.checkSameSubmission(userId, courseId)) {
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
                         "User has already applied"));
             }
@@ -361,6 +360,7 @@ public class SubmissionController {
                 finalUserId = getUserIdFromToken(headers);
             }
             try {
+                System.out.println(finalUserId + " " + courseId);
                 return Mono.just(submissionService.getMaxHours(finalUserId, courseId));
             } catch (NoSuchElementException e) {
                 return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
