@@ -132,7 +132,8 @@ public class StatisticsController {
      * @param multipleStatisticsRequests requests containing student ids, course ids
      * @return aggregation statistics for declarations with specified values.
      */
-    @PostMapping("/aggregation-stats")
+    @PostMapping(path = "/aggregation-stats",
+            produces = "application/json")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     Mono<AggregationStatistics> getAggregationStatistics(@RequestHeader HttpHeaders headers,
