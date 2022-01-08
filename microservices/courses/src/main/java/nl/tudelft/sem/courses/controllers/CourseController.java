@@ -240,7 +240,7 @@ public class CourseController {
     public boolean addGrade(@RequestBody GradeRequest request,
                             @RequestHeader HttpHeaders httpHeaders) {
         Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if (checkIfAdmin(webToken)||checkIfLecturer(webToken)&&courseService.lecturerTeachesCourse(jwtUtils.getUserId(webToken), request.getCourseId())) {
+        if (checkIfAdmin(webToken)||(checkIfLecturer(webToken)&&courseService.lecturerTeachesCourse(jwtUtils.getUserId(webToken), request.getCourseId()))) {
             if (request == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "No Request was provided");
