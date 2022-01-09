@@ -73,9 +73,9 @@ public class Contract {
         }
         BaseFont bf = BaseFont.createFont(
                 BaseFont.HELVETICA, BaseFont.CP1252, BaseFont.EMBEDDED);
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PdfReader reader = new PdfReader(baseContract); // input PDF
-        PdfStamper stamper = new PdfStamper(reader, new FileOutputStream("out/" + name + ".pdf")); // output PDF
+        PdfStamper stamper = new PdfStamper(reader,
+            new FileOutputStream("out/" + name + ".pdf")); // output PDF
 
         if (this.taName != null) {
             addText(taName, taPos, stamper, bf);
@@ -103,5 +103,14 @@ public class Contract {
         over.setTextMatrix(pos.getPosX(), pos.getPosY());   // 0,0 is at the bottom left
         over.showText(text);  // set text
         over.endText();
+    }
+
+    /**
+     * Generates a DTO for the client.
+     *
+     * @return The generated DTO
+     */
+    public ContractDto toDto() {
+        return new ContractDto(taName, courseCode, startDate, endDate, maxHours);
     }
 }

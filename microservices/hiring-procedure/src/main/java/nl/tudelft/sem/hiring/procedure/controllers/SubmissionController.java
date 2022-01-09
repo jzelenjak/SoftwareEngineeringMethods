@@ -4,23 +4,18 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.itextpdf.text.DocumentException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
-
-import java.io.*;
-import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
-
-import jdk.jfr.ContentType;
 import lombok.Data;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
 import nl.tudelft.sem.hiring.procedure.contracts.Contract;
+import nl.tudelft.sem.hiring.procedure.contracts.ContractDto;
 import nl.tudelft.sem.hiring.procedure.entities.Submission;
 import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
 import nl.tudelft.sem.hiring.procedure.services.NotificationService;
@@ -36,17 +31,9 @@ import nl.tudelft.sem.hiring.procedure.validation.AsyncTaLimitValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncUserExistsValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncValidator;
 import nl.tudelft.sem.jwt.JwtUtils;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -59,8 +46,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
-
-import javax.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/api/hiring-procedure")
@@ -305,45 +290,27 @@ public class SubmissionController {
         });
     }
 
-    @GetMapping( value = "/get-help", produces = MediaType.APPLICATION_PDF_VALUE)
-    public ResponseEntity<byte[]> getHelp() throws IOException {
-        File file = new File("out/" + "gen" + ".pdf");
-
-        InputStream is = new FileInputStream(file);
-        //OutputStream os = new ByteArrayOutputStream();
-        //IOUtils.copy(is, os);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        // Here you have to set the actual filename of your pdf
-        String filename = "output.pdf";
-        headers.setContentDispositionFormData(filename, filename);
-        headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
-        ResponseEntity<byte[]> response = new ResponseEntity<>(is.readAllBytes(), headers, HttpStatus.OK);
-        return response;
-    }
-
     /**
      * Endpoint for retrieving the contract of a user, for a course.
-     * Current implementation just returns a template contract, to be filled by the TA.
+     * Current implementation just a DTO with the data to be filled in.
+     * Client deals with contract creation.
      *
      * @param userId   is the ID of the user for which the contract is requested.
      *                 Parameter may be null, in which case the contract was requested
      *                 by the userId in the JWT
      * @param courseId is the ID of the course for which the contract is requested
      * @param headers  is the list of the request headers
-     * @return a byte stream of the contract pdf
+     * @return a JSON body containing the relevant data to be filled in
      */
-    @GetMapping(value = "get-contract", produces = "application/pdf")
-    public @ResponseBody Mono<Void> getContract(@RequestParam(required = false) Long userId,
-                                              @RequestParam(required = false) String name,
-                                              @RequestParam long courseId,
-                                              @RequestHeader HttpHeaders headers,
-                                              HttpServletResponse response) throws IOException {
+    @GetMapping(value = "get-contract")
+    public Mono<ContractDto> getContract(@RequestParam(required = false) Long userId,
+                                         @RequestParam(required = false) String name,
+                                         @RequestParam long courseId,
+                                         @RequestHeader HttpHeaders headers) {
 
         AsyncValidator head = buildVariableValidator(userId);
 
-        head.validate(headers, "").flatMap(value -> {
+        return head.validate(headers, "").flatMap(value -> {
             Contract contract = new Contract();
             String token = headers.getFirst(HttpHeaders.AUTHORIZATION);
             Mono<JsonObject> courseInfo = getCourseInfoFromCourseId(courseId, token);
@@ -352,20 +319,9 @@ public class SubmissionController {
                         .doOnError(e -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                         COURSE_NOT_FOUND)))
                         .flatMap(info -> {
-                    contract.setTaName(name);
-                            try {
-                                System.out.println("HERE1");
-                                InputStream is = setContractParamsAndGenerate(info, contract, headers, courseId);
-                                response.setContentType(MediaType.APPLICATION_PDF_VALUE);
-                                IOUtils.copy(is, response.getOutputStream());
-                                response.flushBuffer();
-                                System.out.println("HERE2");
-
-                                return Mono.empty();
-                            } catch (IOException e) {
-                                return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                                        "Contract generation failed"));
-                            }
+                            contract.setTaName(name);
+                            setContractParams(info, contract, headers, courseId);
+                            return Mono.just(contract.toDto());
                         });
             }
             Mono<String> userName = getNameFromUserId(userId, token);
@@ -379,19 +335,11 @@ public class SubmissionController {
                                COURSE_NOT_FOUND)))
                        .flatMap(info ->
                        {
-                           try {
-                               InputStream is = setContractParamsAndGenerate(info, contract, headers, courseId);
-                               IOUtils.copy(is, response.getOutputStream());
-                               response.flushBuffer();
-                               return Mono.empty();
-                           } catch (IOException e) {
-                               return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                                       "Contract generation failed"));
-                           }
+                           setContractParams(info, contract, headers, courseId);
+                           return Mono.just(contract.toDto());
                        });
             });
-        }).block();
-        return Mono.empty();
+        });
     }
 
     /**
@@ -651,10 +599,8 @@ public class SubmissionController {
         return info.get("courseCode").getAsString();
     }
 
-    private InputStream setContractParamsAndGenerate(JsonObject info,
-                                                      Contract contract,
-                                                      HttpHeaders headers,
-                                                      Long courseId) throws IOException {
+    private void setContractParams(JsonObject info, Contract contract,
+                                   HttpHeaders headers, Long courseId){
         String courseCode = getCourseCodeFromInfo(info);
         ZonedDateTime startDate = getStartDateFromInfo(info);
         ZonedDateTime endDate = getEndDateFromInfo(info);
@@ -663,16 +609,5 @@ public class SubmissionController {
         contract.setEndDate(endDate);
         contract.setMaxHours(submissionService.
                 getMaxHours(getUserIdFromToken(headers), courseId));
-        try {
-            String name = LocalDateTime.now().toString();
-            name = name.replace(":", "-");
-            name = name.replace(".", "-");
-            contract.generate(name);
-            File file = new File("out/" + name + ".pdf");
-            return new FileInputStream(file);
-            //return Files.readAllBytes(file.toPath());
-        } catch (IOException | DocumentException e) {
-            throw new IOException("Generating contract failed");
-        }
     }
 }
