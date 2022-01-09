@@ -8,7 +8,7 @@ This document is structured as follows:
 4. [File description](#file-description)
 5. [Testing document](#Testing)
 
-## Purpose
+## Why (necessity of microservice)
 <!Insert here a short description what your microservice is for and what the different users can do.>
 Authentication is necessary to identify, authorize and authenticate the users using our application. We use this with the help of JWT tokens and send these with every request the user makes (to the different microservices).
 
