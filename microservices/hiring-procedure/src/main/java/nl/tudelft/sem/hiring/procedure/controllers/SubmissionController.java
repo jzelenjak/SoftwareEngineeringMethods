@@ -337,16 +337,16 @@ public class SubmissionController {
                     .doOnError(e -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                             USER_NOT_FOUND)))
                     .flatMap(retrievedName -> {
-               contract.setTaName(retrievedName);
-               return courseInfo
-                       .doOnError(e -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                               COURSE_NOT_FOUND)))
-                       .flatMap(info ->
-                       {
-                           setContractParams(info, contract, headers, courseId);
-                           return Mono.just(contract.toDto());
-                       });
-            });
+                        contract.setTaName(retrievedName);
+                        return courseInfo
+                               .doOnError(e -> Mono.error(
+                                   new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                       COURSE_NOT_FOUND)))
+                               .flatMap(info -> {
+                                   setContractParams(info, contract, headers, courseId);
+                                   return Mono.just(contract.toDto());
+                               });
+                    });
         });
     }
 
@@ -569,7 +569,8 @@ public class SubmissionController {
                     return clientResponse.bodyToMono(String.class).flatMap(responseBody -> {
                         var response = JsonParser.parseString(responseBody).getAsJsonObject();
                         return Mono.just(
-                                response.get("firstName").getAsString() + response.get("lastName").getAsString());
+                                response.get("firstName").getAsString()
+                                    + response.get("lastName").getAsString());
                     });
                 });
     }
@@ -608,14 +609,14 @@ public class SubmissionController {
     }
 
     private void setContractParams(JsonObject info, Contract contract,
-                                   HttpHeaders headers, Long courseId){
+                                   HttpHeaders headers, Long courseId) {
         String courseCode = getCourseCodeFromInfo(info);
         ZonedDateTime startDate = getStartDateFromInfo(info);
         ZonedDateTime endDate = getEndDateFromInfo(info);
         contract.setCourseCode(courseCode);
         contract.setStartDate(startDate);
         contract.setEndDate(endDate);
-        contract.setMaxHours(submissionService.
-                getMaxHours(getUserIdFromToken(headers), courseId));
+        contract.setMaxHours(submissionService
+            .getMaxHours(getUserIdFromToken(headers), courseId));
     }
 }
