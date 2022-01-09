@@ -206,7 +206,7 @@ public class CourseController {
      * @param recommendationRequest - recommendation request object
      * @return a map of user ids as keys and grade as values
      */
-    @GetMapping("/statistics/user-grade")
+    @PostMapping("/statistics/user-grade")
     public Map<Long, Float> getMultipleUserGrades(
             @RequestBody RecommendationRequest recommendationRequest,
             @RequestHeader HttpHeaders httpHeaders) {

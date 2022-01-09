@@ -212,18 +212,29 @@ public class CourseService {
         if (recommendationRequest == null) {
             return null;
         }
+
+        Course course = getCourse(recommendationRequest.getCourseId());
+        if (course == null) {
+            return null;
+        }
+
         List<Map.Entry<Long, Float>> list = new ArrayList<>();
         for (Long userId : recommendationRequest.getUserIds()) {
-            Grade grade = getGrade(userId, recommendationRequest.getCourseId());
-            if (grade != null && grade.getGradeValue() >= recommendationRequest.getMinGrade()) {
-                AbstractMap.SimpleEntry<Long, Float> entry =
-                        new AbstractMap.SimpleEntry<>(userId, grade.getGradeValue());
-                list.add(entry);
+            for (Course edition : courseRepository.findAllByCourseCode(course.getCourseCode())) {
+                if (edition.getId() == course.getId()) {
+                    continue;
+                }
+                Grade grade = getGrade(userId, edition.getId());
+                if (grade != null && grade.getGradeValue() >= recommendationRequest.getMinGrade()) {
+                    AbstractMap.SimpleEntry<Long, Float> entry =
+                            new AbstractMap.SimpleEntry<>(userId, grade.getGradeValue());
+                    list.add(entry);
+                }
             }
         }
         list.sort(Map.Entry.comparingByValue());
         Collections.reverse(list);
-        list = list.subList(0, recommendationRequest.getAmount());
+        list = list.subList(0, Math.min(list.size(), recommendationRequest.getAmount()));
         Map<Long, Float> result = new LinkedHashMap<>();
         for (Map.Entry<Long, Float> entry : list) {
             result.put(entry.getKey(), entry.getValue());

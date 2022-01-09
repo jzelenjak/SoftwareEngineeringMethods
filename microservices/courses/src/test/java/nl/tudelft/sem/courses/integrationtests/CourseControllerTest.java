@@ -283,7 +283,7 @@ public class CourseControllerTest {
 
         String resultContent = mvcResult1.getResponse().getContentAsString();
         EditionsResponse response = objectMapper.readValue(resultContent, EditionsResponse.class);
-        Assert.assertEquals(Arrays.asList(course.getCourseId(),
+        Assertions.assertEquals(Arrays.asList(course.getCourseId(),
                 course2.getCourseId()), response.getCourseIds());
 
     }
@@ -308,23 +308,15 @@ public class CourseControllerTest {
 
     @Test
     void testGetMultipleUserGradesValid() throws Exception {
-        //create a course
-        MvcResult mvcResult = mockMvc.perform(post(createCoursePath)
-                .header(HttpHeaders.AUTHORIZATION, "")
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .content(objectMapper.writeValueAsString(courseRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
-        String content1 = mvcResult.getResponse().getContentAsString();
-        CourseResponse course = objectMapper.readValue(content1, CourseResponse.class);
+        // Create courses and grades
+        Course course1 = courseRepository.save(new Course(courseCode, date, date, 3));
+        Course course2 = courseRepository.save(new Course(courseCode, date, date, 3));
 
-        GradeRequest gradeRequest1 = new GradeRequest(course.getCourseId(), 7.6F, 1);
-        GradeRequest gradeRequest2 = new GradeRequest(course.getCourseId(), 9.9F, 2);
-        GradeRequest gradeRequest3 = new GradeRequest(course.getCourseId(), 2.0F, 3);
-        GradeRequest gradeRequest4 = new GradeRequest(course.getCourseId(), 7.0F, 4);
+        GradeRequest gradeRequest1 = new GradeRequest(course2.getId(), 9.9F, 2);
+        GradeRequest gradeRequest2 = new GradeRequest(course2.getId(), 2.0F, 3);
+        GradeRequest gradeRequest3 = new GradeRequest(course2.getId(), 7.0F, 4);
 
-        List<GradeRequest> requests = Arrays.asList(gradeRequest1, gradeRequest2,
-                gradeRequest3, gradeRequest4);
+        List<GradeRequest> requests = Arrays.asList(gradeRequest1, gradeRequest2, gradeRequest3);
         for (GradeRequest request : requests) {
             mockMvc.perform(post(createGradePath)
                     .header(HttpHeaders.AUTHORIZATION, "")
@@ -333,12 +325,12 @@ public class CourseControllerTest {
                     .andExpect(status().isOk());
         }
         RecommendationRequest request = new RecommendationRequest();
-        request.setCourseId(1);
+        request.setCourseId(course1.getId());
         request.setAmount(2);
         request.setUserIds(Arrays.asList(1L, 2L, 3L, 4L));
         request.setMinGrade(7);
 
-        MvcResult mvcResultGrades = mockMvc.perform(get(multipleUserGrades)
+        MvcResult mvcResultGrades = mockMvc.perform(post(multipleUserGrades)
                 .header(HttpHeaders.AUTHORIZATION, "")
                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                 .content(objectMapper.writeValueAsString(request)))
@@ -348,20 +340,17 @@ public class CourseControllerTest {
         Map<Long, Float> result = objectMapper.readValue(resultContent,
                 new TypeReference<Map<Long, Float>>() {});
         Map<Long, Float> expectedResult = new LinkedHashMap<>();
-        expectedResult.put(gradeRequest2.getUserId(), gradeRequest2.getGrade());
+        expectedResult.put(gradeRequest3.getUserId(), gradeRequest3.getGrade());
         expectedResult.put(gradeRequest1.getUserId(), gradeRequest1.getGrade());
 
-        Assert.assertEquals(expectedResult, result);
+        Assertions.assertEquals(expectedResult, result);
     }
 
     @Test
     void testGetMultipleUserGradesNoRequestBody() throws Exception {
-        RecommendationRequest request = null;
-
-        mockMvc.perform(get(multipleUserGrades)
+        mockMvc.perform(post(multipleUserGrades)
                 .header(HttpHeaders.AUTHORIZATION, "")
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .content(objectMapper.writeValueAsString(request)))
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(status().isBadRequest());
     }
 
@@ -373,7 +362,7 @@ public class CourseControllerTest {
         request.setUserIds(Arrays.asList(1L, 2L, 3L, 4L));
         request.setMinGrade(7);
 
-        mockMvc.perform(get(multipleUserGrades)
+        mockMvc.perform(post(multipleUserGrades)
                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());

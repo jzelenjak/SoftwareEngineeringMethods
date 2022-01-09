@@ -107,7 +107,7 @@ public class StatisticsController {
 
             // Fetch the declaration statistics
             statisticsService.getTotalHoursPerStudentPerCourse(
-                            userHoursStatisticsRequest.getStudentIds(),
+                            userHoursStatisticsRequest.getUserIds(),
                             userHoursStatisticsRequest.getCourseIds(),
                             userHoursStatisticsRequest.getMinHours(),
                             userHoursStatisticsRequest.getAmount())

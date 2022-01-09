@@ -13,7 +13,7 @@ public class UserHoursStatisticsRequest {
 
     private double minHours;
 
-    private Set<Long> studentIds;
+    private Set<Long> userIds;
 
     private Set<Long> courseIds;
 }
