@@ -32,19 +32,21 @@ public class AsyncCourseTimeValidator extends AsyncBaseValidator {
 
     @Override
     public Mono<Boolean> validate(HttpHeaders headers, String body) {
-        return courseInfoCache.getCourseInfoResponse(courseId).flatMap(responseBody -> {
-            var response = JsonParser.parseString(responseBody).getAsJsonObject();
-            var start = ZonedDateTime.parse(response.get("startTime").getAsString());
+        String authorization = headers.getFirst(HttpHeaders.AUTHORIZATION);
+        return courseInfoCache.getCourseInfoResponse(authorization, courseId)
+                .flatMap(responseBody -> {
+                    var response = JsonParser.parseString(responseBody).getAsJsonObject();
+                    var start = ZonedDateTime.parse(response.get("startDate").getAsString());
 
-            // Check if the course registration period has not ended yet
-            if (ZonedDateTime.now().plus(VALID_DURATION).isAfter(start)) {
-                return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "Course registration/withdrawal period has ended"));
-            }
+                    // Check if the course registration period has not ended yet
+                    if (ZonedDateTime.now().plus(VALID_DURATION).isAfter(start)) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                                "Course registration/withdrawal period has ended"));
+                    }
 
-            // Continue with the request
-            return evaluateNext(headers, body);
-        });
+                    // Continue with the request
+                    return evaluateNext(headers, body);
+                });
     }
 
 }

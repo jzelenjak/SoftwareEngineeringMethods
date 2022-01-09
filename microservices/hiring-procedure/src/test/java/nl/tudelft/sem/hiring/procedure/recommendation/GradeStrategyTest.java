@@ -7,11 +7,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import nl.tudelft.sem.hiring.procedure.entities.Application;
+import nl.tudelft.sem.hiring.procedure.entities.Submission;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.GradeStrategy;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.RecommendationStrategy;
-import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
+import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
@@ -26,14 +26,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.server.ResponseStatusException;
 
 @SpringBootTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class GradeStrategyTest {
     @Autowired
-    private transient ApplicationRepository repo;
+    private transient SubmissionRepository repo;
 
     private transient RecommendationStrategy strategy;
 
@@ -69,6 +67,9 @@ class GradeStrategyTest {
 
         strategy = new GradeStrategy(repo, gatewayConfig, jwtToken);
         mapper = new ObjectMapper();
+
+        // Clear the database
+        repo.deleteAll();
     }
 
     @AfterEach
@@ -81,9 +82,9 @@ class GradeStrategyTest {
         // Prepare the repository and mockWebServer
 
         // Applicants No88, No81, No86; Course with courseId 27
-        this.repo.save(new Application(88, 27L, time));
-        this.repo.save(new Application(81, 27L, time));
-        this.repo.save(new Application(86, 27L, time));
+        this.repo.save(new Submission(88, 27L, time));
+        this.repo.save(new Submission(81, 27L, time));
+        this.repo.save(new Submission(86, 27L, time));
 
         String json = mapper.writeValueAsString(Map.of(88L, 9.1, 86L, 8.2, 81L, 7.5));
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(json));
@@ -114,7 +115,7 @@ class GradeStrategyTest {
         // Prepare the repository and mockWebServer
 
         // Applicant No44; Course with courseId 29
-        this.repo.save(new Application(44, 29L, time));
+        this.repo.save(new Submission(44, 29L, time));
 
         mockWebServer.enqueue(new MockResponse().setResponseCode(500));
 
@@ -132,7 +133,7 @@ class GradeStrategyTest {
         // Prepare the repository and mockWebServer
 
         // Applicant No41; Course with courseId 23
-        this.repo.save(new Application(41, 23L, time));
+        this.repo.save(new Submission(41, 23L, time));
 
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(""));
 
@@ -150,7 +151,7 @@ class GradeStrategyTest {
         // Prepare the repository and mockWebServer
 
         // Applicant No44; Course with courseId 8
-        this.repo.save(new Application(44, 8L, time));
+        this.repo.save(new Submission(44, 8L, time));
 
         String json = mapper.createObjectNode().put("44", "FAIL").toString();
 
@@ -171,8 +172,8 @@ class GradeStrategyTest {
         // Prepare the repository and mockWebServer
 
         // Applicants No48, No49; Course with courseId 56789
-        this.repo.save(new Application(48, 56789L, time));
-        this.repo.save(new Application(49, 56789L, time));
+        this.repo.save(new Submission(48, 56789L, time));
+        this.repo.save(new Submission(49, 56789L, time));
 
         String json = mapper.writeValueAsString(Map.of());
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody(json));

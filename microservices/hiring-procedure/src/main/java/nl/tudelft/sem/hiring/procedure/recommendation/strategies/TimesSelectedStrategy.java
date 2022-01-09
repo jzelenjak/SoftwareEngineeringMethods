@@ -3,7 +3,7 @@ package nl.tudelft.sem.hiring.procedure.recommendation.strategies;
 import java.util.List;
 import java.util.stream.Collectors;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
-import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
+import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
@@ -23,7 +23,7 @@ public class TimesSelectedStrategy implements RecommendationStrategy {
 
     private final transient WebClient webClient;
 
-    private final transient ApplicationRepository repo;
+    private final transient SubmissionRepository repo;
 
     private final transient String authorization;
 
@@ -34,7 +34,7 @@ public class TimesSelectedStrategy implements RecommendationStrategy {
      * @param gatewayConfig the gateway configuration.
      * @param authorization the authorization token of the caller.
      */
-    public TimesSelectedStrategy(ApplicationRepository repo, GatewayConfig gatewayConfig,
+    public TimesSelectedStrategy(SubmissionRepository repo, GatewayConfig gatewayConfig,
                                  String authorization) {
         this.repo = repo;
         this.webClient = WebClient.create();

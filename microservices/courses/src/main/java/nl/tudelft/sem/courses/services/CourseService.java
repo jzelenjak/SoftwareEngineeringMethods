@@ -1,26 +1,35 @@
 package nl.tudelft.sem.courses.services;
 
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import nl.tudelft.sem.courses.communication.CourseRequest;
+import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
+import nl.tudelft.sem.courses.communication.RecommendationRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
+import nl.tudelft.sem.courses.entities.Teaches;
+import nl.tudelft.sem.courses.entities.TeachesPk;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.GradeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import nl.tudelft.sem.courses.respositories.TeachesRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class CourseService {
 
+    private final transient CourseRepository courseRepository;
 
+    private final transient GradeRepository gradeRepository;
 
-    private transient CourseRepository courseRepository;
-
-    private transient GradeRepository gradeRepository;
+    private final transient TeachesRepository teachesRepository;
 
     /**
      * Constructor for Dependency Injection.
@@ -28,9 +37,12 @@ public class CourseService {
      * @param courseRepository - A repository object for courses
      * @param gradeRepository -  A repository object for grades
      */
-    public CourseService(CourseRepository courseRepository, GradeRepository gradeRepository) {
+    public CourseService(CourseRepository courseRepository,
+                         GradeRepository gradeRepository,
+                         TeachesRepository teachesRepository) {
         this.courseRepository = courseRepository;
         this.gradeRepository = gradeRepository;
+        this.teachesRepository = teachesRepository;
     }
 
     /**
@@ -38,28 +50,34 @@ public class CourseService {
      * The request must be through the controller.
      *
      * @param request - The request
-     * @return String - returns successful string.
+     * @return long - returns positive number upon successful completion,
+     *      otherwise returns -1
      */
-    public String addNewCourses(CourseRequest request)  {
+    public CourseResponse addNewCourses(CourseRequest request)  {
         List<Course> courses = courseRepository.findAllByCourseCode(request.getCourseCode());
 
-
-        if (courses.isEmpty()) {
-            Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
-                    request.getFinishDate(), request.getNumStudents());
-            courseRepository.save(newCourse);
-
-            return "Success. Added course";
-        } else {
-            Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
-                    request.getFinishDate(), request.getNumStudents());
-            if (courses.contains(newCourse)) {
-                return "Failed";
-            } else {
+        try {
+            if (courses.isEmpty()) {
+                Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
+                        request.getFinishDate(), request.getNumStudents());
                 courseRepository.save(newCourse);
-                return "Success. Added course";
+                courseRepository.flush();
+                return new CourseResponse(newCourse);
+            } else {
+                Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
+                        request.getFinishDate(), request.getNumStudents());
+                if (courses.contains(newCourse)) {
+                    return null;
+                } else {
+                    courseRepository.save(newCourse);
+                    courseRepository.flush();
+                    return new CourseResponse(newCourse);
+                }
             }
+        } catch (Exception e) {
+            return null;
         }
+
     }
 
     /**
@@ -90,6 +108,16 @@ public class CourseService {
      */
     public List<Course> getCourses(String courseCode) {
         return courseRepository.findAllByCourseCode(courseCode);
+    }
+
+    /**
+     * Returns a list of courses associated to the given IDs.
+     *
+     * @param courseIds - Set of course IDs
+     * @return - List of courses associated to the given IDs
+     */
+    public List<Course> getMultipleCourses(Set<Long> courseIds) {
+        return courseRepository.findAllByIds(courseIds);
     }
 
     /**
@@ -141,6 +169,82 @@ public class CourseService {
     }
 
     /**
+     * Endpoint takes course id as input.
+     * It gives back list of course ids for
+     * courses which have the same course code
+     * as the course in the input.
+     *
+     * @param courseId - The id of the input course.
+     * @return - List of courses with matching course code.
+     */
+    public List<Long> getAllEditionsOfCourse(long courseId) {
+        Course course = getCourse(courseId);
+        if (course == null) {
+            return null;
+        }
+        try {
+            List<Course> courses = courseRepository.findAllByCourseCode(course.getCourseCode());
+            if (courses == null) {
+                return null;
+            }
+            List<Long> courseIds = courses.stream().map(course1 -> course1.getId())
+                    .collect(Collectors.toList());
+            return courseIds;
+
+        } catch (Exception e) {
+            return null;
+        }
+
+    }
+
+    /**
+     * Gives a map of user ids and grades.
+     * Recommendation request object which contains the
+     * following information:
+     * course id
+     * amount
+     * minimum grade
+     * user ids - for the users we want the grades for
+     *
+     * @param recommendationRequest - a request the final
+     */
+    public Map<Long, Float> getMultipleUserGrades(RecommendationRequest recommendationRequest) {
+        if (recommendationRequest == null) {
+            return null;
+        }
+
+        Course course = getCourse(recommendationRequest.getCourseId());
+        if (course == null) {
+            return null;
+        }
+
+        List<Map.Entry<Long, Float>> list = new ArrayList<>();
+        for (Long userId : recommendationRequest.getUserIds()) {
+            for (Course edition : courseRepository.findAllByCourseCode(course.getCourseCode())) {
+                if (edition.getId() == course.getId()) {
+                    continue;
+                }
+                Grade grade = getGrade(userId, edition.getId());
+                if (grade != null && grade.getGradeValue() >= recommendationRequest.getMinGrade()) {
+                    AbstractMap.SimpleEntry<Long, Float> entry =
+                            new AbstractMap.SimpleEntry<>(userId, grade.getGradeValue());
+                    list.add(entry);
+                }
+            }
+        }
+        list.sort(Map.Entry.comparingByValue());
+        Collections.reverse(list);
+        list = list.subList(0, Math.min(list.size(), recommendationRequest.getAmount()));
+        Map<Long, Float> result = new LinkedHashMap<>();
+        for (Map.Entry<Long, Float> entry : list) {
+            result.put(entry.getKey(), entry.getValue());
+        }
+
+        return result;
+
+    }
+
+    /**
      * Adds a grade to the repository.
      *
      * @param request -  a grade request object containing all
@@ -160,10 +264,61 @@ public class CourseService {
                 Course course = getCourse(request.getCourseId());
                 Grade grade = new Grade(course, request.getUserId(), request.getGrade());
                 gradeRepository.save(grade);
-            } else {
-                existingGrade.setGradeValue(request.getGrade());
-                gradeRepository.save(existingGrade);
             }
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Gives all the course ids for the
+     * courses the lecturer teaches.
+     *
+     * @param lecturerId - id of the lecturer
+     * @return list of course id's
+     */
+    public List<Long> getCourseIdsForLecturer(long lecturerId) {
+        List<Teaches> list = teachesRepository.findAllByLecturerId(lecturerId);
+
+        if (list == null || list.isEmpty()) {
+            return null;
+        }
+        List<Long> result = list.stream().map(teaches -> teaches.getCourseId())
+                .collect(Collectors.toList());
+
+        return result;
+    }
+
+    /**
+     * Checks if the lecturer teaches a specific course.
+     *
+     * @param lecturerId - lecturer's id
+     * @param courseId - the courses id
+     * @return true if lecturer teaches course otherwise false
+     */
+    public Boolean lecturerTeachesCourse(long lecturerId, long courseId) {
+        Optional<Teaches> teachesCourse = teachesRepository
+                .findById(new TeachesPk(courseId, lecturerId));
+        if (teachesCourse.isEmpty()) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * Assigns a lecturer to a course.
+     * This is done by creating a teach entity
+     *
+     * @param lecturerId - lecturer's id
+     * @param courseId - id of the course
+     * @return if operation was successful or not
+     */
+    public Boolean createTeaches(long lecturerId, long courseId) {
+        try {
+            Teaches teach = new Teaches(courseId, lecturerId);
+            teachesRepository.save(teach);
             return true;
         } catch (Exception e) {
             return false;

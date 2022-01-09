@@ -11,18 +11,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
+import nl.tudelft.sem.hour.management.dto.AggregationStatistics;
 import nl.tudelft.sem.hour.management.dto.HourDeclarationRequest;
+import nl.tudelft.sem.hour.management.dto.MultipleStatisticsRequests;
 import nl.tudelft.sem.hour.management.dto.StatisticsRequest;
 import nl.tudelft.sem.hour.management.dto.StudentHoursTuple;
 import nl.tudelft.sem.hour.management.dto.UserHoursStatisticsRequest;
 import nl.tudelft.sem.hour.management.entities.HourDeclaration;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
+import nl.tudelft.sem.hour.management.services.StatisticsService;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +56,9 @@ public class StatisticsControllerTest {
     private transient ObjectMapper objectMapper;
 
     @Autowired
+    private transient StatisticsService statisticsService;
+
+    @Autowired
     private transient HourDeclarationRepository hourDeclarationRepository;
 
     @MockBean
@@ -61,14 +67,17 @@ public class StatisticsControllerTest {
     @Mock
     private transient Jws<Claims> jwsMock;
 
-    private final transient LocalDateTime testDate = LocalDateTime.now();
+    private final transient ZonedDateTime testDate = ZonedDateTime.now();
 
     private final transient HourDeclarationRequest hourDeclarationRequest =
-            new HourDeclarationRequest(1234, 5678, 1);
+            new HourDeclarationRequest(1234, 5678, 1, "de");
     private final transient HourDeclarationRequest hourDeclarationRequestSameStudent =
-            new HourDeclarationRequest(1234, 567812, 12);
+            new HourDeclarationRequest(1234, 567812, 12, "nl");
     private final transient HourDeclarationRequest hourDeclarationRequestNew =
-            new HourDeclarationRequest(12345, 567812, 12);
+            new HourDeclarationRequest(12345, 567812, 1337.5, "tr");
+    private final transient HourDeclarationRequest hourDeclarationRequestInvalid =
+            new HourDeclarationRequest(12345, 567812, -9999, "gb");
+
 
     private final transient HourDeclaration hourDeclarationUnapproved = new HourDeclaration(1,
             hourDeclarationRequest, false, testDate);
@@ -76,6 +85,8 @@ public class StatisticsControllerTest {
             hourDeclarationRequestNew, true, testDate);
     private final transient HourDeclaration hourDeclarationSameStudent = new HourDeclaration(3,
             hourDeclarationRequestSameStudent, false, testDate);
+    private final transient HourDeclaration hourDeclarationInvalid = new HourDeclaration(4,
+            hourDeclarationRequestInvalid, false, testDate);
 
     @BeforeEach
     void init() {
@@ -147,7 +158,7 @@ public class StatisticsControllerTest {
     @Test
     void testGetTotalHoursPerStudentPerCourse() throws Exception {
         Collection<StudentHoursTuple> expectedTotalHours = hourDeclarationRepository
-                .findByCourseIdSetAndStudentIdSet(Set.of(12345L), Set.of(567812L), 1.0);
+                .aggregateByCourseIdSetAndStudentIdSet(Set.of(12345L), Set.of(567812L), 1.0);
 
         UserHoursStatisticsRequest userHoursStatisticsRequest
                 = new UserHoursStatisticsRequest(1, 1.0, Set.of(12345L), Set.of(567812L));
@@ -193,5 +204,69 @@ public class StatisticsControllerTest {
                 Arguments.of(new UserHoursStatisticsRequest(1, 9999.0, Set.of(), Set.of(12345L))),
                 Arguments.of(new UserHoursStatisticsRequest(0, 1.0, Set.of(), Set.of(12345L)))
         );
+    }
+
+    @Test
+    void testGetAggregationStatisticsValid() throws Exception {
+        hourDeclarationRepository.save(hourDeclarationSameStudent);
+
+        MultipleStatisticsRequests multipleStatisticsRequests
+                = new MultipleStatisticsRequests(Set.of(1234L, 12345L), Set.of(5678L, 567812L));
+
+        MvcResult mvcResult = mockMvc.perform(
+                post("/api/hour-management/statistics/aggregation-stats")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                multipleStatisticsRequests))
+                        .header(authorization, ""))
+                .andReturn();
+
+        Optional<AggregationStatistics> expect = statisticsService
+                .calculateAggregationStatistics(multipleStatisticsRequests.getStudentIds(),
+                        multipleStatisticsRequests.getCourseIds());
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(
+                        expect)));
+    }
+
+    @Test
+    void testGetAggregationStatisticsInvalid() throws Exception {
+        hourDeclarationRepository.save(hourDeclarationSameStudent);
+        hourDeclarationRepository.save(hourDeclarationInvalid);
+
+        MultipleStatisticsRequests multipleStatisticsRequests
+                = new MultipleStatisticsRequests(Set.of(1234L, 12345L), Set.of(5678L, 567812L));
+
+        MvcResult mvcResult = mockMvc.perform(
+                        post("/api/hour-management/statistics/aggregation-stats")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(
+                                        multipleStatisticsRequests))
+                                .header(authorization, ""))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testGetAggregationStatisticsEmpty() throws Exception {
+        hourDeclarationRepository.deleteAll();
+
+        MultipleStatisticsRequests multipleStatisticsRequests
+                = new MultipleStatisticsRequests(Set.of(1234L, 12345L), Set.of(5678L, 567812L));
+
+        MvcResult mvcResult = mockMvc.perform(
+                        post("/api/hour-management/statistics/aggregation-stats")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(
+                                        multipleStatisticsRequests))
+                                .header(authorization, ""))
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isNotFound());
     }
 }

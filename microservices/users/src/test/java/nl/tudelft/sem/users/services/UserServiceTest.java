@@ -23,6 +23,8 @@ class UserServiceTest {
     private transient UserService userService;
 
     private final transient String username = "amogus@student.tudelft.nl";
+    private final transient String firstName = "Stan";
+    private final transient String lastName = "Lee";
 
     /**
      * Tests for registerUser method.
@@ -175,6 +177,53 @@ class UserServiceTest {
         Assertions.assertThat(savedUser.get().getRole()).isEqualTo(UserRole.LECTURER);
     }
 
+    /**
+     * Tests for changeFirstName method.
+     */
+
+    @Test
+    void testChangeFirstNameUserNotFound() {
+        Assertions
+                .assertThat(userService.changeFirstName(63452L, firstName))
+                .isFalse();
+    }
+
+    @Test
+    void testChangeFirstNameSuccessful() {
+        User user = userRepository.save(new User(username, "Sad", lastName, UserRole.STUDENT));
+        long userId = user.getUserId();
+
+        Assertions
+                .assertThat(userService.changeFirstName(userId, firstName))
+                .isTrue();
+        Optional<User> savedUser = userService.getUserByUserId(userId);
+        Assertions.assertThat(savedUser).isPresent();
+        Assertions.assertThat(savedUser.get().getFirstName()).isEqualTo(firstName);
+    }
+
+    /**
+     * Tests for changeLastName method.
+     */
+
+    @Test
+    void testChangeLastNameUserNotFound() {
+        Assertions
+                .assertThat(userService.changeLastName(63452L, lastName))
+                .isFalse();
+    }
+
+    @Test
+    void testChangeLastNameSuccessful() {
+        User user = userRepository.save(new User(username, firstName, "Lie", UserRole.STUDENT));
+        long userId = user.getUserId();
+
+        Assertions
+                .assertThat(userService.changeLastName(userId, lastName))
+                .isTrue();
+        Optional<User> savedUser = userService.getUserByUserId(userId);
+        Assertions.assertThat(savedUser).isPresent();
+        Assertions.assertThat(savedUser.get().getLastName()).isEqualTo(lastName);
+    }
 
     /**
      * Tests for deleteUserByUserId method.

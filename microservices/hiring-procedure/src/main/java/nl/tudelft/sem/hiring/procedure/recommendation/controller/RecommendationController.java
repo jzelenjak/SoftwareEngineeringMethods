@@ -14,7 +14,7 @@ import nl.tudelft.sem.hiring.procedure.recommendation.strategies.RecommendationS
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.StrategyType;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.TimesSelectedStrategy;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.TotalTimesSelectedStrategy;
-import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
+import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncAuthValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncRoleValidator;
@@ -41,7 +41,7 @@ public class RecommendationController {
 
     private final transient JwtUtils jwtUtils;
 
-    private final transient ApplicationRepository applicationRepository;
+    private final transient SubmissionRepository submissionRepository;
 
     /**
      * Instantiates a new RecommendationController object.
@@ -49,9 +49,9 @@ public class RecommendationController {
      * @param repo          the application repository
      * @param gatewayConfig the gateway configuration
      */
-    public RecommendationController(ApplicationRepository repo,
+    public RecommendationController(SubmissionRepository repo,
                                     GatewayConfig gatewayConfig, JwtUtils jwtUtils) {
-        this.applicationRepository = repo;
+        this.submissionRepository = repo;
         this.gatewayConfig = gatewayConfig;
         this.jwtUtils = jwtUtils;
     }
@@ -96,21 +96,21 @@ public class RecommendationController {
         switch (strategy) {
             case TOTAL_TIMES_SELECTED:
                 RecommendationStrategy strategy1 =
-                        new TotalTimesSelectedStrategy(applicationRepository);
+                        new TotalTimesSelectedStrategy(submissionRepository);
                 return new Recommender(strategy1).recommend(courseId, amount, minValue);
             case TIMES_SELECTED:
                 RecommendationStrategy strategy2 =
-                        new TimesSelectedStrategy(applicationRepository, gatewayConfig,
+                        new TimesSelectedStrategy(submissionRepository, gatewayConfig,
                                 authorization);
                 return new Recommender(strategy2).recommend(courseId, amount, minValue);
             case GRADE:
                 RecommendationStrategy strategy3 =
-                        new GradeStrategy(applicationRepository, gatewayConfig, authorization);
+                        new GradeStrategy(submissionRepository, gatewayConfig, authorization);
                 return new Recommender(strategy3).recommend(courseId, amount, minValue);
             //HOURS
             default:
                 RecommendationStrategy strategy4 =
-                        new HoursStrategy(applicationRepository, gatewayConfig, authorization);
+                        new HoursStrategy(submissionRepository, gatewayConfig, authorization);
                 return new Recommender(strategy4).recommend(courseId, amount, minValue);
         }
     }

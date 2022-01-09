@@ -2,7 +2,10 @@ package nl.tudelft.sem.hour.management.validation;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
+import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -15,18 +18,32 @@ public class AsyncHiringValidator extends AsyncBaseValidator {
     // WebClient used to communicate with the hiring microservice
     private final transient WebClient webClient;
 
+    // JWT utility library for parsing the authorization header
+    private final transient JwtUtils jwtUtils;
+
     /**
      * Constructs a new AsyncHiringValidator.
      *
      * @param gatewayConfig The gateway configuration.
+     * @param jwtUtils      The JWT utility library.
      */
-    public AsyncHiringValidator(GatewayConfig gatewayConfig) {
+    public AsyncHiringValidator(GatewayConfig gatewayConfig, JwtUtils jwtUtils) {
         super(gatewayConfig);
+        this.jwtUtils = jwtUtils;
         this.webClient = WebClient.create();
     }
 
     @Override
     public Mono<Boolean> validate(HttpHeaders headers, String body) {
+        // Parse the authorization token to retrieve the role and user ID
+        String token = jwtUtils.resolveToken(headers.getFirst(HttpHeaders.AUTHORIZATION));
+        Jws<Claims> claims = jwtUtils.validateAndParseClaims(token);
+
+        // Admins do not have to be lecturers, therefore they should be able to bypass this check
+        if (jwtUtils.getRole(claims).equals(AsyncRoleValidator.Roles.ADMIN.name())) {
+            return evaluateNext(headers, body);
+        }
+
         // Verify body of recorded request
         JsonObject parsed = JsonParser.parseString(body).getAsJsonObject();
 
@@ -36,8 +53,8 @@ public class AsyncHiringValidator extends AsyncBaseValidator {
                         .scheme("http")
                         .host(getGatewayConfig().getHost())
                         .port(getGatewayConfig().getPort())
-                        .pathSegment("api", "hiring-service", "get-contract")
-                        .queryParam("courseID", parsed.get("courseId"))
+                        .pathSegment("api", "hiring-procedure", "get-max-hours")
+                        .queryParam("courseId", parsed.get("courseId"))
                         .toUriString())
                 .header(HttpHeaders.AUTHORIZATION, headers.getFirst(HttpHeaders.AUTHORIZATION))
                 .exchange()
@@ -47,16 +64,14 @@ public class AsyncHiringValidator extends AsyncBaseValidator {
                                 "Cannot find active contract"));
                     }
 
-                    return response.bodyToMono(String.class).flatMap(json -> {
-                        JsonObject contract = JsonParser.parseString(json).getAsJsonObject();
-
+                    return response.bodyToMono(String.class).flatMap(responseBody -> {
                         if (parsed.get("declaredHours").getAsDouble() <= 0) {
                             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
                                     "Declared hours cannot be negative or 0."));
                         }
 
-                        if (parsed.get("declaredHours").getAsDouble()
-                                > contract.get("maxHours").getAsDouble()) {
+                        int maxHours = Integer.parseInt(responseBody);
+                        if (parsed.get("declaredHours").getAsDouble() > maxHours) {
                             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
                                     "Declared hours cannot exceed the maximum hours "
                                             + "denoted in the contract."));

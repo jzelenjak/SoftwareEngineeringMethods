@@ -6,6 +6,8 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.Data;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
+import nl.tudelft.sem.hour.management.dto.AggregationStatistics;
+import nl.tudelft.sem.hour.management.dto.MultipleStatisticsRequests;
 import nl.tudelft.sem.hour.management.dto.StatisticsRequest;
 import nl.tudelft.sem.hour.management.dto.UserHoursStatisticsRequest;
 import nl.tudelft.sem.hour.management.repositories.HourDeclarationRepository;
@@ -105,7 +107,7 @@ public class StatisticsController {
 
             // Fetch the declaration statistics
             statisticsService.getTotalHoursPerStudentPerCourse(
-                            userHoursStatisticsRequest.getStudentIds(),
+                            userHoursStatisticsRequest.getUserIds(),
                             userHoursStatisticsRequest.getCourseIds(),
                             userHoursStatisticsRequest.getMinHours(),
                             userHoursStatisticsRequest.getAmount())
@@ -120,6 +122,44 @@ public class StatisticsController {
 
             // Return the response object
             return Mono.just(jsonObject.toString());
+        });
+    }
+
+    /**
+     * Retrieves the aggregation statistics for declarations with specified values.
+     *
+     * @param headers                    headers of the request.
+     * @param multipleStatisticsRequests requests containing student ids, course ids
+     * @return aggregation statistics for declarations with specified values.
+     */
+    @PostMapping(path = "/aggregation-stats",
+            produces = "application/json")
+    @ResponseStatus(HttpStatus.OK)
+    public @ResponseBody
+    Mono<AggregationStatistics> getAggregationStatistics(@RequestHeader HttpHeaders headers,
+                                          @RequestBody MultipleStatisticsRequests
+                                                             multipleStatisticsRequests) {
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+                .addValidators(
+                        new AsyncAuthValidator(gatewayConfig, jwtUtils),
+                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
+                                Set.of(AsyncRoleValidator.Roles.ADMIN,
+                                        AsyncRoleValidator.Roles.LECTURER))
+                ).build();
+
+        return head.validate(headers, "").flatMap(valid -> {
+            Optional<AggregationStatistics> statistics = statisticsService
+                    .calculateAggregationStatistics(multipleStatisticsRequests.getStudentIds(),
+                                                    multipleStatisticsRequests.getCourseIds());
+
+            // Check if at least one of the students declared hours for any of the courses
+            if (statistics.isEmpty()) {
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "No statistics found for the specified course and students."));
+            }
+
+            // Return the response object
+            return Mono.just(statistics.get());
         });
     }
 }

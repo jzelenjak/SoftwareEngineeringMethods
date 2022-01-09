@@ -13,6 +13,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -20,7 +21,7 @@ import java.util.Optional;
 import nl.tudelft.sem.authentication.entities.Notification;
 import nl.tudelft.sem.authentication.entities.UserData;
 import nl.tudelft.sem.authentication.jwt.JwtTokenProvider;
-import nl.tudelft.sem.authentication.repositories.NotificationDataRepository;
+import nl.tudelft.sem.authentication.repositories.NotificationRepository;
 import nl.tudelft.sem.authentication.repositories.UserDataRepository;
 import nl.tudelft.sem.authentication.security.UserRole;
 import org.junit.jupiter.api.Assertions;
@@ -50,7 +51,7 @@ class AuthControllerTest {
     private transient UserDataRepository userDataRepository;
 
     @Autowired
-    private transient NotificationDataRepository notificationDataRepository;
+    private transient NotificationRepository notificationRepository;
 
     @Autowired
     private transient AuthController authController;
@@ -205,7 +206,7 @@ class AuthControllerTest {
         String username = "admin2";
         String password = "passMyWord";
 
-        this.notificationDataRepository.save(
+        this.notificationRepository.save(
                 new Notification(1048369L, "IMPOSTER!"));
 
         this.userDataRepository
@@ -612,25 +613,26 @@ class AuthControllerTest {
         // Add notifications to list.
         List<Notification> list = new ArrayList<>();
         list.add(someNotification);
-        LocalDateTime localDateTime = someNotification.getNotificationDate();
-        String timeStamp = localDateTime.getHour()
-                + ":" + localDateTime.getMinute()
-                + " " + localDateTime.getDayOfMonth()
-                + "-" + localDateTime.getMonthValue()
-                + "-" + localDateTime.getYear()
+        ZonedDateTime zonedDateTime = someNotification.getNotificationDate();
+        String timeStamp = zonedDateTime.getHour()
+                + ":" + zonedDateTime.getMinute()
+                + " " + zonedDateTime.getDayOfMonth()
+                + "-" + zonedDateTime.getMonthValue()
+                + "-" + zonedDateTime.getYear()
                 + " " + ZoneId.systemDefault();
 
-        String first = String.format("{\"message\":\"%s\",\"notificationDate\":\"%s\"}",
-                message, timeStamp);
+        String first = createPrettyJson("message", message,
+                "notificationDate", timeStamp);
 
         String otherMessage = "Again, hi there (:";
         Notification someOtherNotification = new Notification(41L, otherMessage);
         list.add(someOtherNotification);
 
-        String second = String.format("{\"message\":\"%s\",\"notificationDate\":\"%s\"}",
-                otherMessage, timeStamp);
+        String second = createPrettyJson("message", otherMessage,
+                "notificationDate", timeStamp);
         String expectedJson = "{\"notifications\":[" + first + ", " + second + "]}";
         String actualJson = authController.turnListInJsonResponse(list);
+
         Assertions.assertEquals(expectedJson, actualJson);
     }
 
@@ -647,9 +649,9 @@ class AuthControllerTest {
     void testGetAllNotificationsFromUserSuccess() {
         final long myUserId = 2121212L;
         Notification first = new Notification(myUserId, "I am the first.");
-        this.notificationDataRepository.save(first);
+        this.notificationRepository.save(first);
         Notification second = new Notification(myUserId, "I am the second.");
-        this.notificationDataRepository.save(second);
+        this.notificationRepository.save(second);
 
         List<Notification> list = new ArrayList<>();
         list.add(first);
@@ -660,5 +662,20 @@ class AuthControllerTest {
         for (int i = 0; i < list.size() - 1; i++) {
             Assertions.assertEquals(list.get(i), actualList.get(i));
         }
+    }
+
+    /**
+     * A helper method to create json pretty string out of String key-value pairs.
+     *
+     * @param kvPairs       list of key-values, must be an even number
+     * @return the json string that can be used in the response body
+     */
+    private String createPrettyJson(String... kvPairs) {
+        ObjectNode node = new ObjectMapper().createObjectNode();
+
+        for (int i = 0; i < kvPairs.length; i += 2) {
+            node.put(kvPairs[i], kvPairs[i + 1]);
+        }
+        return node.toPrettyString();
     }
 }

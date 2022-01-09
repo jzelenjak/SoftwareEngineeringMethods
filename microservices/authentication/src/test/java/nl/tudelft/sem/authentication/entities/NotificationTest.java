@@ -1,7 +1,10 @@
 package nl.tudelft.sem.authentication.entities;
 
-import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +17,7 @@ class NotificationTest {
     private final transient long userId = 1234567L;
     private final transient String message = "Hey there, you are hired!";
     private final transient String newMessage = "Unfortunately you are fired, get out.";
-    private final transient LocalDateTime notificationDate = LocalDateTime.now();
+    private final transient ZonedDateTime notificationDate = ZonedDateTime.now();
 
     @BeforeEach
     void setUp() {
@@ -122,15 +125,18 @@ class NotificationTest {
     @Test
     void testToJsonSuccess() {
         Notification someNotification = new Notification(userId, message);
-        LocalDateTime timeStamp = someNotification.getNotificationDate();
-        String json = String.format("{\"message\":\"%s\",\"notificationDate\":\"%s\"}",
-                this.message, timeStamp.getHour()
-                        + ":" + timeStamp.getMinute()
-                        + " " + timeStamp.getDayOfMonth()
-                        + "-" + timeStamp.getMonthValue()
-                        + "-" + timeStamp.getYear()
-                        + " " + ZoneId.systemDefault());
-        Assertions.assertEquals(json, someNotification.toJsonResponse());
+        ZonedDateTime timeStamp = someNotification.getNotificationDate();
+        String date = timeStamp.getHour()
+                + ":" + timeStamp.getMinute()
+                + " " + timeStamp.getDayOfMonth()
+                + "-" + timeStamp.getMonthValue()
+                + "-" + timeStamp.getYear()
+                + " " + ZoneId.systemDefault();
+
+        String actualJsonResponse = someNotification.toJsonResponse();
+        String expectedJsonResponse = createPrettyJson("message",
+                this.message, "notificationDate", date);
+        Assertions.assertEquals(expectedJsonResponse, actualJsonResponse);
     }
 
     @Test
@@ -139,5 +145,20 @@ class NotificationTest {
         String json = String.format("{\"message\":\"%s,\"notificationDate\":\"%s\"}",
                 this.message, this.notificationDate.toLocalDate().toString());
         Assertions.assertNotEquals(json, someNotification.toJsonResponse());
+    }
+
+    /**
+     * A helper method to create json pretty string out of String key-value pairs.
+     *
+     * @param kvPairs       list of key-values, must be an even number
+     * @return the json string that can be used in the response body
+     */
+    private String createPrettyJson(String... kvPairs) {
+        ObjectNode node = new ObjectMapper().createObjectNode();
+
+        for (int i = 0; i < kvPairs.length; i += 2) {
+            node.put(kvPairs[i], kvPairs[i + 1]);
+        }
+        return node.toPrettyString();
     }
 }

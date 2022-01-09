@@ -3,26 +3,24 @@ package nl.tudelft.sem.hiring.procedure.recommendation;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Scanner;
-import nl.tudelft.sem.hiring.procedure.entities.Application;
-import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
+import nl.tudelft.sem.hiring.procedure.entities.Submission;
+import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.RecommendationStrategy;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.TotalTimesSelectedStrategy;
-import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
+import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.server.ResponseStatusException;
 
 
 @SpringBootTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class TotalTimesSelectedStrategyTest {
     @Autowired
-    private transient ApplicationRepository repo;
+    private transient SubmissionRepository repo;
 
     private transient RecommendationStrategy strategy;
 
@@ -33,8 +31,11 @@ public class TotalTimesSelectedStrategyTest {
     private static final transient String THREE_LF = "3\n";
 
     @BeforeEach
-    public void setup() {
+    private void setup() {
         this.strategy = new TotalTimesSelectedStrategy(repo);
+
+        // Clear the database
+        repo.deleteAll();
     }
 
     /**
@@ -59,8 +60,8 @@ public class TotalTimesSelectedStrategyTest {
                 int applications = sc.nextInt();
                 sc.nextLine();
                 for (int j = 0; j < applications; ++j) {
-                    Application appl = new Application(sc.nextLong(), sc.nextLong(), time);
-                    appl.setStatus(ApplicationStatus.valueOf(sc.next()));
+                    Submission appl = new Submission(sc.nextLong(), sc.nextLong(), time);
+                    appl.setStatus(SubmissionStatus.valueOf(sc.next()));
                     this.repo.save(appl);
                 }
                 sc.nextLine();

@@ -3,8 +3,11 @@ package nl.tudelft.sem.hour.management.services;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.io.IOException;
 import nl.tudelft.sem.hour.management.config.GatewayConfig;
 import okhttp3.HttpUrl;
@@ -73,6 +76,14 @@ public class NotificationServiceTest {
 
         assertEquals("POST", recordedRequest.getMethod());
         assertEquals("/api/auth/notifications/add", recordedRequest.getPath());
+
+        // Create expected request body
+        JsonObject expectedRequestBody = new JsonObject();
+        expectedRequestBody.addProperty("userId", USER_ID);
+        expectedRequestBody.addProperty("message", MESSAGE);
+
+        assertEquals(expectedRequestBody, JsonParser
+                .parseString(recordedRequest.getBody().readUtf8()).getAsJsonObject());
     }
 
     @Test

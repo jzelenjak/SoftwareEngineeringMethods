@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import lombok.Getter;
 import lombok.Setter;
+import nl.tudelft.sem.courses.entities.Course;
 
 @Getter
 @Setter
@@ -36,6 +37,19 @@ public class CourseResponse {
         this.startDate = startDate;
         this.endDate = endDate;
         this.numberOfStudents = numberOfStudents;
+    }
+
+    /**
+     * Constructs a CourseResponse object from an existing Course entry.
+     *
+     * @param course - The course to construct the response object from.
+     */
+    public CourseResponse(Course course) {
+        this.courseId = course.getId();
+        this.courseCode = course.getCourseCode();
+        this.startDate = course.getStartDate();
+        this.endDate = course.getFinishDate();
+        this.numberOfStudents = course.getNumStudents();
     }
 
 }

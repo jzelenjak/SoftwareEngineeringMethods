@@ -58,7 +58,7 @@ public class AsyncCourseTimeValidatorTest {
 
     @Test
     void testValidate() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10, "A");
         AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfig);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, TOKEN);
@@ -80,11 +80,12 @@ public class AsyncCourseTimeValidatorTest {
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
         assertEquals("/api/courses/get/1", recordedRequest.getPath());
+        assertEquals(TOKEN, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
     void testValidateInvalidCourse() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 12, 10);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 12, 10, "B");
         AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfig);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, TOKEN);
@@ -102,11 +103,12 @@ public class AsyncCourseTimeValidatorTest {
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
         assertEquals("/api/courses/get/12", recordedRequest.getPath());
+        assertEquals(TOKEN, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
     void testValidateBeforeStart() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10, "C");
         AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfig);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, TOKEN);
@@ -128,11 +130,12 @@ public class AsyncCourseTimeValidatorTest {
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
         assertEquals("/api/courses/get/1", recordedRequest.getPath());
+        assertEquals(TOKEN, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
     void testValidateAfterEnd() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10, "D");
         AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfig);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, TOKEN);
@@ -155,6 +158,7 @@ public class AsyncCourseTimeValidatorTest {
 
         assertEquals(HttpMethod.GET.name(), recordedRequest.getMethod());
         assertEquals("/api/courses/get/1", recordedRequest.getPath());
+        assertEquals(TOKEN, recordedRequest.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     private JsonObject configureCourseResponseBody(ZonedDateTime start, ZonedDateTime end) {

@@ -1,5 +1,5 @@
 group = 'nl.tudelft.cse.sem.hiring.procedure'
-version = '0.0.1-SNAPSHOT'
+version = '1.0.0'
 mainClassName = 'nl.tudelft.sem.hiring.procedure.HiringProcedureMain'
 
 dependencies {
@@ -8,6 +8,10 @@ dependencies {
     implementation 'com.google.guava:guava:31.0.1-jre'
     implementation 'io.jsonwebtoken:jjwt-api:0.11.2'
 
+    // https://mvnrepository.com/artifact/com.itextpdf/itextpdf
+    implementation group: 'com.itextpdf', name: 'itextpdf', version: '5.0.6'
+
+
     implementation project(':libs:heartbeat')
     implementation project(':libs:jwt')
 
@@ -15,4 +19,6 @@ dependencies {
             'io.jsonwebtoken:jjwt-jackson:0.11.2'
     testImplementation 'com.squareup.okhttp3:mockwebserver'
     testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+
+    compile 'commons-io:commons-io:2.11.0'
 }

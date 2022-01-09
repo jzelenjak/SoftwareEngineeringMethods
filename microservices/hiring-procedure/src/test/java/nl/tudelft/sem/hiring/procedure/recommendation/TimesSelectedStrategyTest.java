@@ -6,12 +6,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
-import nl.tudelft.sem.hiring.procedure.entities.Application;
-import nl.tudelft.sem.hiring.procedure.entities.ApplicationStatus;
+import nl.tudelft.sem.hiring.procedure.entities.Submission;
+import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.RecommendationStrategy;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.TimesSelectedStrategy;
-import nl.tudelft.sem.hiring.procedure.repositories.ApplicationRepository;
+import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
@@ -26,15 +26,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.web.server.ResponseStatusException;
 
 @SpringBootTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class TimesSelectedStrategyTest {
 
     @Autowired
-    private transient ApplicationRepository repo;
+    private transient SubmissionRepository repo;
 
     private transient RecommendationStrategy strategy;
 
@@ -77,6 +75,9 @@ public class TimesSelectedStrategyTest {
         gatewayConfig = Mockito.mock(GatewayConfig.class);
         strategy = new TimesSelectedStrategy(repo, gatewayConfig, jwtToken);
         mapper = new ObjectMapper();
+
+        // Clear the database
+        repo.deleteAll();
     }
 
     @AfterEach
@@ -475,8 +476,8 @@ public class TimesSelectedStrategyTest {
                 int applications = sc.nextInt();
                 sc.nextLine();
                 for (int j = 0; j < applications; ++j) {
-                    Application appl = new Application(sc.nextLong(), sc.nextLong(), time);
-                    appl.setStatus(ApplicationStatus.valueOf(sc.next()));
+                    Submission appl = new Submission(sc.nextLong(), sc.nextLong(), time);
+                    appl.setStatus(SubmissionStatus.valueOf(sc.next()));
                     this.repo.save(appl);
                 }
                 sc.nextLine();

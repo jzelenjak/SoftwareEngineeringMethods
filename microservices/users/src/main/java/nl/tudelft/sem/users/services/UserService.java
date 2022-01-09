@@ -98,6 +98,28 @@ public class UserService {
         return this.userRepository.findAllByRole(role);
     }
 
+    /**
+     * Gets users by their first name.
+     * Only allowed for admins which is checked in UserController.
+     *
+     * @param firstName          the first name of a user.
+     * @return the users who have the given first name if found.
+     */
+    public Optional<List<User>> getUsersByFirstName(String firstName) {
+        return this.userRepository.findAllByFirstName(firstName);
+    }
+
+    /**
+     * Gets users by their last name.
+     * Only allowed for admins which is checked in UserController.
+     *
+     * @param lastName          the last name of a user.
+     * @return the users who have the given last name if found.
+     */
+    public Optional<List<User>> getUsersByLastName(String lastName) {
+        return this.userRepository.findAllByLastName(lastName);
+    }
+
 
     /**
      * Changes the role of a user to another role.
@@ -105,6 +127,7 @@ public class UserService {
      *
      * @param userId        the user ID of the user
      * @param newRole       the new role of the user
+     *
      * @return true if the operation has been successful, false if the user does not exist
      */
     public boolean changeRole(long userId, UserRole newRole) {
@@ -115,6 +138,46 @@ public class UserService {
 
         User user = optionalUser.get();
         user.setRole(newRole);
+        this.userRepository.save(user);
+        return true;
+    }
+
+    /**
+     * Changes the first name of a user.
+     * Only allowed for admins which is checked in UserController.
+     *
+     * @param userId             the user ID of the user.
+     * @param newFirstName       the new first name of the user.
+     *
+     * @return true if the operation has been successful, false if the user does not exist
+     */
+    public boolean changeFirstName(long userId, String newFirstName) {
+        Optional<User> optionalUser = this.userRepository.findByUserId(userId);
+        if (optionalUser.isEmpty()) {
+            return false;
+        }
+        User user = optionalUser.get();
+        user.setFirstName(newFirstName);
+        this.userRepository.save(user);
+        return true;
+    }
+
+    /**
+     * Changes the last name of a user.
+     * Only allowed for admins which is checked in UserController.
+     *
+     * @param userId             the user ID of the user.
+     * @param newLastName        the new last name of the user.
+     *
+     * @return true if the operation has been successful, false if the user does not exist
+     */
+    public boolean changeLastName(long userId, String newLastName) {
+        Optional<User> optionalUser = this.userRepository.findByUserId(userId);
+        if (optionalUser.isEmpty()) {
+            return false;
+        }
+        User user = optionalUser.get();
+        user.setLastName(newLastName);
         this.userRepository.save(user);
         return true;
     }

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -28,6 +29,8 @@ import reactor.core.publisher.Mono;
 
 @SpringBootTest(classes = CourseInfoResponseCache.class)
 public class CourseInfoResponseCacheTest {
+    
+    private static final String AUTHORIZATION_TOKEN = "MyToken";
 
     @Autowired
     private transient CourseInfoResponseCache cache;
@@ -64,7 +67,7 @@ public class CourseInfoResponseCacheTest {
         mockWebServer.enqueue(new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.value()));
 
         // Fetch course information
-        Mono<String> courseInfo = cache.getCourseInfoResponse(courseId);
+        Mono<String> courseInfo = cache.getCourseInfoResponse(AUTHORIZATION_TOKEN, courseId);
 
         // Verify that the response object is not available
         assertThrows(ResponseStatusException.class, courseInfo::block);
@@ -74,6 +77,7 @@ public class CourseInfoResponseCacheTest {
         assertNotNull(request);
         assertEquals(HttpMethod.GET.name(), request.getMethod());
         assertEquals("/api/courses/get/" + courseId, request.getPath());
+        assertEquals(AUTHORIZATION_TOKEN, request.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
@@ -83,7 +87,7 @@ public class CourseInfoResponseCacheTest {
         mockWebServer.enqueue(new MockResponse().setBody(new JsonObject().toString()));
 
         // Fetch course information
-        Mono<String> courseInfo = cache.getCourseInfoResponse(courseId);
+        Mono<String> courseInfo = cache.getCourseInfoResponse(AUTHORIZATION_TOKEN, courseId);
 
         // Verify that the response object is not available
         assertEquals(new JsonObject().toString(), courseInfo.block());
@@ -93,10 +97,11 @@ public class CourseInfoResponseCacheTest {
         assertNotNull(request);
         assertEquals(HttpMethod.GET.name(), request.getMethod());
         assertEquals("/api/courses/get/" + courseId, request.getPath());
+        assertEquals(AUTHORIZATION_TOKEN, request.getHeader(HttpHeaders.AUTHORIZATION));
     }
 
     @Test
-    public void testGetCourseInfoMultiple() throws InterruptedException {
+    public void testGetCourseInfoMultiple() {
         // Enqueue response and setup parameters
         List<Long> courseIds = List.of(1337L, 1338L, 1339L, 1340L, 1341L, 1342L);
         List<String> responses = new ArrayList<>();
@@ -115,7 +120,7 @@ public class CourseInfoResponseCacheTest {
         for (int i = 0; i < repeat; i++) {
             for (int j = 0; j < courseIds.size(); j++) {
                 assertEquals(responses.get(j),
-                        cache.getCourseInfoResponse(courseIds.get(j)).block());
+                        cache.getCourseInfoResponse("", courseIds.get(j)).block());
             }
         }
 
