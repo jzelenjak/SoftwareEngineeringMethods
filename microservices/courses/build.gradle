@@ -1,5 +1,5 @@
 group = 'nl.tudelft.cse.sem.courses'
-version = '0.0.1-SNAPSHOT'
+version = '1.0.0'
 mainClassName = 'nl.tudelft.sem.courses.CoursesMain'
 
 dependencies {
