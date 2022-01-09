@@ -1,6 +1,6 @@
 # Courses API Document
 This document shows how to make use of the endpoints for the courses microservice.   
-It contains a description of the endpoint, what the courses microservice does, and the required input format and output.
+It contains a description of the endpoint, what the courses microservice does, and the required input and output format as well as the response requests.
 ## General information
 The courses microservice manages everything related to courses such as grades and the lecturers who teach a certain course.
 
@@ -22,18 +22,27 @@ The input can be either a CourseRequest object or a JSON object in the format be
 Expected Input Format:
 ```json  
 {  
- "courseCode" : "CSE2216", "startDate" : "2022-01-08T16:51:32.7123609Z", "finishDate" : "2022-01-08T16:51:32.7123609Z", "numStudents" : 400}  
+ "courseCode" : "CSE2216", 
+ "startDate" : "2022-01-08T16:51:32.7123609Z", 
+ "finishDate" : "2022-01-08T16:51:32.7123609Z", 
+ "numStudents" : 400
+}  
 ```  
 
 The expected output format:
 ```json  
 {  
- "coruseId" : 2, "courseCode" : "CSE2216","startDate" : "2022-01-08T16:51:32.7123609Z", "finishDate" : "2022-01-08T16:51:32.7123609Z", "numStudents" : 400}  
+ "courseId" : 2, 
+ "courseCode" : "CSE2216",
+ "startDate" : "2022-01-08T16:51:32.7123609Z", 
+ "finishDate" : "2022-01-08T16:51:32.7123609Z", 
+ "numStudents" : 400
+}  
 ```  
 | Response code | Reason |  
 |---------------|--------|  
 |200 OK | Successful Completion|  
-|400 Bad Request | The failed to create|  
+|400 Bad Request | The failed to create the course|  
 |404 Not Found | The endpoint was not found|  
 |403 Forbidden | The user doesn't have permission for this endpoint|  
   
@@ -53,11 +62,24 @@ GET /api/courses/get/coruses/CSE2215
 ```  
 
 Example output:  
+
 The output is a JSON object containing multiple JSON objects of the same format as the courseResponse as above.  
 It should look something like this:
 ```json  
-[{"coruseId" : 2,"courseCode" : "CSE2216","startDate" : "2022-01-08T16:51:32.7123609Z","finishDate" : "2022-01-08T16:51:32.7123609Z","numStudents" : 400},  
-{"coruseId" : 3,"courseCode" : "CSE2200","startDate" : "2022-01-08T16:51:32.7123609Z","finishDate" : "2022-01-08T16:51:32.7123609Z","numStudents" : 400}]  
+[{
+    "coruseId" : 2,
+    "courseCode" : "CSE2216",
+    "startDate" : "2022-01-08T16:51:32.7123609Z",
+    "finishDate" : "2022-01-08T16:51:32.7123609Z",
+    "numStudents" : 400
+},  
+{
+    "coruseId" : 3,
+    "courseCxode" : "CSE2200",
+    "startDate" : "2022-01-08T16:51:32.7123609Z",
+    "finishDate" : "2022-01-08T16:51:32.7123609Z",
+    "numStudents" : 400
+}]  
 ```  
 
 | Response code | Reason |  
@@ -100,7 +122,7 @@ Example Output format:
 
 ## Get Multiple Courses
 ```
-GET "/api/courses/get-multiple"
+POST "/api/courses/get-multiple"
 ```
 
 This endpoint gives back a list that contains the information of multiple courses .
@@ -117,10 +139,20 @@ The input is a JSON object as given in the format above. It consists of a "cours
 
 Expected Output:
 ```JSON
-[{"coruseId" : 2,"courseCode" : "CSE2216","startDate" : "2022-01-08T16:51:32.7123609Z","finishDate" : "2022-01-08T16:51:32.7123609Z","numStudents" : 400},  
-{"coruseId" : 3,"courseCode" : "CSE2200","startDate" : "2022-01-08T16:51:32.7123609Z","finishDate" : "2022-01-08T16:51:32.7123609Z","numStudents" : 400}]  
+[{"coruseId" : 2,
+  "courseCode" : "CSE2216",
+  "startDate" : "2022-01-08T16:51:32.7123609Z",
+  "finishDate" : "2022-01-08T16:51:32.7123609Z",
+  "numStudents" : 400
+},  
+{"coruseId" : 3,
+  "courseCode" : "CSE2200",
+  "startDate" : "2022-01-08T16:51:32.7123609Z",
+  "finishDate" : "2022-01-08T16:51:32.7123609Z",
+  "numStudents" : 400}]  
 ```
 It is in the same format as the endpoint for getting courses by course code.
+
 | Response code | Reason |  
 |---------------|--------|  
 |200 OK | Successful Completion|  
@@ -134,7 +166,7 @@ It is in the same format as the endpoint for getting courses by course code.
 GET "/api/courses/get-all-editions"
 ```
 
-This endpoint returns all the courses with the same course as the requested course. To use this endpoint, the id of the course must be passed as a query parameter as shown below.
+This endpoint returns all the courses with the same course code as the requested course. To use this endpoint, the id of the course must be passed as a query parameter as shown below.
 
 **Note: you must be an admin, student or lecturer to get all editions of a course**
 
@@ -146,9 +178,11 @@ GET /api/courses/get-all-editions?courseId=54344
 
 Expected Output:
 ```JSON
-{ "courseIds" : [123457,345678,7867789] }
+{
+  "courseIds" : [123457,345678,7867789]
+}
 ```
-The output is a Json object containing a list of course ids of courses with the same course code.
+The output is a JSON object containing a list of course ids of courses with the same course code.
 
 | Response code | Reason |  
 |---------------|--------|  
@@ -164,7 +198,7 @@ The output is a Json object containing a list of course ids of courses with the 
 GET "/api/courses/statistics/user-grade"
 ```
 
-This endpoint returns back a Map of grades with their corresponding user ids for a specific course based on some input parameters. In order to use this endpoint you must provide a JSON object as input with the parameters listed below. Furthermore the output is also a JSON object
+This endpoint returns back a map of grades with their corresponding user ids for a specific course based on some input parameters. In order to use this endpoint you must provide a JSON object as input with the parameters listed below. Furthermore the output is also a JSON object
 
 **Note you must be an admin or lecturer to get multiple user grades**
 
@@ -214,6 +248,7 @@ DELETE "/api/courses/delete/1"
 
 Expected Output:
 A boolean object saying true or false.
+
 | Response code | Reason |  
 |---------------|--------|  
 |200 OK | Successful Completion|  
@@ -227,7 +262,7 @@ A boolean object saying true or false.
 ```
 POST "/api/courses/create/grade"
 ```
-This endpoint adds a grade for a given user and course and saves it in the database. For the input you can make use of the GradeRequest class when making the http request or make use of equivalent JSON object in the format below.
+This endpoint adds a grade for a given user and course and saves it in the database. For the input you can make use of the GradeRequest class when making the HTTP request or make use of equivalent JSON object in the format below.
 
 **Note you must be an admin or lecturer  to add a grade.**
 
@@ -242,6 +277,7 @@ Expected input:
 
 Expected output:
 A string saying "true" or "false".
+
 | Response code | Reason |  
 |---------------|--------|  
 |200 OK | Successful Completion|  
@@ -341,7 +377,7 @@ This endpoint checks if a lecturer teaches a specific course. There are 2 path v
 
 Expected input:
 ```
-GET "/get/teaches/5839662/4}"
+GET "/get/teaches/5839662/4"
 ```
 
 Expected output:
