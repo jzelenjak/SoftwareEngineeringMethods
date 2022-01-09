@@ -12,17 +12,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
+import nl.tudelft.sem.courses.communication.EditionsResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
+import nl.tudelft.sem.courses.communication.RecommendationRequest;
 import nl.tudelft.sem.courses.controllers.CourseController;
 import nl.tudelft.sem.courses.entities.Course;
+import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.TeachesRepository;
 import nl.tudelft.sem.jwt.JwtUtils;
+import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +62,8 @@ public class CourseControllerTest {
     private static final String courseCode = "CSE2216";
     private static final String createGradePath = "/api/courses/create/grade";
     private static final String assignLecturerPath = "/api/courses/assign/lecturer/1/1";
+    private static final String allEditionsPath = "/api/courses/get-all-editions";
+    private static final String multipleUserGrades = "/api/courses/statistics/user-grade";
     private static final ZonedDateTime date = ZonedDateTime.now();
     private static final CourseRequest courseRequest = new CourseRequest(courseCode,
             date, date, 1);
@@ -238,6 +247,139 @@ public class CourseControllerTest {
     }
 
     @Test
+    void testGetAllEditionsOfCourse() throws Exception {
+        //first creation request
+        MvcResult mvcResult = mockMvc.perform(post(createCoursePath)
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(courseRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+        //second creation request
+        CourseRequest courseRequest1 = new CourseRequest(courseCode, date,
+                ZonedDateTime.of(1, 1, 1, 1, 1, 1, 1, ZoneId.systemDefault()),  1);
+
+        MvcResult mvcResult2 = mockMvc.perform(post(createCoursePath)
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(courseRequest1)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+
+        String content = mvcResult.getResponse().getContentAsString();
+        CourseResponse course = objectMapper.readValue(content, CourseResponse.class);
+
+        MvcResult mvcResult1 = mockMvc.perform(
+                get(allEditionsPath + "?courseId=" + course.getCourseId())
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(courseRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String content2 = mvcResult2.getResponse().getContentAsString();
+        CourseResponse course2 = objectMapper.readValue(content2, CourseResponse.class);
+
+        String resultContent = mvcResult1.getResponse().getContentAsString();
+        EditionsResponse response = objectMapper.readValue(resultContent, EditionsResponse.class);
+        Assert.assertEquals(Arrays.asList(course.getCourseId(),
+                course2.getCourseId()), response.getCourseIds());
+
+    }
+
+    @Test
+    void testGetAllEditionsOfCourseNoCourses() throws Exception {
+        mockMvc.perform(get(allEditionsPath + "?courseId=1")
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(courseRequest)))
+                .andExpect(status().isBadRequest());
+
+    }
+
+    @Test
+    void testGetAllEditionsOfCourseUnauthoried() throws Exception {
+        mockMvc.perform(get(allEditionsPath + "?courseId=1")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(courseRequest)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetMultipleUserGradesValid() throws Exception {
+        //create a course
+        MvcResult mvcResult = mockMvc.perform(post(createCoursePath)
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(courseRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+        String content1 = mvcResult.getResponse().getContentAsString();
+        CourseResponse course = objectMapper.readValue(content1, CourseResponse.class);
+
+        GradeRequest gradeRequest1 = new GradeRequest(course.getCourseId(), 7.6F, 1);
+        GradeRequest gradeRequest2 = new GradeRequest(course.getCourseId(), 9.9F, 2);
+        GradeRequest gradeRequest3 = new GradeRequest(course.getCourseId(), 2.0F, 3);
+        GradeRequest gradeRequest4 = new GradeRequest(course.getCourseId(), 7.0F, 4);
+
+        List<GradeRequest> requests = Arrays.asList(gradeRequest1, gradeRequest2,
+                gradeRequest3, gradeRequest4);
+        for (GradeRequest request : requests) {
+            mockMvc.perform(post(createGradePath)
+                    .header(HttpHeaders.AUTHORIZATION, "")
+                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                    .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk());
+        }
+        RecommendationRequest request = new RecommendationRequest();
+        request.setCourseId(1);
+        request.setAmount(2);
+        request.setUserIds(Arrays.asList(1L, 2L, 3L, 4L));
+        request.setMinGrade(7);
+
+        MvcResult mvcResultGrades = mockMvc.perform(get(multipleUserGrades)
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andReturn();
+        String resultContent = mvcResultGrades.getResponse().getContentAsString();
+        Map<Long, Float> result = objectMapper.readValue(resultContent,
+                new TypeReference<Map<Long, Float>>() {});
+        Map<Long, Float> expectedResult = new LinkedHashMap<>();
+        expectedResult.put(gradeRequest2.getUserId(), gradeRequest2.getGrade());
+        expectedResult.put(gradeRequest1.getUserId(), gradeRequest1.getGrade());
+
+        Assert.assertEquals(expectedResult, result);
+    }
+
+    @Test
+    void testGetMultipleUserGradesNoRequestBody() throws Exception {
+        RecommendationRequest request = null;
+
+        mockMvc.perform(get(multipleUserGrades)
+                .header(HttpHeaders.AUTHORIZATION, "")
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetMultipleUserGradesUnauthorized() throws Exception {
+        RecommendationRequest request = new RecommendationRequest();
+        request.setCourseId(1);
+        request.setAmount(2);
+        request.setUserIds(Arrays.asList(1L, 2L, 3L, 4L));
+        request.setMinGrade(7);
+
+        mockMvc.perform(get(multipleUserGrades)
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void testGetCourseById() throws Exception {
         //First we add the course
         MvcResult mvcResult1 = mockMvc.perform(post(createCoursePath)
@@ -247,9 +389,9 @@ public class CourseControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
         String content1 = mvcResult1.getResponse().getContentAsString();
-        Course course = objectMapper.readValue(content1, Course.class);
+        CourseResponse course = objectMapper.readValue(content1, CourseResponse.class);
         //now we check if it has the correct course id.
-        MvcResult mvcResult = mockMvc.perform(get("/api/courses/get/" + course.getId())
+        MvcResult mvcResult = mockMvc.perform(get("/api/courses/get/" + course.getCourseId())
                         .header(HttpHeaders.AUTHORIZATION, ""))
                 .andExpect(status().isOk())
                 .andReturn();
