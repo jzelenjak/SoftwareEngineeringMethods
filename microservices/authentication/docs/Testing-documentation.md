@@ -1,4 +1,12 @@
 # Authentication
+
+This document contains the following testing-related topics:
+
+1. [Postman examples (manual testing)](#postman-examples-manual-testing)
+2. [Testing naming conventions](#testing-naming-convention)
+3. [Integration testing](#integration-testing)
+4. [Other notes](#other-notes)
+
 ## Postman examples (manual testing)
 <!Post here some (no pun intended) Postman examples for your microservice and what to expect>
 ### Authentication:
@@ -112,11 +120,20 @@
   ![img.png](images/notifications/noNewNotificationsRootUser.png)\
   Which gives a HttpStatus ```200 - OK``` and also displays a message "No new notifications".
 
+     
+## Integration testing
+We decided to use H2 database for testing. Thus, AuthService communicates with H2 repository in AuthServiceTest and AuthControllerTest.
+
+Furthermore, the authentication microservice does not rely on other microservices.
+
 
 ## Testing naming convention
 We decided to use the following naming convention for the tests in the authentication microservice:
 ```test<MethodWeWantToTest><ConditionWeWantTest>()```\
 And for the classes it is in the format: ```<ClassWeWantToTest>Test.java```.
+
+Within the test methods we use the AAA (Arrange - Act - Assert) convention, and they are clearly separated by empty lines.
+
 
 ## Other notes
 We have a test class to test our ```AuthenticationMain.java``` class which is named ```AuthenticationMainTest.java```. 

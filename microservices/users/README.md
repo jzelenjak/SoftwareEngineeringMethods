@@ -1,12 +1,23 @@
 # Users
 
+This document is structured as follows:
 
-## Why
+1. [Necessity of microservice](#why-necessity-of-microservice)
+2. [Operations](#operations)
+3. [Unique user ID](#unique-user-id)
+4. [Asynchronous requests to other microservices](#Asynchronous requests to other microservices)
+5. [API document](#API)
+6. [File description](#file-description)
+7. [Testing document](#Testing)
+
+
+
+## Why (necessity of microservice)
 
 Users microservice is necessary to perform CRUD operations on the users in our application.
 
 
-## How
+## Operations
 
 The CRUD operations provided by users microservice are the following:
 - **register a user** (can be done by anyone; for security reasons everyone is initially registered as a student)

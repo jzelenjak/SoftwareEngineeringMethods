@@ -1,8 +1,37 @@
 # Authentication
+
+This document is structured as follows:
+
+1. [Necessity of microservice](#why-necessity-of-microservice)
+2. [Operations](#operations)
+3. [API document](#API)
+4. [File description](#file-description)
+5. [Testing document](#Testing)
+
+## Purpose
 <!Insert here a short description what your microservice is for and what the different users can do.>
 Authentication is necessary to identify, authorize and authenticate the users using our application. We use this with the help of JWT tokens and send these with every request the user makes (to the different microservices).
 
+## Operations
+
+The CRUD operations provided by the authentication microservice are the following:
+- **register a new user** (can be done by anyone; for security reasons everyone is initially registered as a student)
+- **login as an existing user** (can be done by anyone who has an account provided with the correct username and password)
+- **change the role of a user** (can only be done by admins to prevent the abuse by malicious users)
+- **change the password of a user** (can only change your own password, given that you're already logged in; admin can change anyone's password)
+- **delete a user** (can only be done by admins).
+
+We check the permissions with the help of JWT tokens in every request the user makes (when authorization/authentication is required).
+
+
+## API
+
+The API documentation for the authentication microservice can be found in [`docs/API-document-authentication.md`](docs/API-document-authentication.md) 
+and for notification specific functionality this can be found in [`docs/API-document-notifications.md`](docs/API-document-notifications.md) document.
+
+
 ## File description
+
 <!Insert here a short description of the purpose of each file in your microservice.>
 **Controllers**:
 - ```AuthController.java```: Takes care of all the authentication API, following the ```<host><port>/api/auth/<request>``` path. Such as _login, register, changing password, changing role, deleting user_ endpoints.
@@ -19,7 +48,7 @@ Authentication is necessary to identify, authorize and authenticate the users us
 - ```JwtTokenProvider.java```: which is a class that provides utilities related to JWT token. It uses the JWT library as well. But most importantly it takes care of the creation of the JWT tokens and returning the Authentication object we use for filtering (in the ```JwtTokenFilter.java```).
 
 **Repositories**:
-- ```NotificationDataRepository.java```: which is the repository for storing the notification data (Notification entities).
+- ```NotificationRepository.java```: which is the repository for storing the notifications (Notification entities).
 - ```UserDataRepository.java```: which is the repository for storing the user data (UserData entities).
 
 **Security related classes**:
@@ -32,3 +61,7 @@ Authentication is necessary to identify, authorize and authenticate the users us
 - ```NotificationService.java```: which is a class that represents a service which communicates with the database containing the notification data.
 
 ```AuthenticationMain.java```: the main class of our authentication microservice.
+
+## Testing
+
+We have properly tested this microservice using unit, integration and manual testing. See [`docs/Testing-documentation.md`](docs/Testing-documentation.md) file for the testing process.
