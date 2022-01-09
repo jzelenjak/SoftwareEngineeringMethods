@@ -4,7 +4,8 @@ This document contains the following testing-related topics:
 
 1. [Postman examples (manual testing)](#postman-examples-manual-testing)
 2. [Integration testing](#integration-testing)
-3. [Testing naming conventions](#testing-naming-conventions)
+3. [Mutation testing and boundary testing](#mutation-testing-and-boundary-testing)
+4. [Testing naming conventions](#testing-naming-conventions)
 
 ## Postman examples (manual testing)
 
@@ -155,6 +156,13 @@ Almost all tests use randomized global variables which look as follows: `{{varia
 ## Integration testing
 
 Except for the authentication library and remote microservice endpoints, most of the components have not been mocked. All tested components interact with an in-memory H2 database (only during testing).
+
+## Mutation testing (and boundary testing)
+
+The hour-management microservice has, according to the PIT report, a mutation score of **100%**. As pitest is also responsible 
+for changing boundary conditions in mutants, we can therefore safely say that all boundary conditions are properly tested. An example 
+of a boundary test can be found in the `validation/AsyncCourseTimeValidatorTest.java` file. This test class ensures that all date/time-related 
+boundaries are covered so that we can rely on the validator when we need to check if a teaching assistant is allowed to declare their hours for a particular course.
 
 ## Testing naming conventions
 We decided to use the following naming convention for the tests in the hour-management microservice:
