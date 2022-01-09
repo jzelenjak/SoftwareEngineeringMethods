@@ -2,24 +2,20 @@
 
 This document is structured as follows:
 
-1. [Necessity of microservice](#why-necessity-of-microservice)
-2. [Operations](#operations)
-3. [Unique user ID](#unique-user-id)
-4. [Asynchronous requests to other microservices](#asynchronous-requests-to-other-microservices)
-5. [API document](#api)
-6. [File description](#file-description)
-7. [Testing document](#testing)
+1. [Purpose](#purpose)
+2. [Unique user ID](#unique-user-id)
+3. [Asynchronous requests to other microservices](#asynchronous-requests-to-other-microservices)
+4. [API document](#api)
+5. [File description](#file-description)
+6. [Testing document](#testing)
 
 
 
-## Why (necessity of microservice)
+## Purpose
 
 Users microservice is necessary to perform CRUD operations on the users in our application.
 
-
-## Operations
-
-The CRUD operations provided by users microservice are the following:
+The CRUD operations provided by users' microservice are the following:
 - **register a user** (can be done by anyone; for security reasons everyone is initially registered as a student)
 - **query users by user ID, username, role** (can only be done by lecturers and admins) and **by first and last name** (can only be done by admins for security reasons)
 - **change the role, the first and last name of a user** (can only be done by admins to prevent the abuse by malicious users)

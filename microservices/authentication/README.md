@@ -2,17 +2,14 @@
 
 This document is structured as follows:
 
-1. [Necessity of microservice](#why-necessity-of-microservice)
-2. [Operations](#operations)
-3. [API document](#api)
-4. [File description](#file-description)
-5. [Testing document](#testing)
+1. [Purpose](#purpose)
+2. [API document](#api)
+3. [File description](#file-description)
+4. [Testing document](#testing)
 
-## Why (necessity of microservice)
+## Purpose
 <!Insert here a short description what your microservice is for and what the different users can do.>
 Authentication is necessary to identify, authorize and authenticate the users using our application. We use this with the help of JWT tokens and send these with every request the user makes (to the different microservices).
-
-## Operations
 
 The CRUD operations provided by the authentication microservice are the following:
 - **register a new user** (can be done by anyone; for security reasons everyone is initially registered as a student)
