@@ -3,16 +3,19 @@ package nl.tudelft.sem.hiring.procedure.controllers;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
-import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Data;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
+import nl.tudelft.sem.hiring.procedure.contracts.Contract;
+import nl.tudelft.sem.hiring.procedure.contracts.ContractDto;
 import nl.tudelft.sem.hiring.procedure.entities.Submission;
 import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
 import nl.tudelft.sem.hiring.procedure.services.NotificationService;
@@ -42,6 +45,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -296,48 +300,54 @@ public class SubmissionController {
 
     /**
      * Endpoint for retrieving the contract of a user, for a course.
-     * Current implementation just returns a template contract, to be filled by the TA.
+     * Current implementation just a DTO with the data to be filled in.
+     * Client deals with contract creation.
      *
      * @param userId   is the ID of the user for which the contract is requested.
      *                 Parameter may be null, in which case the contract was requested
      *                 by the userId in the JWT
      * @param courseId is the ID of the course for which the contract is requested
      * @param headers  is the list of the request headers
-     * @return a byte stream of the contract pdf
+     * @return a JSON body containing the relevant data to be filled in
      */
-    @GetMapping("get-contract")
-    public Mono<byte[]> getContract(@RequestParam(required = false) Long userId,
-                                    @RequestParam long courseId,
-                                    @RequestHeader HttpHeaders headers) {
-        AsyncValidator.Builder builder = AsyncValidator.Builder.newBuilder();
-        builder.addValidator(new AsyncAuthValidator(jwtUtils));
-        if (userId != null) {
-            builder.addValidator(new AsyncRoleValidator(jwtUtils,
-                    Set.of(Roles.LECTURER, Roles.ADMIN)));
-            AsyncValidator head = builder.build();
-            return head.validate(headers, "").flatMap(value -> {
-                try {
-                    return Mono.just(Thread.currentThread().getContextClassLoader()
-                            .getResourceAsStream("templatecontract.pdf").readAllBytes());
-                } catch (IOException e) {
-                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Resource was not found"));
-                }
-            });
-        } else {
-            builder.addValidator(new AsyncRoleValidator(jwtUtils, Set.of(Roles.STUDENT)));
-            AsyncValidator head = builder.build();
-            return head.validate(headers, "").flatMap(value -> {
-                try {
-                    byte[] contract = Thread.currentThread().getContextClassLoader()
-                            .getResourceAsStream("templatecontract.pdf").readAllBytes();
-                    return Mono.just(contract);
-                } catch (IOException e) {
-                    return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Resource was not found"));
-                }
-            });
-        }
+    @GetMapping(value = "get-contract")
+    public Mono<ContractDto> getContract(@RequestParam(required = false) Long userId,
+                                         @RequestParam(required = false) String name,
+                                         @RequestParam long courseId,
+                                         @RequestHeader HttpHeaders headers) {
+
+        AsyncValidator head = buildVariableValidator(userId);
+
+        return head.validate(headers, "").flatMap(value -> {
+            Contract contract = new Contract();
+            String token = headers.getFirst(HttpHeaders.AUTHORIZATION);
+            Mono<JsonObject> courseInfo = getCourseInfoFromCourseId(courseId, token);
+            if (userId == null) {
+                return courseInfo
+                        .doOnError(e -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        COURSE_NOT_FOUND)))
+                        .flatMap(info -> {
+                            contract.setTaName(name);
+                            setContractParams(info, contract, headers, courseId);
+                            return Mono.just(contract.toDto());
+                        });
+            }
+            Mono<String> userName = getNameFromUserId(userId, token);
+            return userName
+                    .doOnError(e -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            USER_NOT_FOUND)))
+                    .flatMap(retrievedName -> {
+                        contract.setTaName(retrievedName);
+                        return courseInfo
+                               .doOnError(e -> Mono.error(
+                                   new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                       COURSE_NOT_FOUND)))
+                               .flatMap(info -> {
+                                   setContractParams(info, contract, headers, courseId);
+                                   return Mono.just(contract.toDto());
+                               });
+                    });
+        });
     }
 
     /**
@@ -540,4 +550,73 @@ public class SubmissionController {
         return builder.build();
     }
 
+    private Mono<String> getNameFromUserId(Long userId, String token) {
+        return webClient.get()
+                .uri(UriComponentsBuilder.newInstance()
+                        .scheme("http")
+                        .host(gatewayConfig.getHost())
+                        .port(gatewayConfig.getPort())
+                        .pathSegment("api", "users", "by_userid")
+                        .queryParam("userId", userId)
+                        .toUriString())
+                .header(HttpHeaders.AUTHORIZATION, token)
+                .exchange()
+                .flatMap(clientResponse -> {
+                    if (clientResponse.statusCode().isError()) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                USER_NOT_FOUND));
+                    }
+                    return clientResponse.bodyToMono(String.class).flatMap(responseBody -> {
+                        var response = JsonParser.parseString(responseBody).getAsJsonObject();
+                        return Mono.just(
+                                response.get("firstName").getAsString()
+                                    + response.get("lastName").getAsString());
+                    });
+                });
+    }
+
+    private Mono<JsonObject> getCourseInfoFromCourseId(Long courseId, String token) {
+        return webClient.get()
+                .uri(UriComponentsBuilder.newInstance()
+                        .scheme("http")
+                        .host(gatewayConfig.getHost())
+                        .port(gatewayConfig.getPort())
+                        .pathSegment("api", "courses", "get", courseId.toString())
+                        .toUriString())
+                .header(HttpHeaders.AUTHORIZATION, token)
+                .exchange()
+                .flatMap(clientResponse -> {
+                    if (clientResponse.statusCode().isError()) {
+                        return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                COURSE_NOT_FOUND));
+                    }
+                    return clientResponse.bodyToMono(String.class).flatMap(responseBody -> {
+                        return Mono.just(JsonParser.parseString(responseBody).getAsJsonObject());
+                    });
+                });
+    }
+
+    private ZonedDateTime getStartDateFromInfo(JsonObject info) {
+        return ZonedDateTime.parse(info.get("startDate").getAsString());
+    }
+
+    private ZonedDateTime getEndDateFromInfo(JsonObject info) {
+        return ZonedDateTime.parse(info.get("endDate").getAsString());
+    }
+
+    private String getCourseCodeFromInfo(JsonObject info) {
+        return info.get("courseCode").getAsString();
+    }
+
+    private void setContractParams(JsonObject info, Contract contract,
+                                   HttpHeaders headers, Long courseId) {
+        String courseCode = getCourseCodeFromInfo(info);
+        ZonedDateTime startDate = getStartDateFromInfo(info);
+        ZonedDateTime endDate = getEndDateFromInfo(info);
+        contract.setCourseCode(courseCode);
+        contract.setStartDate(startDate);
+        contract.setEndDate(endDate);
+        contract.setMaxHours(submissionService
+            .getMaxHours(getUserIdFromToken(headers), courseId));
+    }
 }

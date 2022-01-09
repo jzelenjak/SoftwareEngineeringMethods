@@ -34,3 +34,6 @@ gradle-app.setting
 
 # OS-Specific #
 __MACOSX/
+
+/microservices/hiring-procedure/out/*
+!/microservices/hiring-procedure/out/out.pdf

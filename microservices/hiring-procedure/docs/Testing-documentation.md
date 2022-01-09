@@ -87,6 +87,19 @@ Almost all tests use randomized global variables which look as follows: `{{varia
    8.8
    ```
 
+### Get contract
+   ![GetContract](images/get-contract.png)\
+   Which gives an HttpStatus `200 Ok` response and the json below.
+   ```json
+   {
+      "taName": "Ben",
+      "courseCode": "CSE1215",
+      "startDate": "2023-01-16T00:59:59+02:00",
+      "endDate": "2023-02-02T00:59:59+02:00",
+      "maxHours": 200
+   }
+   ```
+
 ## Integration testing
 
 Because of its multiple interactions with other microservices, which would be very difficult to set up in a real testing environment, we have decided to opt for testing using mocks to keep the complexity of the tests down. Therefore, there has not been a great amount of integration testing.
