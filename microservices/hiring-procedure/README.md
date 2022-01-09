@@ -1,5 +1,14 @@
 # Hiring Procedure Microservice
 
+This document is structured as follows:
+
+1. [Purpose](#purpose)
+2. [Other functionalities](#other-functionalities)
+3. [Some technical details](#some-technical-details)
+4. [API document](#api)
+5. [Testing document](#testing)
+
+
 ## Purpose
 Hiring Procedure is the microservice that allows users to perform any and all actions related to applying for a TA position. In short:
 1. A student applies for a TA position in a course they have previously completed.
