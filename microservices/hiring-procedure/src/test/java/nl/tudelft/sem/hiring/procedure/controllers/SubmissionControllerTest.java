@@ -91,7 +91,6 @@ public class SubmissionControllerTest {
     private static final String USER_ID_STR = "userId";
     private static final String START_DATE_STR = "startDate";
     private static final String FINISH_DATE_STR = "endDate";
-    private static final String SUBMISSION_ID_PARAM = "submissionId";
     private static final String PARAM_STARTER = "?";
     private static final String APPLY_API = "/api/hiring-procedure/apply";
     private static final String HIRE_API = "/api/hiring-procedure/hire-TA";
@@ -795,7 +794,7 @@ public class SubmissionControllerTest {
     void testGetOwnContractSuccess() throws Exception {
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
-        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.TA.name());
+        when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.STUDENT.name());
 
         JsonObject json = new JsonObject();
         json.addProperty("id", courseId);
