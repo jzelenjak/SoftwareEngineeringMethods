@@ -28,17 +28,17 @@ public class StatisticsServiceTest {
     private final transient ZonedDateTime testDate = ZonedDateTime.now();
 
     private final transient HourDeclarationRequest hourDeclarationRequestOne =
-            new HourDeclarationRequest(1234, 5678, 12);
+            new HourDeclarationRequest(1234, 5678, 12, "nl");
     private final transient HourDeclarationRequest hourDeclarationRequestTwo =
-            new HourDeclarationRequest(1234, 5678, 29);
+            new HourDeclarationRequest(1234, 5678, 29, "de");
     private final transient HourDeclarationRequest hourDeclarationRequestThree =
-            new HourDeclarationRequest(1234, 5678, 42);
+            new HourDeclarationRequest(1234, 5678, 42, "tr");
     private final transient HourDeclarationRequest hourDeclarationRequestFour =
-            new HourDeclarationRequest(1234, 5678, 1337.5);
+            new HourDeclarationRequest(1234, 5678, 1337.5, "gb");
     private final transient HourDeclarationRequest hourDeclarationRequestInvalidate =
-            new HourDeclarationRequest(1234, 5678, -9999);
+            new HourDeclarationRequest(1234, 5678, -9999, "us");
     private final transient HourDeclarationRequest hourDeclarationRequestZero =
-            new HourDeclarationRequest(1234, 5678, 0);
+            new HourDeclarationRequest(1234, 5678, 0, "it");
 
     private final transient HourDeclaration hourDeclarationOne = new HourDeclaration(1,
             hourDeclarationRequestOne, false, testDate);

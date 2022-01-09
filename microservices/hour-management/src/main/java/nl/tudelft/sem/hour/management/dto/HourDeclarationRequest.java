@@ -13,6 +13,8 @@ public class HourDeclarationRequest {
 
     private double declaredHours;
 
+    private String description;
+
     /**
      * Returns the JSON representation of this object.
      *
@@ -20,7 +22,8 @@ public class HourDeclarationRequest {
      */
     public String toJson() {
         return String.format(Locale.ROOT,
-                "{\"studentId\": %d, \"courseId\": %d, \"declaredHours\": %f}",
-                studentId, courseId, declaredHours);
+                "{\"studentId\": %d, \"courseId\": %d, "
+                        + "\"declaredHours\": %f, \"description\": %s}",
+                studentId, courseId, declaredHours, description);
     }
 }

@@ -2,6 +2,8 @@ package nl.tudelft.sem.hour.management.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -14,6 +16,7 @@ import nl.tudelft.sem.hour.management.services.NotificationService;
 import nl.tudelft.sem.hour.management.services.StatisticsService;
 import nl.tudelft.sem.hour.management.validation.AsyncAuthValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncCourseTimeValidator;
+import nl.tudelft.sem.hour.management.validation.AsyncDeclarationValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncHiringValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncLecturerValidator;
 import nl.tudelft.sem.hour.management.validation.AsyncRoleValidator;
@@ -61,8 +64,7 @@ public class HourDeclarationController {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
-                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
-                                Set.of(Roles.ADMIN, Roles.LECTURER))
+                        new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN))
                 ).build();
 
         // Validate the request, if it succeeds, attempt to return the declarations
@@ -84,7 +86,7 @@ public class HourDeclarationController {
      * @param hourDeclarationRequest hour declaration that will be saved
      * @return an informative message about status of request
      */
-    @PostMapping
+    @PostMapping(produces = "application/json")
     @ResponseStatus(HttpStatus.OK)
     public @ResponseBody
     Mono<String> declareHours(@RequestHeader HttpHeaders headers,
@@ -95,7 +97,8 @@ public class HourDeclarationController {
                         new AsyncRoleValidator(gatewayConfig, jwtUtils,
                                 Set.of(Roles.ADMIN, Roles.STUDENT)),
                         new AsyncCourseTimeValidator(gatewayConfig),
-                        new AsyncHiringValidator(gatewayConfig)
+                        new AsyncHiringValidator(gatewayConfig, jwtUtils),
+                        new AsyncDeclarationValidator(jwtUtils, hourDeclarationRequest)
                 ).build();
 
         return head.validate(headers, hourDeclarationRequest.toJson()).flatMap((valid) -> {
@@ -103,7 +106,7 @@ public class HourDeclarationController {
             long declarationId = hourDeclarationRepository.save(hourDeclaration).getDeclarationId();
             return createInfoResponse(
                     String.format("Declaration with id %s has been successfully saved.",
-                    declarationId));
+                            declarationId));
         });
     }
 
@@ -242,7 +245,7 @@ public class HourDeclarationController {
     /**
      * Gets all unapproved declarations in the system.
      *
-     * @return all stored unapproved declarations
+     * @return all stored unapproved declarations.
      */
     @GetMapping("/unapproved")
     @ResponseStatus(HttpStatus.OK)
@@ -251,8 +254,7 @@ public class HourDeclarationController {
         AsyncValidator head = AsyncValidator.Builder.newBuilder()
                 .addValidators(
                         new AsyncAuthValidator(gatewayConfig, jwtUtils),
-                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
-                                Set.of(Roles.ADMIN, Roles.LECTURER))
+                        new AsyncRoleValidator(gatewayConfig, jwtUtils, Set.of(Roles.ADMIN))
                 ).build();
 
         return head.validate(headers, "").flatMap((valid) -> {
@@ -260,7 +262,41 @@ public class HourDeclarationController {
 
             if (result.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "There are no declarations in the system."));
+                        "There are no unapproved declarations in the system."));
+            }
+
+            return Mono.just(result);
+        });
+    }
+
+    /**
+     * Gets all unapproved declarations in the system.
+     *
+     * @param courseId is the id of the course to fetch the unapproved declarations for.
+     * @return all stored unapproved declarations.
+     */
+    @GetMapping("/unapproved/{courseId}")
+    @ResponseStatus(HttpStatus.OK)
+    public @ResponseBody
+    Mono<List<HourDeclaration>> getAllUnapprovedDeclarationsForCourse(
+            @RequestHeader HttpHeaders headers,
+            @PathVariable("courseId") long courseId) {
+        AsyncValidator head = AsyncValidator.Builder.newBuilder()
+                .addValidators(
+                        new AsyncAuthValidator(gatewayConfig, jwtUtils),
+                        new AsyncRoleValidator(gatewayConfig, jwtUtils,
+                                Set.of(Roles.ADMIN, Roles.LECTURER)),
+                        new AsyncLecturerValidator(gatewayConfig, jwtUtils, courseId)
+                ).build();
+
+        return head.validate(headers, "").flatMap((valid) -> {
+            List<HourDeclaration> result = hourDeclarationRepository
+                    .findByCourseIdAndApproved(courseId, false);
+
+            if (result.isEmpty()) {
+                return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        String.format("There are no unapproved declarations for course with id %d.",
+                                courseId)));
             }
 
             return Mono.just(result);
@@ -270,8 +306,8 @@ public class HourDeclarationController {
     /**
      * Gets all declarations associated with a student.
      *
-     * @param studentId id of the desired student
-     * @return all declared hours associated with a student
+     * @param studentId id of the desired student.
+     * @return all declared hours associated with a student.
      */
     @GetMapping("/student/{id}")
     @ResponseStatus(HttpStatus.OK)

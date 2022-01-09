@@ -70,13 +70,14 @@ public class StatisticsControllerTest {
     private final transient ZonedDateTime testDate = ZonedDateTime.now();
 
     private final transient HourDeclarationRequest hourDeclarationRequest =
-            new HourDeclarationRequest(1234, 5678, 1);
+            new HourDeclarationRequest(1234, 5678, 1, "de");
     private final transient HourDeclarationRequest hourDeclarationRequestSameStudent =
-            new HourDeclarationRequest(1234, 567812, 12);
+            new HourDeclarationRequest(1234, 567812, 12, "nl");
     private final transient HourDeclarationRequest hourDeclarationRequestNew =
-            new HourDeclarationRequest(12345, 567812, 1337.5);
+            new HourDeclarationRequest(12345, 567812, 1337.5, "tr");
     private final transient HourDeclarationRequest hourDeclarationRequestInvalid =
-            new HourDeclarationRequest(12345, 567812, -9999);
+            new HourDeclarationRequest(12345, 567812, -9999, "gb");
+
 
     private final transient HourDeclaration hourDeclarationUnapproved = new HourDeclaration(1,
             hourDeclarationRequest, false, testDate);

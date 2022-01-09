@@ -80,7 +80,7 @@ public class AsyncCourseTimeValidatorTest {
 
         // Construct the json object used for testing
         JsonObject json = new JsonObject();
-        json.addProperty("startTime", current.toString());
+        json.addProperty("startDate", current.toString());
         String responseBody = json.toString();
 
         // Enqueue a response

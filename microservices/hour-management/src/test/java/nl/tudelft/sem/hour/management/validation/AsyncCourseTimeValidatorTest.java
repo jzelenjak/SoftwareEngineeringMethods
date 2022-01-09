@@ -58,7 +58,7 @@ public class AsyncCourseTimeValidatorTest {
 
     @Test
     void testValidate() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10, "A");
         AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfig);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, TOKEN);
@@ -85,7 +85,7 @@ public class AsyncCourseTimeValidatorTest {
 
     @Test
     void testValidateInvalidCourse() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 12, 10);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 12, 10, "B");
         AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfig);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, TOKEN);
@@ -108,7 +108,7 @@ public class AsyncCourseTimeValidatorTest {
 
     @Test
     void testValidateBeforeStart() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10, "C");
         AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfig);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, TOKEN);
@@ -135,7 +135,7 @@ public class AsyncCourseTimeValidatorTest {
 
     @Test
     void testValidateAfterEnd() throws InterruptedException {
-        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10);
+        HourDeclarationRequest declarationRequest = new HourDeclarationRequest(1, 1, 10, "D");
         AsyncCourseTimeValidator validator = new AsyncCourseTimeValidator(gatewayConfig);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, TOKEN);
