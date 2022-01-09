@@ -217,7 +217,7 @@ public class CourseService {
             Grade grade = getGrade(userId, recommendationRequest.getCourseId());
             if (grade != null && grade.getGradeValue() >= recommendationRequest.getMinGrade()) {
                 AbstractMap.SimpleEntry<Long, Float> entry =
-                        new AbstractMap.SimpleEntry(userId, grade.getGradeValue());
+                        new AbstractMap.SimpleEntry<>(userId, grade.getGradeValue());
                 list.add(entry);
             }
         }
