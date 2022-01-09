@@ -58,7 +58,7 @@ The course code is provided in the URL as a path variable of the endpoint in the
 
 Example input:
 ```  
-GET /api/courses/get/coruses/CSE2215  
+GET "/api/courses/get/courses/CSE2215"  
 ```  
 
 Example output:  
@@ -75,7 +75,7 @@ It should look something like this:
 },  
 {
     "coruseId" : 3,
-    "courseCxode" : "CSE2200",
+    "courseCode" : "CSE2200",
     "startDate" : "2022-01-08T16:51:32.7123609Z",
     "finishDate" : "2022-01-08T16:51:32.7123609Z",
     "numStudents" : 400
@@ -302,7 +302,7 @@ GET "/api/courses/get/grade/5310824/2"
 
 Expected output:
 It is a floating point number in the following format:
-```
+```JSON
 "7.0"
 ```
 | Response code | Reason |  
@@ -318,7 +318,7 @@ It is a floating point number in the following format:
 GET "/api/courses/get/lecturer/courses/{lecturerid}"
 ```
 
-This endpoint returns all the all the course ids for the courses that a specific lecturer teaches. The input required is the id of the lecturer which is given as a path variable {lecturerid}.
+This endpoint returns all the course ids for the courses that a specific lecturer teaches. The input required is the id of the lecturer which is given as a path variable {lecturerid}.
 
 **Note you must be an admin, student or lecturer  to get the courses that a lecturer is associated with.**
 

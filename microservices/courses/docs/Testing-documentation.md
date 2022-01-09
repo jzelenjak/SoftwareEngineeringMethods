@@ -49,7 +49,7 @@ This clearly gives us a 200 OK response as shown in the image above.
 
 The request body is as expected, an array of json objects.
 
-###Get Course by Id
+### Get Course by Id
 
 **Sending the request**
 
