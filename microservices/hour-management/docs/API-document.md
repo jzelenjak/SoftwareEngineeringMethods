@@ -6,7 +6,7 @@
 GET  /api/hour-management/declaration
 ```
 
-Endpoint for fetching all stored declarations. This includes both approved, and unapproved declarations. This endpoint requires **admin** or **lecturer** privileges.
+Endpoint for fetching all stored declarations. This includes both approved, and unapproved declarations. This endpoint requires **admin** privileges.
 
 Upon calling this endpoint, a list of declaration objects is returned in a JSON format. See the example below.
 
@@ -65,7 +65,37 @@ The *id* used within the path is the ID of the declaration.
 GET  /api/hour-management/declaration/unapproved
 ```
 
-Endpoint used for fetching *all* unapproved hour declarations. Only **admins** and **lecturers** have permission to access this endpoint. The response object is similar to that of the `/api/hour-management/declaration` endpoint;
+Endpoint used for fetching *all* unapproved hour declarations. Only **admins** have permission to access this endpoint. The response object is similar to that of the `/api/hour-management/declaration` endpoint;
+
+```json
+[
+    {
+        "declarationId": 12345,
+        "studentId": 54321,
+        "courseId": 78910,
+        "approved": true,
+        "declaredHours": 10.5,
+        "declarationData": "<date>"
+    },
+    {
+        "...": "..."
+    }
+]
+```
+
+| Response code | Reason                                       |
+| ------------- | -------------------------------------------- |
+| 200 OK        | Successful completion                        |
+| 404 NOT FOUND | No unapproved declarations in the system     |
+| 403 FORBIDDEN | User is not permitted to access the endpoint |
+
+---
+
+```
+GET  /api/hour-management/declaration/unapproved/{courseId}
+```
+
+Endpoint used for fetching *all* unapproved hour declarations for a particular course. Only **admins** and **lecturers** have permission to access this endpoint. The response object is similar to that of the `/api/hour-management/declaration` endpoint;
 
 ```json
 [
@@ -139,11 +169,11 @@ Endpoint used to declare hours. Only **admins** and **TAs** are permitted to dec
 }
 ```
 
-| Response code   | Reason                                                             |
-| --------------- | ------------------------------------------------------------------ |
-| 200 OK          | Successful completion                                              |
-| 403 FORBIDDEN   | User is not permitted to access the endpoint                       |
-| 400 BAD REQUEST | Declaration is not within valid course time or contract is invalid |
+| Response code   | Reason                                                                 |
+| --------------- | ---------------------------------------------------------------------- |
+| 200 OK          | Successful completion                                                  |
+| 403 FORBIDDEN   | User is not permitted to access the endpoint or declare for other user |
+| 400 BAD REQUEST | Declaration is not within valid course time or contract is invalid     |
 
 ---
 
@@ -232,6 +262,37 @@ The response object gives a map-like structure, where student ids are matched to
 }
 ```
 
+
+| Response code | Reason                                                     |
+| ------------- | ---------------------------------------------------------- |
+| 200 OK        | Successful completion                                      |
+| 404 NOT FOUND | No statistics found for the specified students and courses |
+| 403 FORBIDDEN | User is not permitted to access the endpoint               |
+
+---
+
+```
+POST /api/hour-management/statistics/aggregation-stats
+```
+
+Endpoint for retrieving the mode, median, and standard deviation of hours worked given a list of student ids and course id. This endpoint is accessible by **admins**, **lecturers**. All requests towards this endpoint require the use of the following body used to request the desired data;
+
+```json
+{
+  "studentIds": [1234, 5678],
+  "courseIds": [4321, 8765]
+}
+```
+
+The response object is an aggregation statistics object that contains the mode, median, and standard deviation.
+
+```json
+{
+  "mode": 12.1,
+  "median": 5,
+  "standardDeviation": 123.551
+}
+```
 
 | Response code | Reason                                                     |
 | ------------- | ---------------------------------------------------------- |

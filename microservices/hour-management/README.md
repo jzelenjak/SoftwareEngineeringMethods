@@ -1,5 +1,14 @@
 # Hour Management Microservice
 
+This document is structured as follows:
+
+1. [Purpose](#purpose)
+2. [Other functionalities](#other-functionalities)
+3. [Some technical details](#some-technical-details)
+4. [Validation chain](#validation-chain)
+5. [API document](#api)
+6. [Testing document](#testing)
+
 ## Purpose
 Hour Management is the microservice that offers service targeting declaration of work hours by TAs, an integral component to track and appropriately compensate working TAs. Its main workflow is as follows:
 1. A TA declares their hours.
@@ -7,7 +16,7 @@ Hour Management is the microservice that offers service targeting declaration of
     - Whether TA belongs to the course.
     - Whether they have declared an appropriate amount of hours.
 3. If the declaration is deemed appropriate, it is added to the system and it will wait for approval from a responsible lecturer.
-4. A lecturer fetched all of the (unapproved) declarations and reviews them.
+4. A lecturer fetched all the (unapproved) declarations and reviews them.
 5. They either accept or reject this declaration:
     - If accepted, the status of declaration is turned to an accepted one and it resides permanently in the system.
     - If deleted, the declaration is deleted from the system.
@@ -25,3 +34,12 @@ Many of the operations inside the microservice operate within Monos, Java's vers
 The validation chain is an integral part of the microservice as it allows easy and extensible validation of users and requests. Currently, each component in the chain explicitly performs a single check, and should the chain be extended in the future, it is recommended to continue keeping the components granular. Each component operations within Mono's and either returns an error or passes along the request to the next component within the chain. If none of the components throw an exception a successful operation flag (boolean True) is returned from the chain.
 
 For the sake of making it easy to construct the chain, a builder has been created as well. This allows each endpoint to easily construct **its own chain**.
+
+## API
+
+A description of the API that is exposed by the hour management microservice can be found in the [`docs/API-document`](docs/API-document.md) document.
+
+## Testing
+
+We have properly tested this microservice using a variety of test frameworks and testing techniques. A document related to this topic can be found in the [`docs/Testing-documentation.md`](docs/Testing-documentation.md) document. This document contains a description of certain test conventions as well as manual/functional tests made with Postman.
+

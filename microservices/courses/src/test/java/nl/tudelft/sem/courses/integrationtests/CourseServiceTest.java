@@ -7,10 +7,14 @@ import static org.mockito.Mockito.when;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import nl.tudelft.sem.courses.communication.CourseRequest;
+import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
+import nl.tudelft.sem.courses.communication.RecommendationRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.entities.Teaches;
@@ -26,6 +30,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.web.servlet.tags.form.InputTag;
+import org.xmlunit.builder.Input;
 
 
 @ExtendWith(SpringExtension.class)
@@ -56,10 +62,10 @@ public class CourseServiceTest {
 
     @Test
     void testAddNewCourse() {
-        Course result = courseService.addNewCourses(courseRequest);
+        CourseResponse result = courseService.addNewCourses(courseRequest);
         verify(courseRepository, Mockito.times(1)).save(Mockito.any());
         Assert.assertNotNull(result);
-        Assert.assertTrue(result.getId() >= 0);
+        Assert.assertTrue(result.getCourseId() >= 0);
 
     }
 
@@ -76,13 +82,13 @@ public class CourseServiceTest {
         List<Course> courseList = new ArrayList<>();
         courseList.add(course);
 
-        Course result = courseService.addNewCourses(courseRequest);
+        CourseResponse result = courseService.addNewCourses(courseRequest);
         when(courseRepository.findAllByCourseCode(Mockito.any())).thenReturn(courseList);
 
         verify(courseRepository, Mockito.times(1)).save(Mockito.any());
         Assert.assertNotNull(result);
-        Assert.assertTrue(result.getId() >= 0);
-        Course result2 = courseService.addNewCourses(courseRequest);
+        Assert.assertTrue(result.getCourseId() >= 0);
+        CourseResponse result2 = courseService.addNewCourses(courseRequest);
         Assert.assertNull(result2);
 
     }
@@ -99,19 +105,19 @@ public class CourseServiceTest {
         List<Course> courseList = new ArrayList<>();
         courseList.add(course);
 
-        Course result = courseService.addNewCourses(courseRequest);
+        CourseResponse result = courseService.addNewCourses(courseRequest);
         when(courseRepository.findAllByCourseCode(Mockito.any())).thenReturn(courseList);
 
         //second iteration of adding the course list.
 
         verify(courseRepository, Mockito.times(1)).save(Mockito.any());
         Assert.assertNotNull(result);
-        Assert.assertTrue(result.getId() >= 0);
+        Assert.assertTrue(result.getCourseId() >= 0);
         CourseRequest courseRequest2 = new CourseRequest(courseCode,
                 date, ZonedDateTime.parse("2007-12-03T10:15:30+01:00[Europe/Paris]"), 1);
-        Course result2 = courseService.addNewCourses(courseRequest2);
+        CourseResponse result2 = courseService.addNewCourses(courseRequest2);
         Assert.assertNotNull(result2);
-        Assert.assertTrue(result2.getId() >= 0);
+        Assert.assertTrue(result2.getCourseId() >= 0);
 
     }
     //Now tests for the second service method deleting a course. First we have to add a course.
@@ -340,6 +346,119 @@ public class CourseServiceTest {
         verify(courseRepository, Mockito.times(1)).findById(Mockito.any());
         Assert.assertNull(result);
     }
+
+    @Test
+    void testGetAllEditionsOfCourseValidList() {
+        Course inputCourse = new Course();
+        inputCourse.setId(1);
+        inputCourse.setStartDate(date);
+        inputCourse.setFinishDate(date);
+        inputCourse.setCourseCode(courseCode);
+
+        List<Course> courses = Arrays.asList(inputCourse);
+
+        Optional<Course> optionalCourse = Optional.ofNullable(inputCourse);
+
+        when(courseRepository.findById(Mockito.any())).thenReturn(optionalCourse);
+        when(courseRepository.findAllByCourseCode(Mockito.any())).thenReturn(courses);
+
+        List<Long> result = courseService.getAllEditionsOfCourse(1);
+        List<Long> expectedResult = Arrays.asList(1L);
+        verify(courseRepository, Mockito.times(1)).findById(Mockito.any());
+        verify(courseRepository, Mockito.times(1)).findAllByCourseCode(Mockito.any());
+
+        Assert.assertEquals(result, expectedResult);
+    }
+
+    @Test
+    void testGetAllEditionsOfCourseNoCourseFoundWithGivenId() {
+        List<Long> result = courseService.getAllEditionsOfCourse(1);
+        Assert.assertNull(result);
+    }
+
+    @Test
+    void testGetAllEditionsOfCourseFailedToFindAllCoursesByCourseCode() {
+        Course inputCourse = new Course();
+        inputCourse.setId(1);
+        inputCourse.setStartDate(date);
+        inputCourse.setFinishDate(date);
+        inputCourse.setCourseCode(courseCode);
+
+        Optional<Course> optionalCourse = Optional.ofNullable(inputCourse);
+
+        when(courseRepository.findById(Mockito.any())).thenReturn(optionalCourse);
+        when(courseRepository.findAllByCourseCode(Mockito.any())).thenReturn(null);
+
+        List<Long> result = courseService.getAllEditionsOfCourse(1);
+        verify(courseRepository, Mockito.times(1)).findById(Mockito.any());
+        verify(courseRepository, Mockito.times(1)).findAllByCourseCode(Mockito.any());
+
+        Assert.assertNull(result);
+    }
+
+    @Test
+    void testGetAllEditionsOfCourseExceptionThrown() {
+        Course inputCourse = new Course();
+        inputCourse.setId(1);
+        inputCourse.setStartDate(date);
+        inputCourse.setFinishDate(date);
+        inputCourse.setCourseCode(courseCode);
+
+        Optional<Course> optionalCourse = Optional.ofNullable(inputCourse);
+        when(courseRepository.findById(Mockito.any())).thenReturn(optionalCourse);
+        doThrow(IllegalArgumentException.class)
+                .when(courseRepository).findAllByCourseCode(Mockito.any());
+        List<Long> result = courseService.getAllEditionsOfCourse(1);
+
+        verify(courseRepository, Mockito.times(1)).findById(Mockito.any());
+        verify(courseRepository, Mockito.times(1)).findAllByCourseCode(Mockito.any());
+
+        Assert.assertNull(result);
+    }
+
+    @Test
+    void testGetMultipleUserGrades() {
+        RecommendationRequest request = new RecommendationRequest();
+        request.setCourseId(1);
+        request.setAmount(2);
+        request.setUserIds(Arrays.asList(1L, 2L, 3L, 4L));
+        request.setMinGrade(7);
+
+        //required objects for this test
+        Course course = new Course("CSE1011", date, date, 3);
+        Grade gradeUser1 = new Grade(1, course, 1, 7.6F);
+        Grade gradeUser2 = new Grade(2, course, 2, 9.9F);
+        Grade gradeUser3 = new Grade(3, course, 3, 2.0F);
+        Grade gradeUser4 = new Grade(4, course, 4, 7F);
+        //now the optionals of the entities created above.
+        Optional<Course> courseOptional = Optional.of(course);
+        Optional<Grade> gradeUser1Optional = Optional.of(gradeUser1);
+        Optional<Grade> gradeUser2Optional = Optional.of(gradeUser2);
+        Optional<Grade> gradeUser3Optional = Optional.of(gradeUser3);
+        Optional<Grade> gradeUser4Optional = Optional.of(gradeUser4);
+
+        when(courseRepository.findById(Mockito.any())).thenReturn(courseOptional);
+        when(gradeRepository.findByUserIdAndCourse(1, course)).thenReturn(gradeUser1Optional);
+        when(gradeRepository.findByUserIdAndCourse(2, course)).thenReturn(gradeUser2Optional);
+        when(gradeRepository.findByUserIdAndCourse(3, course)).thenReturn(gradeUser3Optional);
+        when(gradeRepository.findByUserIdAndCourse(4, course)).thenReturn(gradeUser4Optional);
+
+        Map<Long, Float> expectedMap = new LinkedHashMap<>();
+        expectedMap.put(gradeUser2.getUserId(), gradeUser2.getGradeValue());
+        expectedMap.put(gradeUser1.getUserId(), gradeUser1.getGradeValue());
+
+        Map<Long, Float> result = courseService.getMultipleUserGrades(request);
+
+        Assert.assertEquals(expectedMap, result);
+    }
+
+    @Test
+    void testGetMultiplUserGradesNullRecomendationRequest() {
+        Map<Long, Float> result = courseService.getMultipleUserGrades(null);
+        Assert.assertNull(result);
+    }
+
+
 
     @Test
     void testAddGradeWithValidGradeForUser() {

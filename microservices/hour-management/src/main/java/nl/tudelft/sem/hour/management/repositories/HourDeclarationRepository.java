@@ -17,6 +17,15 @@ public interface HourDeclarationRepository extends JpaRepository<HourDeclaration
 
     List<HourDeclaration> findByApproved(boolean approved);
 
+    List<HourDeclaration> findByCourseIdAndApproved(long courseId, boolean approved);
+
+    @Query("SELECT h FROM HourDeclaration h "
+            + "WHERE studentId IN :studentIds AND courseId IN :courseIds "
+            + "ORDER BY declaredHours ASC")
+    Collection<HourDeclaration>
+        findByCourseIdSetAndStudentIdSet(@Param("studentIds") Set<Long> studentIds,
+                                         @Param("courseIds") Set<Long> courseIds);
+
     @Query("SELECT SUM(declaredHours) FROM HourDeclaration "
             + "WHERE studentId = :studentId AND courseId = :courseId")
     Optional<Double> aggregateHoursFor(@Param("studentId") long studentId,
@@ -30,7 +39,7 @@ public interface HourDeclarationRepository extends JpaRepository<HourDeclaration
             + "GROUP BY studentId "
             + "HAVING SUM(declaredHours) >= :minHours "
             + "ORDER BY SUM(declaredHours) DESC")
-    Collection<StudentHoursTuple> findByCourseIdSetAndStudentIdSet(
+    Collection<StudentHoursTuple> aggregateByCourseIdSetAndStudentIdSet(
             @Param("studentIds") Set<Long> studentIds,
             @Param("courseIds") Set<Long> courseIds,
             @Param("minHours") double minHours);

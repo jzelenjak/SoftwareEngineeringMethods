@@ -3,9 +3,11 @@ package nl.tudelft.sem.authentication.controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -174,7 +176,7 @@ public class AuthController {
         String target = jsonNode.get(USERNAME).asText();
 
         String newRoleInput = jsonNode.get("role").asText();
-        UserRole newRole = getRole(newRoleInput);
+        UserRole newRole = parseRole(newRoleInput.toUpperCase(Locale.US));
         this.authService.changeRole(target, newRole);
     }
 
@@ -195,22 +197,20 @@ public class AuthController {
     }
 
     /**
-     * Gets role for a given string.
+     * A helper method to parse the user role from string to UserRole.
      *
-     * @param newRoleFromInput the new role from input.
-     * @return role for the given string as enum element.
+     * @param role   the user role string.
+     * @return the user role if successful. If not, ResponseStatusException is thrown.
      */
-    public UserRole getRole(String newRoleFromInput) {
-        switch (newRoleFromInput.toUpperCase(Locale.ROOT)) {
-            case "ADMIN":
-                return UserRole.ADMIN;
-            case "STUDENT":
-                return UserRole.STUDENT;
-            case "LECTURER":
-                return UserRole.LECTURER;
-            default:
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Please enter a valid role.");
+    private UserRole parseRole(String role) {
+        try {
+            return UserRole.valueOf(role);
+        } catch (Exception e) {
+            // Either IllegalArgumentException or NullPointerException
+            String reason = String.format("Role must be one of the following: %s.",
+                    Arrays.stream(UserRole.values()).map(Enum::name)
+                            .collect(Collectors.joining(", ")));
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
         }
     }
 

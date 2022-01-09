@@ -125,44 +125,44 @@ public class SubmissionServiceTest {
 
     @Test
     public void testCheckCandidateTrue() {
-        given(submissionRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
-                List.of(submission1, submission2));
-        boolean actual = submissionService.checkCandidate(userId1, courseId1);
+        given(submissionRepository.findById(submission1.getSubmissionId()))
+                .willReturn(Optional.of(submission1));
+        boolean actual = submissionService.checkCandidate(submission1.getSubmissionId());
         assertTrue(actual);
     }
 
     @Test
     public void testCheckCandidateFalse() {
         submission1.setStatus(SubmissionStatus.ACCEPTED);
-        given(submissionRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
-                List.of(submission1, submission2));
-        boolean actual = submissionService.checkCandidate(userId1, courseId1);
+        given(submissionRepository.findById(submission1.getSubmissionId()))
+                .willReturn(Optional.of(submission1));
+        boolean actual = submissionService.checkCandidate(submission1.getSubmissionId());
         assertFalse(actual);
         submission1.setStatus(SubmissionStatus.IN_PROGRESS);
     }
 
     @Test
     public void testCheckCandidateNoApplications() {
-        given(submissionRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
-                List.of(submission2));
-        boolean actual = submissionService.checkCandidate(userId1, courseId1);
+        given(submissionRepository.findById(submission2.getSubmissionId()))
+                .willReturn(Optional.empty());
+        boolean actual = submissionService.checkCandidate(submission2.getSubmissionId());
         assertFalse(actual);
     }
 
     @Test
     public void testHireGoesThrough() {
-        given(submissionRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
-                List.of(submission1, submission2));
-        submissionService.hire(userId1, courseId1);
+        given(submissionRepository.findById(submission1.getSubmissionId()))
+                .willReturn(Optional.of(submission1));
+        submissionService.hire(submission1.getSubmissionId());
         submission1.setStatus(SubmissionStatus.ACCEPTED);
         verify(submissionRepository).save(submission1);
     }
 
     @Test
     public void testHireFails() {
-        given(submissionRepository.findAllByUserIdAndAndCourseId(userId1, courseId1)).willReturn(
-                List.of(submission2));
-        submissionService.hire(userId1, courseId1);
+        given(submissionRepository.findById(submission2.getSubmissionId()))
+                .willReturn(Optional.of(submission2));
+        submissionService.hire(submission2.getSubmissionId());
         submission1.setStatus(SubmissionStatus.ACCEPTED);
         verify(submissionRepository, never()).save(submission1);
     }

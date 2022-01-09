@@ -1,11 +1,18 @@
 package nl.tudelft.sem.courses.services;
 
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import nl.tudelft.sem.courses.communication.CourseRequest;
+import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
+import nl.tudelft.sem.courses.communication.RecommendationRequest;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.entities.Teaches;
@@ -46,7 +53,7 @@ public class CourseService {
      * @return long - returns positive number upon successful completion,
      *      otherwise returns -1
      */
-    public Course addNewCourses(CourseRequest request)  {
+    public CourseResponse addNewCourses(CourseRequest request)  {
         List<Course> courses = courseRepository.findAllByCourseCode(request.getCourseCode());
 
         try {
@@ -55,7 +62,7 @@ public class CourseService {
                         request.getFinishDate(), request.getNumStudents());
                 courseRepository.save(newCourse);
                 courseRepository.flush();
-                return newCourse;
+                return new CourseResponse(newCourse);
             } else {
                 Course newCourse = new Course(request.getCourseCode(), request.getStartDate(),
                         request.getFinishDate(), request.getNumStudents());
@@ -64,7 +71,7 @@ public class CourseService {
                 } else {
                     courseRepository.save(newCourse);
                     courseRepository.flush();
-                    return newCourse;
+                    return new CourseResponse(newCourse);
                 }
             }
         } catch (Exception e) {
@@ -158,6 +165,71 @@ public class CourseService {
         } else {
             return null;
         }
+
+    }
+
+    /**
+     * Endpoint takes course id as input.
+     * It gives back list of course ids for
+     * courses which have the same course code
+     * as the course in the input.
+     *
+     * @param courseId - The id of the input course.
+     * @return - List of courses with matching course code.
+     */
+    public List<Long> getAllEditionsOfCourse(long courseId) {
+        Course course = getCourse(courseId);
+        if (course == null) {
+            return null;
+        }
+        try {
+            List<Course> courses = courseRepository.findAllByCourseCode(course.getCourseCode());
+            if (courses == null) {
+                return null;
+            }
+            List<Long> courseIds = courses.stream().map(course1 -> course1.getId())
+                    .collect(Collectors.toList());
+            return courseIds;
+
+        } catch (Exception e) {
+            return null;
+        }
+
+    }
+
+    /**
+     * Gives a map of user ids and grades.
+     * Recommendation request object which contains the
+     * following information:
+     * course id
+     * amount
+     * minimum grade
+     * user ids - for the users we want the grades for
+     *
+     * @param recommendationRequest - a request the final
+     */
+    public Map<Long, Float> getMultipleUserGrades(RecommendationRequest recommendationRequest) {
+        if (recommendationRequest == null) {
+            return null;
+        }
+        List<Map.Entry<Long, Float>> list = new ArrayList<>();
+        for (Long userId : recommendationRequest.getUserIds()) {
+            Grade grade = getGrade(userId, recommendationRequest.getCourseId());
+            if (grade != null && grade.getGradeValue() >= recommendationRequest.getMinGrade()) {
+                AbstractMap.SimpleEntry<Long, Float> entry =
+                        new AbstractMap.SimpleEntry<>(userId, grade.getGradeValue());
+                list.add(entry);
+            }
+        }
+        list.sort(Map.Entry.comparingByValue());
+        Collections.reverse(list);
+        list = list.subList(0, recommendationRequest.getAmount());
+        Map<Long, Float> result = new LinkedHashMap<>();
+        for (Map.Entry<Long, Float> entry : list) {
+            result.put(entry.getKey(), entry.getValue());
+        }
+
+        return result;
 
     }
 
