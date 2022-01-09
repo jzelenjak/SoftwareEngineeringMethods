@@ -1,6 +1,7 @@
 package nl.tudelft.sem.hiring.procedure.contracts;
 
 import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Font;
 import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfContentByte;
 import com.itextpdf.text.pdf.PdfReader;
@@ -70,9 +71,8 @@ public class Contract {
         if (baseContract == null) {
             throw new IOException("Resource not found");
         }
-
         BaseFont bf = BaseFont.createFont(
-                BaseFont.HELVETICA, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
+                BaseFont.HELVETICA, BaseFont.CP1252, BaseFont.EMBEDDED);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PdfReader reader = new PdfReader(baseContract); // input PDF
         PdfStamper stamper = new PdfStamper(reader, new FileOutputStream("out/" + name + ".pdf")); // output PDF

@@ -305,9 +305,22 @@ public class SubmissionController {
         });
     }
 
-    @GetMapping( value = "/get-help", produces = "image/png")
-    public FileSystemResource getHelp() throws IOException {
-        return new FileSystemResource("E:\\Projects\\SEM\\sem-repo-13a\\microservices\\hiring-procedure\\src\\main\\resources\\index.png");
+    @GetMapping( value = "/get-help", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> getHelp() throws IOException {
+        File file = new File("out/" + "gen" + ".pdf");
+
+        InputStream is = new FileInputStream(file);
+        //OutputStream os = new ByteArrayOutputStream();
+        //IOUtils.copy(is, os);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        // Here you have to set the actual filename of your pdf
+        String filename = "output.pdf";
+        headers.setContentDispositionFormData(filename, filename);
+        headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+        ResponseEntity<byte[]> response = new ResponseEntity<>(is.readAllBytes(), headers, HttpStatus.OK);
+        return response;
     }
 
     /**
@@ -322,19 +335,15 @@ public class SubmissionController {
      * @return a byte stream of the contract pdf
      */
     @GetMapping(value = "get-contract", produces = "application/pdf")
-    public FileSystemResource getContract(@RequestParam(required = false) Long userId,
+    public @ResponseBody Mono<Void> getContract(@RequestParam(required = false) Long userId,
                                               @RequestParam(required = false) String name,
                                               @RequestParam long courseId,
                                               @RequestHeader HttpHeaders headers,
                                               HttpServletResponse response) throws IOException {
 
-        File file = new File("out/" + "index" + ".png");
-        InputStream in = FileUtils.openInputStream(file);
-        return new FileSystemResource("E:\\Projects\\SEM\\sem-repo-13a\\microservices\\hiring-procedure\\out\\1.pdf");
-        /*
         AsyncValidator head = buildVariableValidator(userId);
 
-        return head.validate(headers, "").flatMap(value -> {
+        head.validate(headers, "").flatMap(value -> {
             Contract contract = new Contract();
             String token = headers.getFirst(HttpHeaders.AUTHORIZATION);
             Mono<JsonObject> courseInfo = getCourseInfoFromCourseId(courseId, token);
@@ -345,7 +354,14 @@ public class SubmissionController {
                         .flatMap(info -> {
                     contract.setTaName(name);
                             try {
-                                return Mono.just(setContractParamsAndGenerate(info, contract, headers, courseId));
+                                System.out.println("HERE1");
+                                InputStream is = setContractParamsAndGenerate(info, contract, headers, courseId);
+                                response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+                                IOUtils.copy(is, response.getOutputStream());
+                                response.flushBuffer();
+                                System.out.println("HERE2");
+
+                                return Mono.empty();
                             } catch (IOException e) {
                                 return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                                         "Contract generation failed"));
@@ -364,14 +380,18 @@ public class SubmissionController {
                        .flatMap(info ->
                        {
                            try {
-                               return Mono.just(setContractParamsAndGenerate(info, contract, headers, courseId));
+                               InputStream is = setContractParamsAndGenerate(info, contract, headers, courseId);
+                               IOUtils.copy(is, response.getOutputStream());
+                               response.flushBuffer();
+                               return Mono.empty();
                            } catch (IOException e) {
                                return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                                        "Contract generation failed"));
                            }
                        });
             });
-        }).block();*/
+        }).block();
+        return Mono.empty();
     }
 
     /**
@@ -631,7 +651,7 @@ public class SubmissionController {
         return info.get("courseCode").getAsString();
     }
 
-    private byte[] setContractParamsAndGenerate(JsonObject info,
+    private InputStream setContractParamsAndGenerate(JsonObject info,
                                                       Contract contract,
                                                       HttpHeaders headers,
                                                       Long courseId) throws IOException {
@@ -648,9 +668,8 @@ public class SubmissionController {
             name = name.replace(":", "-");
             name = name.replace(".", "-");
             contract.generate(name);
-            File file = new File("out/" + "index" + ".png");
-            InputStream in = new FileInputStream(file);
-            return IOUtils.toByteArray(in);
+            File file = new File("out/" + name + ".pdf");
+            return new FileInputStream(file);
             //return Files.readAllBytes(file.toPath());
         } catch (IOException | DocumentException e) {
             throw new IOException("Generating contract failed");
