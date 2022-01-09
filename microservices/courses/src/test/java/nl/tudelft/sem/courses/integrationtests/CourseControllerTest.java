@@ -270,7 +270,8 @@ public class CourseControllerTest {
         String content = mvcResult.getResponse().getContentAsString();
         CourseResponse course = objectMapper.readValue(content, CourseResponse.class);
 
-        MvcResult mvcResult1 = mockMvc.perform(get(allEditionsPath + "?courseId=" + course.getCourseId())
+        MvcResult mvcResult1 = mockMvc.perform(
+                get(allEditionsPath + "?courseId=" + course.getCourseId())
                 .header(HttpHeaders.AUTHORIZATION, "")
                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                 .content(objectMapper.writeValueAsString(courseRequest)))
