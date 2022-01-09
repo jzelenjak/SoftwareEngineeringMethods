@@ -5,10 +5,10 @@ This document is structured as follows:
 1. [Necessity of microservice](#why-necessity-of-microservice)
 2. [Operations](#operations)
 3. [Unique user ID](#unique-user-id)
-4. [Asynchronous requests to other microservices](#Asynchronous requests to other microservices)
-5. [API document](#API)
+4. [Asynchronous requests to other microservices](#asynchronous-requests-to-other-microservices)
+5. [API document](#api)
 6. [File description](#file-description)
-7. [Testing document](#Testing)
+7. [Testing document](#testing)
 
 
 

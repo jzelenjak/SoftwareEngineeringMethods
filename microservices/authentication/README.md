@@ -4,9 +4,9 @@ This document is structured as follows:
 
 1. [Necessity of microservice](#why-necessity-of-microservice)
 2. [Operations](#operations)
-3. [API document](#API)
+3. [API document](#api)
 4. [File description](#file-description)
-5. [Testing document](#Testing)
+5. [Testing document](#testing)
 
 ## Why (necessity of microservice)
 <!Insert here a short description what your microservice is for and what the different users can do.>

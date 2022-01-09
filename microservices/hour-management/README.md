@@ -6,8 +6,8 @@ This document is structured as follows:
 2. [Other functionalities](#other-functionalities)
 3. [Some technical details](#some-technical-details)
 4. [Validation chain](#validation-chain)
-5. [API document](#API)
-7. [Testing document](#Testing)
+5. [API document](#api)
+7. [Testing document](#testing)
 
 ## Purpose
 Hour Management is the microservice that offers service targeting declaration of work hours by TAs, an integral component to track and appropriately compensate working TAs. Its main workflow is as follows:
