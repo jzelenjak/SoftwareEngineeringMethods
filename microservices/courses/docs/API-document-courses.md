@@ -17,7 +17,7 @@ Furthermore, each endpoint written in the CourseController Class has a correspon
 POST /api/courses/create
 ```  
 This endpoint is for creating  a new course and stores it in the database.   
-The input can be either a CourseRequest object or a JSON object in the format below.  **Note: you must be an admin to create a course**
+The input can be either a CourseRequest object or a json object in the format below.  **Note: you must be an admin to create a course**
 
 Expected Input Format:
 ```json  
@@ -63,7 +63,7 @@ GET /api/courses/get/coruses/CSE2215
 
 Example output:  
 
-The output is a JSON object containing multiple JSON objects of the same format as the courseResponse as above.  
+The output is a json object containing multiple json objects of the same format as the courseResponse as above.  
 It should look something like this:
 ```json  
 [{
@@ -94,7 +94,7 @@ It should look something like this:
 ```
 GET "/api/courses/get/{id}"
 ```
-The endpoint returns the course with the requested ID. Each course when first created is stored in the database is assigned a unique ID. In order to use this endpoint the user has to provide the id as a path variable in the URL (in the {id} section) when making the GET request. The endpoint returns back a CourseResponse object in a JSON output format.
+The endpoint returns the course with the requested ID. Each course when first created is stored in the database is assigned a unique ID. In order to use this endpoint the user has to provide the id as a path variable in the URL (in the {id} section) when making the GET request. The endpoint returns back a CourseResponse object in a json output format.
 **Note: you must be an admin, student or lecturer to get course by id**
 
 Example input:
@@ -135,17 +135,17 @@ Expected Input:
 }
 ```
 
-The input is a JSON object as given in the format above. It consists of a "courseIds" parameter which contains a list of course ids.
+The input is a json object as given in the format above. It consists of a "courseIds" parameter which contains a list of course ids.
 
 Expected Output:
 ```JSON
-[{"coruseId" : 2,
+[{"courseId" : 2,
   "courseCode" : "CSE2216",
   "startDate" : "2022-01-08T16:51:32.7123609Z",
   "finishDate" : "2022-01-08T16:51:32.7123609Z",
   "numStudents" : 400
 },  
-{"coruseId" : 3,
+{"courseId" : 3,
   "courseCode" : "CSE2200",
   "startDate" : "2022-01-08T16:51:32.7123609Z",
   "finishDate" : "2022-01-08T16:51:32.7123609Z",
@@ -182,7 +182,7 @@ Expected Output:
   "courseIds" : [123457,345678,7867789]
 }
 ```
-The output is a JSON object containing a list of course ids of courses with the same course code.
+The output is a json object containing a list of course ids of courses with the same course code.
 
 | Response code | Reason |  
 |---------------|--------|  
@@ -198,7 +198,7 @@ The output is a JSON object containing a list of course ids of courses with the 
 GET "/api/courses/statistics/user-grade"
 ```
 
-This endpoint returns back a map of grades with their corresponding user ids for a specific course based on some input parameters. In order to use this endpoint you must provide a JSON object as input with the parameters listed below. Furthermore the output is also a JSON object
+This endpoint returns back a map of grades with their corresponding user ids for a specific course based on some input parameters. In order to use this endpoint you must provide a json object as input with the parameters listed below. Furthermore the output is also a json object
 
 **Note you must be an admin or lecturer to get multiple user grades**
 
@@ -222,7 +222,7 @@ Expected output:
 }
 ```
 
-The expected output is a JSON object (Map) which has the student numbers as the keys and the grade as the values. Note: The output is always ordered in descending order of grade with the highest grade first and the lowest grade last.
+The expected output is a json object (Map) which has the student numbers as the keys and the grade as the values. Note: The output is always ordered in descending order of grade with the highest grade first and the lowest grade last.
 
 | Response code | Reason |  
 |---------------|--------|  
@@ -262,7 +262,7 @@ A boolean object saying true or false.
 ```
 POST "/api/courses/create/grade"
 ```
-This endpoint adds a grade for a given user and course and saves it in the database. For the input you can make use of the GradeRequest class when making the HTTP request or make use of equivalent JSON object in the format below.
+This endpoint adds a grade for a given user and course and saves it in the database. For the input you can make use of the GradeRequest class when making the HTTP request or make use of equivalent json object in the format below.
 
 **Note you must be an admin or lecturer  to add a grade.**
 

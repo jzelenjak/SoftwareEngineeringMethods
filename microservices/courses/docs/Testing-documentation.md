@@ -37,7 +37,7 @@ the header of all other requests.
 
 This clearly gives us a 200 OK response as shown in the image above. 
 
-## Get Courses by course code
+### Get Courses by course code
 
 **Sending the request**
 
@@ -49,7 +49,7 @@ This clearly gives us a 200 OK response as shown in the image above.
 
 The request body is as expected, an array of json objects.
 
-##Get Course by Id
+###Get Course by Id
 
 **Sending the request**
 
@@ -62,7 +62,7 @@ returned by the create courses request. In this test, the value it has is 1.
 
 ![img.png](images/getCourseByIdResponse.png)
 
-## Get Multiple Courses
+### Get Multiple Courses
 
 **Sending the request:**
 
@@ -72,7 +72,7 @@ returned by the create courses request. In this test, the value it has is 1.
 
 ![img.png](images/getMultipleCoursesResponse.png)
 
-## Get all editions of a course
+### Get all editions of a course
 
 **Sending the request**
 
@@ -82,14 +82,17 @@ returned by the create courses request. In this test, the value it has is 1.
 
 ![img.png](images/getMultipleEditionsOfCourseResponse.png)
 
-## Add grade
+### Add grade
+
 **Sending the request**
+
 ![img.png](images/addGrade.png)
 
 **Receiving the response**
+
 ![img.png](images/addGradeResponse.png)
 
-## Get multiple user grades
+### Get multiple user grades
 For this test, we had to create 3 grades before hand using the add grade method. 
 The request bodies are shown below:
 ```JSON
@@ -122,7 +125,7 @@ The request bodies are shown below:
 
 ![img.png](images/getMultipleUserGradesResponse.png)
 
-## Delete course
+### Delete course
 **Sending the request**
 
 ![img.png](images/deletingCourse.png)
@@ -131,7 +134,7 @@ The request bodies are shown below:
 
 ![img.png](images/deletingCourseResponse.png)
 
-## Get grade of user for course
+### Get grade of user for course
 **Sending the request**
 
 ![img.png](images/getGradeOfUser.png)
@@ -139,7 +142,7 @@ The request bodies are shown below:
 
 ![img.png](images/getGradeOfUserResponse.png)
 
-## Assigning Lecturer to course
+### Assigning Lecturer to course
 **Sending the request**
 
 ![img.png](images/assigningLecturerToCourseRequest.png)
@@ -148,7 +151,7 @@ The request bodies are shown below:
 
 ![img.png](images/assigningLecturerToCourse.png)
 
-##Get courses of lecturer
+###Get courses of lecturer
 **Sending the request**
 
 ![img.png](images/getCoursesOfLecturerRequest.png)
@@ -157,7 +160,7 @@ The request bodies are shown below:
 
 ![img.png](images/getCoursesOfLecturerResponse.png)
 
-## Does lecturer teach course
+### Does lecturer teach course
 **Sending the request**
 
 ![img.png](images/doesLecturerTeachCourseRequest.png)
