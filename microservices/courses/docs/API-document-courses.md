@@ -5,9 +5,10 @@ It contains a description of the endpoint, what the courses microservice does, a
 The courses microservice manages everything related to courses such as grades and the lecturers who teach a certain course.
 
 For each course entity, there can be multiple grade entities associated with it along with the lecturers that teach that course.   
-Each grade entity, the students Id is stored, the courses Id and also the grade itself.
+Each grade entity, the students ID is stored, the courses ID and also the grade itself.
 
-Each endpoint within this microservice authenticates itself using the JWT tokens placed in the headers of the HTTP request.   These JWT Tokens are added by the authentication microservice  upon the initial connection with the applciation.
+Each endpoint within this microservice authenticates itself using the JWT tokens placed in the headers of the HTTP request.   
+These JWT Tokens are added by the authentication microservice  upon the initial connection with the application.
 
 Furthermore, each endpoint written in the CourseController Class has a corresponding method in the CourseService class with a similar name. The service layer handles all the interactions with the database while the controller layer handles the requests.
 
@@ -50,7 +51,7 @@ The expected output format:
 
 ## Get Course By Code
 ```  
-GET "/api/courses/get/courses/{code}"  
+GET /api/courses/get/courses/{code}  
 ```  
 This endpoint returns a list of courses with the same course code as requested by the user.  
 The course code is provided in the URL as a path variable of the endpoint in the "{code}" section.  
@@ -58,12 +59,12 @@ The course code is provided in the URL as a path variable of the endpoint in the
 
 Example input:
 ```  
-GET "/api/courses/get/courses/CSE2215"  
+GET /api/courses/get/courses/CSE2215  
 ```  
 
 Example output:  
 
-The output is a json object containing multiple json objects of the same format as the courseResponse as above.  
+The output is a json object containing multiple json objects of the same format as the course response as above.  
 It should look something like this:
 ```json  
 [{
@@ -90,20 +91,20 @@ It should look something like this:
 
   ---
 
-## Get Course by Id
+## Get Course by ID
 ```
-GET "/api/courses/get/{id}"
+GET /api/courses/get/{id}
 ```
-The endpoint returns the course with the requested ID. Each course when first created is stored in the database is assigned a unique ID. In order to use this endpoint the user has to provide the id as a path variable in the URL (in the {id} section) when making the GET request. The endpoint returns back a CourseResponse object in a json output format.
+The endpoint returns the course with the requested ID. Each course when first created is stored in the database is assigned a unique ID. In order to use this endpoint the user has to provide the id as a path variable in the URL (in the {id} section) when making the GET request. The endpoint returns a CourseResponse object in a json output format.
 **Note: you must be an admin, student or lecturer to get course by id**
 
 Example input:
 ```
-GET "/api/courses/get/1"
+GET /api/courses/get/1
 ```
 
 Example Output format:
-```JSON
+```json
 {  
  "courseId" : 2, 
 "courseCode" : "CSE2216",
@@ -122,14 +123,14 @@ Example Output format:
 
 ## Get Multiple Courses
 ```
-POST "/api/courses/get-multiple"
+POST /api/courses/get-multiple
 ```
 
 This endpoint gives back a list that contains the information of multiple courses .
 **Note: you must be an admin, student or lecturer to get multiple courses**
 
 Expected Input:
-```JSON
+```json
 {
   "courseIds" : [1, 7, 3, 2]
 }
@@ -138,7 +139,7 @@ Expected Input:
 The input is a json object as given in the format above. It consists of a "courseIds" parameter which contains a list of course ids.
 
 Expected Output:
-```JSON
+```json
 [{"courseId" : 2,
   "courseCode" : "CSE2216",
   "startDate" : "2022-01-08T16:51:32.7123609Z",
@@ -163,7 +164,7 @@ It is in the same format as the endpoint for getting courses by course code.
 
 ## Get All Editions Of a Course
 ```
-GET "/api/courses/get-all-editions"
+GET /api/courses/get-all-editions
 ```
 
 This endpoint returns all the courses with the same course code as the requested course. To use this endpoint, the id of the course must be passed as a query parameter as shown below.
@@ -177,7 +178,7 @@ GET /api/courses/get-all-editions?courseId=54344
 ```
 
 Expected Output:
-```JSON
+```json
 {
   "courseIds" : [123457,345678,7867789]
 }
@@ -195,15 +196,15 @@ The output is a json object containing a list of course ids of courses with the 
 
 ## Get Multiple User Grades
 ``` 
-GET "/api/courses/statistics/user-grade"
+GET /api/courses/statistics/user-grade
 ```
 
-This endpoint returns back a map of grades with their corresponding user ids for a specific course based on some input parameters. In order to use this endpoint you must provide a json object as input with the parameters listed below. Furthermore the output is also a json object
+This endpoint returns a map of grades with their corresponding user ids for a specific course based on some input parameters. In order to use this endpoint you must provide a json object as input with the parameters listed below. Furthermore, the output is also a json object
 
 **Note you must be an admin or lecturer to get multiple user grades**
 
 Expected Input
-```JSON
+```json
 {
 "courseId" : 1,
 "amount": 8,
@@ -215,7 +216,7 @@ Expected Input
 The "courseId" is the id of the course for which we want to get the grades for. The second parameter "amount" is the maximum number of grades we want. The third parameter "minGrade" is the minimum grade the student must have to be selected. The final parameters "userIds" is a list of all the student numbers for which we want the grades for.
 
 Expected output:
-```JSON
+```json
 { 
 "523423" : 7.5, 
 "32423" : 6.5 
@@ -235,15 +236,15 @@ The expected output is a json object (Map) which has the student numbers as the 
 
 ## Delete Course
 ```
-DELETE "/api/courses/delete/{id}"
+DELETE /api/courses/delete/{id}
 ```
-Deletes the given course from the database. The input required is the Id of the course specified as a path variable {id} in the URL. Below is an example of this.
+Deletes the given course from the database. The input required is the ID of the course specified as a path variable {id} in the URL. Below is an example of this.
 
 **Note: you must be an admin to delete a course**
 
 Expected Input:
 ```
-DELETE "/api/courses/delete/1"
+DELETE /api/courses/delete/1
 ```
 
 Expected Output:
@@ -260,14 +261,14 @@ A boolean object saying true or false.
 
 ## Add Grade
 ```
-POST "/api/courses/create/grade"
+POST /api/courses/create/grade
 ```
 This endpoint adds a grade for a given user and course and saves it in the database. For the input you can make use of the GradeRequest class when making the HTTP request or make use of equivalent json object in the format below.
 
-**Note you must be an admin or lecturer  to add a grade.**
+**Note you must be an admin or lecturer to add a grade.**
 
 Expected input:
-```JSON
+```json
 {
 "courseId" : 1,
 "grade" : 7.6,
@@ -289,21 +290,21 @@ A string saying "true" or "false".
 
 ## Get Grade Of a User
 ```
-GET "/api/courses/get/grade/{userid}/{courseid}"
+GET /api/courses/get/grade/{userid}/{courseid}
 ```
 
-This endpoint returns the grade for the user for a specific course. This endpoint makes use of 2 path variables one for the userid which is {userid} and the other for the courses id which is {courseid}.
-**Note you must be an admin, student or lecturer  to get the grade of a user**
+This endpoint returns the grade for the user for a specific course. This endpoint makes use of 2 path variables one for the userid which is {userid} and the other for the courses id which is {courseId}.
+**Note you must be an admin, student or lecturer to get the grade of a user**
 
 Expected input:
 ```
-GET "/api/courses/get/grade/5310824/2"
+GET /api/courses/get/grade/5310824/2
 ```
 
 Expected output:
 It is a floating point number in the following format:
-```JSON
-"7.0"
+```json
+7.0
 ```
 | Response code | Reason |  
 |---------------|--------|  
@@ -315,21 +316,21 @@ It is a floating point number in the following format:
 
 ## Get Courses of a lecturer
 ```
-GET "/api/courses/get/lecturer/courses/{lecturerid}"
+GET /api/courses/get/lecturer/courses/{lecturerid}
 ```
 
-This endpoint returns all the course ids for the courses that a specific lecturer teaches. The input required is the id of the lecturer which is given as a path variable {lecturerid}.
+This endpoint returns all the course ids for the courses that a specific lecturer teaches. The input required is the id of the lecturer which is given as a path variable {lecturerId}.
 
-**Note you must be an admin, student or lecturer  to get the courses that a lecturer is associated with.**
+**Note you must be an admin, student or lecturer to get the courses that a lecturer is associated with.**
 
 Example input:
 ```
-GET "/api/courses/get/lecturer/courses/5639163"
+GET /api/courses/get/lecturer/courses/5639163
 ```
 
 Example output:
-```JSON
-"[1,5,9,2]"
+```json
+[1, 5, 9, 2]
 ```
 
 | Response code | Reason |  
@@ -342,20 +343,20 @@ Example output:
 
 ## Assign a lecturer to a course
 ```
-POST "/api/courses/assign/lecturer/{lecturerid}/{courseid}"
+POST /api/courses/assign/lecturer/{lecturerid}/{courseid}
 ```
 
-This endpoint assigns a lecturer to a specific course and stores relationship in the database. There are 2 path variables, one is the id of the lecturer whom we want to connect to a course given by {lecturerid} and the second path variable is the id of the course we want the lecturer to connect to given by {courseid}.
+This endpoint assigns a lecturer to a specific course and stores relationship in the database. There are 2 path variables, one is the id of the lecturer whom we want to connect to a course given by {lecturerId} and the second path variable is the id of the course we want the lecturer to connect to given by {courseId}.
 
 **Note: you must be an admin to assign a lecturer to a course**
 
 Expected Input:
 ```
-POST "/api/courses/assign/lecturer/5839662/4"
+POST /api/courses/assign/lecturer/5839662/4
 ```
 
 Expected output:
-A string saying "true" if the operation has completed succesfully.
+A string saying "true" if the operation has completed successfully.
 
 | Response code | Reason |  
 |---------------|--------|  
@@ -368,20 +369,20 @@ A string saying "true" if the operation has completed succesfully.
 
 ## Does a lecturer teach a course?
 ```
-GET "/get/teaches/{lecturerId}/{courseId}"
+GET /get/teaches/{lecturerId}/{courseId}
 ```
 
-This endpoint checks if a lecturer teaches a specific course. There are 2 path variables for this endpoint. The first is the id of the lecturer which is given by  {lecturerId} and the second is the id of the course given by {courseid}.
+This endpoint checks if a lecturer teaches a specific course. There are 2 path variables for this endpoint. The first is the id of the lecturer which is given by  {lecturerId} and the second is the id of the course given by {courseId}.
 
 **Note: you must be admin, lecturer or student in order to check if a lecturer teaches a course.**
 
 Expected input:
 ```
-GET "/get/teaches/5839662/4"
+GET /get/teaches/5839662/4
 ```
 
 Expected output:
-A string saying "true" if the operation completed succesfully.
+A string saying "true" if the operation completed successfully.
 
 | Response code | Reason |  
 |---------------|--------|  

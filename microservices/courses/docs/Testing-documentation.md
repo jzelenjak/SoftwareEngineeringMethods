@@ -31,7 +31,7 @@ the header of all other requests.
 
 ![img.png](images/courseCreationRequest.png)
 
-**Recieving the response:**
+**Receiving the response:**
 
 ![img_1.png](images/courseCreationResponse.png)
 
@@ -49,13 +49,13 @@ This clearly gives us a 200 OK response as shown in the image above.
 
 The request body is as expected, an array of json objects.
 
-### Get Course by Id
+### Get Course by ID
 
 **Sending the request**
 
 ![img.png](images/getCourseByIdRequest.png)
 
-As you can see above, the {{courseId}} notation is actually a placeholder for the courseid
+As you can see above, the {{courseId}} notation is actually a placeholder for the courseId
 returned by the create courses request. In this test, the value it has is 1.
 
 **Receiving the response:**
@@ -93,23 +93,23 @@ returned by the create courses request. In this test, the value it has is 1.
 ![img.png](images/addGradeResponse.png)
 
 ### Get multiple user grades
-For this test, we had to create 3 grades before hand using the add grade method. 
+For this test, we had to create 3 grades beforehand using the add grade method. 
 The request bodies are shown below:
-```JSON
+```json
 {
 "courseId" : 1,
 "grade" : 5.2,
 "userId" : 1
 }
 ```
-```JSON
+```json
 {
   "courseId" : 1,
   "grade" : 9.9,
   "userId" : 2
 }
 ```
-```JSON
+```json
 {
 "courseId" : 1,
 "grade" : 10,
@@ -138,7 +138,8 @@ The request bodies are shown below:
 **Sending the request**
 
 ![img.png](images/getGradeOfUser.png)
-**Receiving the reseponse**
+
+**Receiving the response**
 
 ![img.png](images/getGradeOfUserResponse.png)
 
@@ -168,3 +169,8 @@ The request bodies are shown below:
 **Receiving the response**
 
 ![img.png](images/doesLecturerTeachCourseResponse.png)
+
+## Testing naming conventions
+We decided to use the following naming convention for the tests in the courses microservice:
+```test<MethodWeWantToTest><ConditionWeWantTest>()```\
+And for the classes it is in the format: ```<ClassWeWantToTest>Test.java```.
