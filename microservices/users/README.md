@@ -1,14 +1,21 @@
 # Users
 
+This document is structured as follows:
 
-## Why
+1. [Purpose](#purpose)
+2. [Unique user ID](#unique-user-id)
+3. [Asynchronous requests to other microservices](#asynchronous-requests-to-other-microservices)
+4. [API document](#api)
+5. [File description](#file-description)
+6. [Testing document](#testing)
+
+
+
+## Purpose
 
 Users microservice is necessary to perform CRUD operations on the users in our application.
 
-
-## How
-
-The CRUD operations provided by users microservice are the following:
+The CRUD operations provided by users' microservice are the following:
 - **register a user** (can be done by anyone; for security reasons everyone is initially registered as a student)
 - **query users by user ID, username, role** (can only be done by lecturers and admins) and **by first and last name** (can only be done by admins for security reasons)
 - **change the role, the first and last name of a user** (can only be done by admins to prevent the abuse by malicious users)

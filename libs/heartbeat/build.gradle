@@ -1,5 +1,5 @@
 group = 'nl.tudelft.cse.sem.heartbeat'
-version = '0.0.1-SNAPSHOT'
+version = '1.0.0'
 
 jar {
     enabled = true

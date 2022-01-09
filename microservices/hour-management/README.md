@@ -1,5 +1,14 @@
 # Hour Management Microservice
 
+This document is structured as follows:
+
+1. [Purpose](#purpose)
+2. [Other functionalities](#other-functionalities)
+3. [Some technical details](#some-technical-details)
+4. [Validation chain](#validation-chain)
+5. [API document](#api)
+6. [Testing document](#testing)
+
 ## Purpose
 Hour Management is the microservice that offers service targeting declaration of work hours by TAs, an integral component to track and appropriately compensate working TAs. Its main workflow is as follows:
 1. A TA declares their hours.
@@ -7,7 +16,7 @@ Hour Management is the microservice that offers service targeting declaration of
     - Whether TA belongs to the course.
     - Whether they have declared an appropriate amount of hours.
 3. If the declaration is deemed appropriate, it is added to the system and it will wait for approval from a responsible lecturer.
-4. A lecturer fetched all of the (unapproved) declarations and reviews them.
+4. A lecturer fetched all the (unapproved) declarations and reviews them.
 5. They either accept or reject this declaration:
     - If accepted, the status of declaration is turned to an accepted one and it resides permanently in the system.
     - If deleted, the declaration is deleted from the system.

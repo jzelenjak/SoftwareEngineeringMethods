@@ -1,6 +1,13 @@
 # Users
 
-## Postman examples
+This document contains the following testing-related topics:
+
+1. [Postman examples (manual testing)](#postman-examples-manual-testing)
+2. [Integration testing](#integration-testing)
+3. [Testing naming convention](#testing-naming-convention)
+4. [Other notes](#other-notes)
+
+## Postman examples (manual testing)
 <!Post here some (no pun intended) Postman examples for your microservice and what to expect>
 
 **NB! Tokens have certain validity time. Thus, periodically you need to log in again to get a fresh one.**
@@ -260,17 +267,21 @@
    ![200 OK response](images/deleteByUserId/Success/verifyDeleteByUserIdResponse.jpg)
 
 
-## Testing naming convention
-
-We decided to use the following naming convention for the tests in the users microservice:
-```test<MethodWeWantToTest><ConditionWeWantTest>()```\
-And for the classes it is in the format: ```<ClassWeWantToTest>Test.java```.
 
 ## Integration testing
 
 We decided to use H2 database for testing. Thus, UserService communicates with H2 repository in UserServiceTest and UserControllerTest.
 
 Furthermore, we decided to use mockWebServer to test communication with other microservices.
+
+## Testing naming convention
+
+We decided to use the following naming convention for the tests in the users microservice:
+```test<MethodWeWantToTest><ConditionWeWantTest>()```\
+And for the classes it is in the format: ```<ClassWeWantToTest>Test.java```.
+
+Within the test methods we use the AAA (Arrange - Act - Assert) convention, and they are clearly separated by empty lines.
+
 
 ## Other notes
 
