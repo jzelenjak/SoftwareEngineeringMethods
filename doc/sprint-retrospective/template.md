@@ -6,16 +6,18 @@
 
 # Main problems encountered
 ### Problem 1
+
 Description:
 
 Reaction:
 
 ### Problem 2
+
 Description:
 
 Reaction:
 
-# Adjustments for the next Spring plan
+# Adjustments for the next Sprint plan
 _Motivate any adjustments that will be made for the next Sprint Plan._
 
 
