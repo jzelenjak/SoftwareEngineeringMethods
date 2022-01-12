@@ -322,31 +322,36 @@ public class SubmissionController {
             Contract contract = new Contract();
             String token = headers.getFirst(HttpHeaders.AUTHORIZATION);
             Mono<JsonObject> courseInfo = getCourseInfoFromCourseId(courseId, token);
-            if (userId == null) {
-                return courseInfo
+            Mono<String> userName = getNameFromUserId(userId, token);
+            long ownUserId = getUserIdFromToken(headers);
+            if (userId != null && userId != ownUserId) {
+                // Only admin/lecturers are allowed to do this
+                return userName
                         .doOnError(e -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        COURSE_NOT_FOUND)))
+                                USER_NOT_FOUND)))
+                        .flatMap(retrievedName -> {
+                            contract.setTaName(retrievedName);
+                            return courseInfo
+                                    .doOnError(e -> Mono.error(
+                                            new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                                    COURSE_NOT_FOUND)))
+                                    .flatMap(info -> {
+                                        setContractParams(info, contract, userId, courseId);
+                                        return Mono.just(contract.toDto());
+                                    });
+                        });
+            } else {
+                // Only students can do this.
+                return courseInfo
+                        .doOnError(e -> Mono.error(
+                                new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                        COURSE_NOT_FOUND)))
                         .flatMap(info -> {
                             contract.setTaName(name);
-                            setContractParams(info, contract, headers, courseId);
+                            setContractParams(info, contract, ownUserId, courseId);
                             return Mono.just(contract.toDto());
                         });
             }
-            Mono<String> userName = getNameFromUserId(userId, token);
-            return userName
-                    .doOnError(e -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            USER_NOT_FOUND)))
-                    .flatMap(retrievedName -> {
-                        contract.setTaName(retrievedName);
-                        return courseInfo
-                               .doOnError(e -> Mono.error(
-                                   new ResponseStatusException(HttpStatus.NOT_FOUND,
-                                       COURSE_NOT_FOUND)))
-                               .flatMap(info -> {
-                                   setContractParams(info, contract, headers, courseId);
-                                   return Mono.just(contract.toDto());
-                               });
-                    });
         });
     }
 
@@ -609,7 +614,7 @@ public class SubmissionController {
     }
 
     private void setContractParams(JsonObject info, Contract contract,
-                                   HttpHeaders headers, Long courseId) {
+                                   Long userId, Long courseId) {
         String courseCode = getCourseCodeFromInfo(info);
         ZonedDateTime startDate = getStartDateFromInfo(info);
         ZonedDateTime endDate = getEndDateFromInfo(info);
@@ -617,6 +622,6 @@ public class SubmissionController {
         contract.setStartDate(startDate);
         contract.setEndDate(endDate);
         contract.setMaxHours(submissionService
-            .getMaxHours(getUserIdFromToken(headers), courseId));
+                .getMaxHours(userId, courseId));
     }
 }
