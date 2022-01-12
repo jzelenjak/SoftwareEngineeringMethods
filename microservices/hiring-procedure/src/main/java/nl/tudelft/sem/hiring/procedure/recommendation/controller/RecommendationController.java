@@ -96,7 +96,8 @@ public class RecommendationController {
         switch (strategy) {
             case TOTAL_TIMES_SELECTED:
                 RecommendationStrategy strategy1 =
-                        new TotalTimesSelectedStrategy(submissionRepository);
+                        new TotalTimesSelectedStrategy(submissionRepository, gatewayConfig,
+                            authorization);
                 return new Recommender(strategy1).recommend(courseId, amount, minValue);
             case TIMES_SELECTED:
                 RecommendationStrategy strategy2 =

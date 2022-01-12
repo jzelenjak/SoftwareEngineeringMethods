@@ -6,26 +6,16 @@ import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 /**
- * The class that implements RecommendationStrategy interface by recommending candidate TAs
- * based of the number of times they have been selected as a TA for
- * any edition of the given course.
+ * The class that extends BaseStrategy class and implements RecommendationStrategy interface by
+ *  recommending candidate TAs based of the number of times they have been selected as a TA for
+ *  any edition of the given course.
  */
-public class TimesSelectedStrategy implements RecommendationStrategy {
-
-    private final transient GatewayConfig gatewayConfig;
-
-    private final transient WebClient webClient;
-
-    private final transient SubmissionRepository repo;
-
-    private final transient String authorization;
+public class TimesSelectedStrategy extends BaseStrategy {
 
     /**
      * Instantiates a new TimesSelectedStrategy object.
@@ -36,10 +26,7 @@ public class TimesSelectedStrategy implements RecommendationStrategy {
      */
     public TimesSelectedStrategy(SubmissionRepository repo, GatewayConfig gatewayConfig,
                                  String authorization) {
-        this.repo = repo;
-        this.webClient = WebClient.create();
-        this.gatewayConfig = gatewayConfig;
-        this.authorization = authorization;
+        super(repo, gatewayConfig, authorization);
     }
 
     /**
@@ -56,20 +43,16 @@ public class TimesSelectedStrategy implements RecommendationStrategy {
      */
     @Override
     public Mono<List<Recommendation>> recommend(long courseId, int amount, double minTimes) {
-
         if (this.repo.findAllApplicantsByCourseId(courseId).isEmpty()) {
             return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Could not find any applicants"));
         }
-        return
-                this.webClient
-                        .get()
-                        .uri(buildUriWithCourseId(gatewayConfig.getHost(), gatewayConfig.getPort(),
-                                courseId, "api", "courses", "get-all-editions"))
-                        .header(HttpHeaders.AUTHORIZATION, authorization)
-                        .exchange()
-                        .flatMap(response -> processMono(response,
-                                body -> processMonoBody(body, courseId, amount, minTimes)));
+
+        String uri = buildUriWithCourseId(gatewayConfig.getHost(), gatewayConfig.getPort(),
+            courseId, "api", "courses", "get-all-editions");
+        return this.get(uri, authorization)
+                    .flatMap(response -> processMono(response,
+                            body -> processMonoBody(body, courseId, amount, minTimes)));
     }
 
     /**

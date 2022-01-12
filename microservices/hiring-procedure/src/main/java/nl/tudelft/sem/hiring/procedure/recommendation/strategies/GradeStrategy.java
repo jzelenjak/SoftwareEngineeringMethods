@@ -7,26 +7,15 @@ import java.util.List;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 /**
- * The class that implements RecommendationStrategy interface by recommending candidate TAs
- * based of the max grade they have received for the given course.
+ * The class that extends BaseStrategy class and implements RecommendationStrategy interface by
+ *  recommending candidate TAs based of the max grade they have received for the given course.
  */
-public class GradeStrategy implements RecommendationStrategy {
-
-    private final transient GatewayConfig gatewayConfig;
-
-    private final transient WebClient webClient;
-
-    private final transient SubmissionRepository repo;
-
-    private final transient String authorization;
+public class GradeStrategy extends BaseStrategy {
 
     /**
      * Instantiates a new GradeStrategy object.
@@ -37,10 +26,7 @@ public class GradeStrategy implements RecommendationStrategy {
      */
     public GradeStrategy(SubmissionRepository repo, GatewayConfig gatewayConfig,
                          String authorization) {
-        this.repo = repo;
-        this.webClient = WebClient.create();
-        this.gatewayConfig = gatewayConfig;
-        this.authorization = authorization;
+        super(repo, gatewayConfig, authorization);
     }
 
     /**
@@ -60,9 +46,8 @@ public class GradeStrategy implements RecommendationStrategy {
         List<Long> applicants = repo.findAllApplicantsByCourseId(courseId);
 
         if (applicants.isEmpty()) {
-            return Mono
-                    .error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "No applicants found"));
+            return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Could not find any applicants"));
         }
 
         ObjectMapper mapper = new ObjectMapper();
@@ -72,14 +57,9 @@ public class GradeStrategy implements RecommendationStrategy {
                 .put("minGrade", minGrade);
         node.set("userIds", mapper.valueToTree(applicants));
 
-        return this.webClient
-                .post()
-                .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
-                        "api", "courses", "statistics", "user-grade"))
-                .header(HttpHeaders.AUTHORIZATION, authorization)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .body(Mono.just(node.toString()), String.class)
-                .exchange()
+        String uri = buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
+            "api", "courses", "statistics", "user-grade");
+        return this.post(uri, node.toString(), authorization)
                 .flatMap(response -> processMono(response, this::processMonoBody));
     }
 

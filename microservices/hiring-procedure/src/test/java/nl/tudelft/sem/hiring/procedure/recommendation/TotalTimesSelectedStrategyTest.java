@@ -31,8 +31,8 @@ public class TotalTimesSelectedStrategyTest {
     private static final transient String THREE_LF = "3\n";
 
     @BeforeEach
-    private void setup() {
-        this.strategy = new TotalTimesSelectedStrategy(repo);
+    public void setup() {
+        this.strategy = new TotalTimesSelectedStrategy(repo, null, "placeholder");
 
         // Clear the database
         repo.deleteAll();

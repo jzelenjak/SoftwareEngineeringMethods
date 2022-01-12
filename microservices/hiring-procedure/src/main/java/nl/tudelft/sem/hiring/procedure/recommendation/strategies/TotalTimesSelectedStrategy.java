@@ -4,25 +4,29 @@ import java.util.List;
 import java.util.stream.Collectors;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
+import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 /**
- * The class that implements RecommendationStrategy interface by recommending candidate TAs
- * based of the total number of times they have been selected as a TA for any course.
+ * The class that extends BaseStrategy class and implements RecommendationStrategy interface by
+ *  recommending candidate TAs based of the total number of times they have been selected as
+ *  a TA for any course.
  */
-public class TotalTimesSelectedStrategy implements RecommendationStrategy {
-    private final transient SubmissionRepository repo;
+public class TotalTimesSelectedStrategy extends BaseStrategy {
 
     /**
      * Instantiates a new TotalTimesSelectedStrategy object.
      *
      * @param repo the TA application repository
+     * @param gatewayConfig the gateway configuration.
+     * @param authorization the authorization token of the caller.
      */
-    public TotalTimesSelectedStrategy(SubmissionRepository repo) {
-        this.repo = repo;
+    public TotalTimesSelectedStrategy(SubmissionRepository repo, GatewayConfig gatewayConfig,
+                                      String authorization) {
+        super(repo, gatewayConfig, authorization);
     }
 
     /**

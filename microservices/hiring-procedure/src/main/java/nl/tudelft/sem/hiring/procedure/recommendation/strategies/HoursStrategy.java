@@ -7,26 +7,16 @@ import java.util.List;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 /**
- * The class that implements RecommendationStrategy interface by recommending candidate TAs
- * based of the total number of hours they have been working as a TA for a given course.
+ * The class that extends BaseStrategy class and implements RecommendationStrategy interface
+ *  by recommending candidate TAs based of the total number of hours they have been working
+ *  as a TA for a given course.
  */
-public class HoursStrategy implements RecommendationStrategy {
-
-    private final transient GatewayConfig gatewayConfig;
-
-    private final transient WebClient webClient;
-
-    private final transient SubmissionRepository repo;
-
-    private final transient String authorization;
+public class HoursStrategy extends BaseStrategy {
 
     /**
      * Instantiates a new HoursStrategy object.
@@ -37,10 +27,7 @@ public class HoursStrategy implements RecommendationStrategy {
      */
     public HoursStrategy(SubmissionRepository repo, GatewayConfig gatewayConfig,
                          String authorization) {
-        this.repo = repo;
-        this.webClient = WebClient.create();
-        this.gatewayConfig = gatewayConfig;
-        this.authorization = authorization;
+        super(repo, gatewayConfig, authorization);
     }
 
     /**
@@ -61,17 +48,13 @@ public class HoursStrategy implements RecommendationStrategy {
 
         if (applicants.isEmpty()) {
             return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "No applicants found"));
+                    "Could not find any applicants"));
         }
 
-        return this.webClient
-                .get()
-                .uri(buildUriWithCourseId(gatewayConfig.getHost(), gatewayConfig.getPort(),
-                        courseId, "api", "courses", "get-all-editions"))
-                .header(HttpHeaders.AUTHORIZATION, authorization)
-                .exchange()
-                .flatMap(response ->
-                        processMono(response, body ->
+        String uri = buildUriWithCourseId(gatewayConfig.getHost(), gatewayConfig.getPort(),
+            courseId, "api", "courses", "get-all-editions");
+        return this.get(uri, authorization)
+                .flatMap(response -> processMono(response, body ->
                                 processMonoBodyFromCourses(body, amount, minHours, applicants)));
     }
 
@@ -100,20 +83,14 @@ public class HoursStrategy implements RecommendationStrategy {
             objectNode.set("userIds", mapper.valueToTree(userIds));
             objectNode.set("courseIds", mapper.valueToTree(courseIds));
 
-            return this.webClient
-                    .post()
-                    .uri(buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
-                            "api", "hour-management", "statistics", "total-user-hours"))
-                    .header(HttpHeaders.AUTHORIZATION, authorization)
-                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                    .body(Mono.just(objectNode.toString()), String.class)
-                    .exchange()
+            String uri = buildUri(gatewayConfig.getHost(), gatewayConfig.getPort(),
+                "api", "hour-management", "statistics", "total-user-hours");
+            return this.post(uri, objectNode.toString(), authorization)
                     .flatMap(response ->
                             processMono(response, this::processMonoBodyFromHours));
         } catch (Exception e) {
             // related to JSON processing (e.g. bad format, missing/incorrect fields)
-            return Mono
-                    .error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+            return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                             "An error has occurred. Please try again later!"));
         }
     }
