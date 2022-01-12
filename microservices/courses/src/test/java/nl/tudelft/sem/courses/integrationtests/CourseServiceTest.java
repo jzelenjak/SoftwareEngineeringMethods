@@ -15,6 +15,7 @@ import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.communication.RecommendationRequest;
+import nl.tudelft.sem.courses.communication.StudentGradeTuple;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.entities.Teaches;
@@ -417,7 +418,7 @@ public class CourseServiceTest {
     @Test
     void testGetMultipleUserGrades() {
         RecommendationRequest request = new RecommendationRequest();
-        request.setCourseId(1);
+        request.setCourseId(2);
         request.setAmount(2);
         request.setUserIds(Arrays.asList(1L, 2L, 3L, 4L));
         request.setMinGrade(7);
@@ -426,24 +427,24 @@ public class CourseServiceTest {
         Course course = new Course(1, "CSE1011", date, date, 3);
         Course course2 = new Course(2, "CSE1011", date, date, 3);
 
-        Grade gradeUser1 = new Grade(1, course, 1, 7.6F);
-        Grade gradeUser2 = new Grade(2, course, 2, 9.9F);
-        Grade gradeUser3 = new Grade(3, course, 3, 2.0F);
-        Grade gradeUser4 = new Grade(4, course, 4, 7F);
+        final Grade gradeUser1 = new Grade(1, course, 1, 7.6F);
+        final Grade gradeUser2 = new Grade(2, course, 2, 9.9F);
+
+        StudentGradeTuple gradeTuple1 = new StudentGradeTuple(2L, 9.9F);
+        StudentGradeTuple gradeTuple2 = new StudentGradeTuple(1L, 7.6F);
+        StudentGradeTuple gradeTuple3 = new StudentGradeTuple(4L, 7F);
+
         //now the optionals of the entities created above.
         Optional<Course> courseOptional = Optional.of(course);
-        Optional<Grade> gradeUser1Optional = Optional.of(gradeUser1);
-        Optional<Grade> gradeUser2Optional = Optional.of(gradeUser2);
-        Optional<Grade> gradeUser3Optional = Optional.of(gradeUser3);
-        Optional<Grade> gradeUser4Optional = Optional.of(gradeUser4);
 
         when(courseRepository.findById(Mockito.any())).thenReturn(courseOptional);
         when(courseRepository.findAllByCourseCode(course.getCourseCode()))
                 .thenReturn(List.of(course, course2));
-        when(gradeRepository.findByUserIdAndCourse(1, course)).thenReturn(gradeUser1Optional);
-        when(gradeRepository.findByUserIdAndCourse(2, course)).thenReturn(gradeUser2Optional);
-        when(gradeRepository.findByUserIdAndCourse(3, course)).thenReturn(gradeUser3Optional);
-        when(gradeRepository.findByUserIdAndCourse(4, course)).thenReturn(gradeUser4Optional);
+        when(gradeRepository
+                        .getMultipleUserGrades(request.getUserIds(),
+                                (float) request.getMinGrade(),
+                                List.of(course.getId())))
+                .thenReturn(List.of(gradeTuple1, gradeTuple2, gradeTuple3));
 
         Map<Long, Float> expectedMap = new LinkedHashMap<>();
         expectedMap.put(gradeUser2.getUserId(), gradeUser2.getGradeValue());
@@ -455,12 +456,41 @@ public class CourseServiceTest {
     }
 
     @Test
-    void testGetMultiplUserGradesNullRecomendationRequest() {
+    void testGetMultipleUserGradesNullRecommendationRequest() {
         Map<Long, Float> result = courseService.getMultipleUserGrades(null);
         Assertions.assertNull(result);
     }
 
+    @Test
+    void testGetMultipleUserGradesEmptyResult() {
+        RecommendationRequest request = new RecommendationRequest(999, 5, 7, List.of(1L));
 
+        Course course = new Course(1, "CSE1011", date, date, 3);
+
+        when(courseRepository.findById(Mockito.any())).thenReturn(Optional.of(course));
+        when(courseRepository.findAllByCourseCode(course.getCourseCode()))
+                .thenReturn(List.of(course));
+
+        when(gradeRepository
+                .getMultipleUserGrades(request.getUserIds(),
+                        (float) request.getMinGrade(),
+                        List.of(course.getId())))
+                .thenReturn(List.of());
+
+
+        Map<Long, Float> result = courseService.getMultipleUserGrades(request);
+        Assertions.assertNull(result);
+    }
+
+    @Test
+    void testGetMultipleUserGradesNoCourseId() {
+        RecommendationRequest request = new RecommendationRequest(999, 5, 7, List.of(1L));
+
+        when(courseRepository.findById(Mockito.any())).thenReturn(Optional.empty());
+
+        Map<Long, Float> result = courseService.getMultipleUserGrades(request);
+        Assertions.assertNull(result);
+    }
 
     @Test
     void testAddGradeWithValidGradeForUser() {

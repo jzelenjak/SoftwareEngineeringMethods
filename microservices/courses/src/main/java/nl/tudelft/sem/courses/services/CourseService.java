@@ -2,7 +2,9 @@ package nl.tudelft.sem.courses.services;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,7 @@ import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.GradeRequest;
 import nl.tudelft.sem.courses.communication.RecommendationRequest;
+import nl.tudelft.sem.courses.communication.StudentGradeTuple;
 import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.entities.Teaches;
@@ -213,36 +216,63 @@ public class CourseService {
             return null;
         }
 
-        Course course = getCourse(recommendationRequest.getCourseId());
-        if (course == null) {
+        List<Long> courseEditions
+                = getAllEditionsOfCourse(recommendationRequest.getCourseId());
+
+        if (courseEditions == null) {
             return null;
         }
 
-        List<Map.Entry<Long, Float>> list = new ArrayList<>();
-        for (Long userId : recommendationRequest.getUserIds()) {
-            for (Course edition : courseRepository.findAllByCourseCode(course.getCourseCode())) {
-                if (edition.getId() == course.getId()) {
-                    continue;
-                }
-                Grade grade = getGrade(userId, edition.getId());
-                if (grade != null && grade.getGradeValue() >= recommendationRequest.getMinGrade()) {
-                    AbstractMap.SimpleEntry<Long, Float> entry =
-                            new AbstractMap.SimpleEntry<>(userId, grade.getGradeValue());
-                    list.add(entry);
-                }
-            }
-        }
-        list.sort(Map.Entry.comparingByValue());
-        Collections.reverse(list);
-        list = list.subList(0, Math.min(list.size(), recommendationRequest.getAmount()));
-        Map<Long, Float> result = new LinkedHashMap<>();
-        for (Map.Entry<Long, Float> entry : list) {
-            result.put(entry.getKey(), entry.getValue());
-        }
+        courseEditions.remove(recommendationRequest.getCourseId());
 
-        return result;
+        Map<Long, Float> resultMap = new HashMap<>();
+        gradeRepository
+                .getMultipleUserGrades(recommendationRequest.getUserIds(),
+                        (float) recommendationRequest.getMinGrade(), courseEditions)
+                .stream()
+                .limit(recommendationRequest.getAmount())
+                .forEach(t -> {
+                    resultMap.put(t.getStudentId(), t.getGrade());
+                });
 
+        return resultMap.isEmpty() ? null : resultMap;
     }
+
+//    public Map<Long, Float> getMultipleUserGrades(RecommendationRequest recommendationRequest) {
+//        if (recommendationRequest == null) {
+//            return null;
+//        }
+//
+//        Course course = getCourse(recommendationRequest.getCourseId());
+//        if (course == null) {
+//            return null;
+//        }
+//
+//        List<Map.Entry<Long, Float>> list = new ArrayList<>();
+//        for (Long userId : recommendationRequest.getUserIds()) {
+//            for (Course edition : courseRepository.findAllByCourseCode(course.getCourseCode())) {
+//                if (edition.getId() == course.getId()) {
+//                    continue;
+//                }
+//                Grade grade = getGrade(userId, edition.getId());
+//                if (grade != null && grade.getGradeValue() >= recommendationRequest.getMinGrade()) {
+//                    AbstractMap.SimpleEntry<Long, Float> entry =
+//                            new AbstractMap.SimpleEntry<>(userId, grade.getGradeValue());
+//                    list.add(entry);
+//                }
+//            }
+//        }
+//        list.sort(Map.Entry.comparingByValue());
+//        Collections.reverse(list);
+//        list = list.subList(0, Math.min(list.size(), recommendationRequest.getAmount()));
+//        Map<Long, Float> result = new LinkedHashMap<>();
+//        for (Map.Entry<Long, Float> entry : list) {
+//            result.put(entry.getKey(), entry.getValue());
+//        }
+//
+//        return result;
+//
+//    }
 
     /**
      * Adds a grade to the repository.
