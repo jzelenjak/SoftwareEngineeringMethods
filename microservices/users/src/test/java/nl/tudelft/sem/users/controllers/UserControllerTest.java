@@ -40,14 +40,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class UserControllerTest {
 
     @Autowired
@@ -196,6 +194,8 @@ class UserControllerTest {
     void setup() throws IOException {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
+
+        userRepository.deleteAll();
     }
 
     @AfterEach
@@ -216,7 +216,8 @@ class UserControllerTest {
 
         String json = createJson(USERNAME, username, FIRSTNAME, firstNameStudent,
                 "lastName", lastNameStudent, "password", "123");
-        mockMvcRegister(json).andExpect(status().isConflict()).andExpect(content().string(""));
+        mockMvcRegister(json).andExpect(status().isConflict())
+            .andExpect(content().string("User with username " + username + " already exist"));
         assertRecordedRequestNull();
     }
 
