@@ -335,12 +335,12 @@ public class SubmissionController {
                                 USER_NOT_FOUND)))
                         .flatMap(retrievedName -> {
                             contract.setTaName(retrievedName);
-                            return getContractHelper(courseInfo, contract, userId, courseId);
+                            return convertContractToMonoDto(courseInfo, contract, userId, courseId);
                         });
             } else {
                 // Only students can do this.
                 contract.setTaName(name);
-                return getContractHelper(courseInfo, contract, ownUserId, courseId);
+                return convertContractToMonoDto(courseInfo, contract, ownUserId, courseId);
             }
         });
     }
@@ -633,8 +633,8 @@ public class SubmissionController {
      *
      * @return the contractDto, or throw an exception when something went wrong.
      */
-    private Mono<ContractDto> getContractHelper(Mono<JsonObject> courseInfo,
-                                                Contract contract, Long userId, Long courseId) {
+    private Mono<ContractDto> convertContractToMonoDto(Mono<JsonObject> courseInfo,
+                                                   Contract contract, Long userId, Long courseId) {
         return courseInfo
                 .doOnError(e -> Mono.error(
                         new ResponseStatusException(HttpStatus.NOT_FOUND,
