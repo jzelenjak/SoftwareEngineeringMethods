@@ -39,9 +39,9 @@ import org.springframework.web.server.ResponseStatusException;
 public class CourseController {
 
     private static final String notAuthorized = "Not authorized";
-    private CourseService courseService;
-    private JwtUtils jwtUtils;
-    private  ObjectMapper objectMapper;
+    private final transient CourseService courseService;
+    private final transient JwtUtils jwtUtils;
+    private final transient ObjectMapper objectMapper;
 
 
     /**
