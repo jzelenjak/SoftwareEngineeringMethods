@@ -1,5 +1,6 @@
 package nl.tudelft.sem.hiring.procedure.services;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -171,21 +172,19 @@ public class SubmissionServiceTest {
     public void getApplicationTest() {
         given(submissionRepository.findByUserIdAndCourseId(userId1, courseId1))
                 .willReturn(Optional.of(submission1));
-        Optional<Submission> actual = submissionService.getSubmission(userId1, courseId1);
-        assertTrue(actual.isPresent());
-        assertEquals(submission1, actual.get());
-        verify(submissionRepository).findByUserIdAndCourseId(userId1, courseId1);
+        Submission actual = submissionService.getSubmission(userId1, courseId1);
+        assertEquals(submission1, actual);
+        verify(submissionRepository, times(1)).findByUserIdAndCourseId(userId1, courseId1);
     }
 
     @Test
     public void testGetApplicationById() {
         given(submissionRepository.findById(submission1.getSubmissionId())).willReturn(
                 Optional.of(submission1));
-        Optional<Submission> actual = submissionService.getSubmission(
-                submission1.getSubmissionId());
-        assertTrue(actual.isPresent());
-        assertEquals(submission1, actual.get());
-        verify(submissionRepository).findById(submission1.getSubmissionId());
+        Submission actual = submissionService.getSubmission(
+            submission1.getSubmissionId());
+        assertEquals(submission1, actual);
+        verify(submissionRepository, times(1)).findById(submission1.getSubmissionId());
     }
 
     @Test

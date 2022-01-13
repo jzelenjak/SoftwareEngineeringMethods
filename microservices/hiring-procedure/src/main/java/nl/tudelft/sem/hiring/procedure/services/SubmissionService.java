@@ -4,11 +4,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import javax.swing.text.html.Option;
 import nl.tudelft.sem.hiring.procedure.entities.Submission;
 import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
 import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Mono;
 
 @Service
 public class SubmissionService {
@@ -74,10 +78,11 @@ public class SubmissionService {
      * Returns the submission associated to the id.
      *
      * @param submissionId is the id of the submission.
-     * @return the submission associated to the id, if exists.
+     * @return the submission associated to the id, if exists. Null otherwise.
      */
-    public Optional<Submission> getSubmission(long submissionId) {
-        return submissionRepository.findById(submissionId);
+    public Submission getSubmission(long submissionId) {
+        Optional<Submission> optionalSubmission = submissionRepository.findById(submissionId);
+        return optionalSubmission.orElse(null);
     }
 
     /**
@@ -86,10 +91,12 @@ public class SubmissionService {
      *
      * @param userId   is the ID of the user.
      * @param courseId is the ID of the course.
-     * @return the submission associated to the user and course, if exists.
+     * @return the submission associated to the user and course, if exists. Null otherwise.
      */
-    public Optional<Submission> getSubmission(long userId, long courseId) {
-        return submissionRepository.findByUserIdAndCourseId(userId, courseId);
+    public Submission getSubmission(long userId, long courseId) {
+        Optional<Submission> optionalSubmission =
+            submissionRepository.findByUserIdAndCourseId(userId, courseId);
+        return optionalSubmission.orElse(null);
     }
 
     public List<Submission> getSubmissionsForStudent(long userId) {
