@@ -30,6 +30,9 @@ public class TotalTimesSelectedStrategyTest {
     private static final transient String TWO_LF = "2\n";
     private static final transient String THREE_LF = "3\n";
 
+    /**
+     * Set up the test case.
+     */
     @BeforeEach
     public void setup() {
         this.strategy = new TotalTimesSelectedStrategy(repo, null, "placeholder");
