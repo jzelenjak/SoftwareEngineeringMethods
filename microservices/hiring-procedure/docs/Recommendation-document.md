@@ -24,9 +24,9 @@ In our case, we use the Strategy pattern to send out TA recommendations based on
 `HoursSpentStrategy`: prioritize the candidate TA’s that _have the most logged hours as a TA **in the previous editions of a certain course**_.
 
 
-## Recommender class
+## StrategyFactory class
 
-We have created a class `Recommender` that has an object of type `RecommendationStrategy` as a private field. It takes the implementation of that interface as a parameter of the constructor, enabling `RecommendationController` to create a `Recommender` with the desired implementation of `RecommendationStrategy`.
+We have created a class `StrategyFactory` that creates an object of type `RecommendationStrategy` based on the desired type of strategy.
 
 
 ## Asynchronous communication with other microservices
