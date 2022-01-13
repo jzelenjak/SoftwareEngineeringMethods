@@ -38,6 +38,8 @@ public abstract class BaseStrategy implements RecommendationStrategy {
 
     protected final transient String authorization;
 
+    private static final transient String SCHEME = "http";
+
     /**
      * Instantiates a new TimesSelectedStrategy object.
      *
@@ -57,8 +59,8 @@ public abstract class BaseStrategy implements RecommendationStrategy {
      * A helper method to send a POST request to another microservice in order to
      *  get some data related to recommendations.
      *
-     * @param uri   the URI of the request
-     * @param body  the body of the request
+     * @param uri           the URI of the request
+     * @param body          the JSON body of the request
      * @param authorization the value of the AUTHORIZATION header of the request
      * @return the client response object wrapped in a Mono.
      */
@@ -77,7 +79,7 @@ public abstract class BaseStrategy implements RecommendationStrategy {
      *  get some data related to recommendations. Used for sending a request to courses
      *  microservice to get all the course IDs of the courses with the same course code.
      *
-     * @param uri   the URI of the request
+     * @param uri           the URI of the request
      * @param authorization the value of the AUTHORIZATION header of the request
      * @return the client response object wrapped in a Mono.
      */
@@ -85,7 +87,8 @@ public abstract class BaseStrategy implements RecommendationStrategy {
         return this.webClient
             .get()
             .uri(uri)
-            .header(HttpHeaders.AUTHORIZATION, authorization).exchange();
+            .header(HttpHeaders.AUTHORIZATION, authorization)
+            .exchange();
     }
 
     /**
@@ -182,7 +185,7 @@ public abstract class BaseStrategy implements RecommendationStrategy {
      */
     protected String buildUri(String host, int port, String... path) {
         return UriComponentsBuilder.newInstance()
-            .scheme("http")
+            .scheme(SCHEME)
             .host(host)
             .port(port)
             .pathSegment(path)
@@ -201,7 +204,7 @@ public abstract class BaseStrategy implements RecommendationStrategy {
     protected String buildUriWithCourseId(String host, int port,
                                         long courseId, String... path) {
         return UriComponentsBuilder.newInstance()
-            .scheme("http")
+            .scheme(SCHEME)
             .host(host)
             .port(port)
             .pathSegment(path)
