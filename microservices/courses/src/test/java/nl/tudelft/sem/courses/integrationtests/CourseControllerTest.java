@@ -28,6 +28,7 @@ import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.respositories.CourseRepository;
 import nl.tudelft.sem.courses.respositories.TeachesRepository;
+import nl.tudelft.sem.courses.util.CourseUtil;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
@@ -82,6 +83,9 @@ public class CourseControllerTest {
 
     @Autowired
     private transient CourseController courseController;
+
+    @Autowired
+    private transient CourseUtil courseUtil;
 
     @BeforeEach
     void setup() {
@@ -575,7 +579,7 @@ public class CourseControllerTest {
         headers.add(HttpHeaders.AUTHORIZATION, "Bearer test");
         when(jwtUtils.resolveToken(Mockito.any())).thenReturn(null);
 
-        Jws<Claims> result = courseController.isAuthorized(headers);
+        Jws<Claims> result = courseUtil.isAuthorized(headers);
         Assertions.assertNull(result);
     }
 
@@ -587,7 +591,7 @@ public class CourseControllerTest {
         when(jwtUtils.resolveToken(Mockito.any())).thenReturn("Valid");
         when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(null);
 
-        Jws<Claims> result = courseController.isAuthorized(headers);
+        Jws<Claims> result = courseUtil.isAuthorized(headers);
         Assertions.assertNull(result);
     }
 
@@ -600,11 +604,11 @@ public class CourseControllerTest {
         when(jwtUtils.validateAndParseClaims(Mockito.any())).thenReturn(claimsJwsMock);
         when(jwtUtils.getRole(Mockito.any())).thenReturn("STUDENT");
 
-        Jws<Claims> result = courseController.isAuthorized(headers);
+        Jws<Claims> result = courseUtil.isAuthorized(headers);
         Assertions.assertEquals("STUDENT", jwtUtils.getRole(result));
-        Assertions.assertTrue(courseController.checkIfStudent(result));
+        Assertions.assertTrue(courseUtil.checkIfStudent(result));
         Assertions.assertNotEquals("LECTURER", jwtUtils.getRole(result));
-        Assertions.assertFalse(courseController.checkIfLecturerOrAdmin(result));
+        Assertions.assertFalse(courseUtil.checkIfLecturerOrAdmin(result));
     }
 
     @Test
