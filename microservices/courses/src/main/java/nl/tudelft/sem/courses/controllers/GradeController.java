@@ -7,7 +7,6 @@ import io.jsonwebtoken.Jws;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import lombok.Data;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;

@@ -7,7 +7,6 @@ import io.jsonwebtoken.Jws;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import lombok.Data;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
@@ -179,7 +178,12 @@ public class CourseController {
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
 
-
+    /**
+     * Removes a course in the courses repo if it exists.
+     *
+     * @param id -  Id of the course we want to delete
+     * @return returns a http success or bad request
+     */
     @DeleteMapping("/delete/{id}")
     public boolean deleteCourse(@PathVariable long id,
                                 @RequestHeader HttpHeaders httpHeaders) {
