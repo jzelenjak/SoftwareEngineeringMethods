@@ -98,7 +98,7 @@ public abstract class BaseStrategy implements RecommendationStrategy {
      *          (wrapped in the mono). The size of the list is at most `amount`.
      */
     protected Mono<List<Recommendation>> processMono(ClientResponse response,
-                                                   @NotNull Function<String, Mono<List<Recommendation>>> callback) {
+                              @NotNull Function<String, Mono<List<Recommendation>>> callback) {
         if (response.statusCode().isError()) {
             return Mono.error(new ResponseStatusException(response.statusCode(),
                 "Could not make any recommendations"));
@@ -159,17 +159,17 @@ public abstract class BaseStrategy implements RecommendationStrategy {
     /**
      * A helper method that converts a list of Recommendations to a Mono.
      *
-     * @param recommendations a (possibly empty) list of Recommendations
+     * @param list a (possibly empty) list of Recommendations
      * @return the list of recommendations wrapped inside a Mono if the list is not empty.
      *          If the list is empty, a ResponseStatusException with the status 404
      *          is returned, wrapped in a mono.
      */
-    protected Mono<List<Recommendation>> recommendationsToMono(List<Recommendation> recommendations) {
-        if (recommendations.isEmpty()) {
+    protected Mono<List<Recommendation>> recommendationsToMono(List<Recommendation> list) {
+        if (list.isEmpty()) {
             return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                 "Could not make any recommendations"));
         }
-        return Mono.just(recommendations);
+        return Mono.just(list);
     }
 
     /**
