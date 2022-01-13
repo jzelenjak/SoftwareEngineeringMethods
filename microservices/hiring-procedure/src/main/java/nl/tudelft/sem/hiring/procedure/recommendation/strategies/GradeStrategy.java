@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
  * The class that extends BaseStrategy class and implements RecommendationStrategy interface by
  *  recommending candidate TAs based of the max grade they have received for the given course.
  */
-public class GradeStrategy extends BaseStrategy {
+public class GradeStrategy extends RecommendationStrategyBase {
 
     /**
      * Instantiates a new GradeStrategy object.

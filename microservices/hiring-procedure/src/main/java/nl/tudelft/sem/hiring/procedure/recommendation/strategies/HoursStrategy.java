@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono;
  *  by recommending candidate TAs based of the total number of hours they have been working
  *  as a TA for a given course.
  */
-public class HoursStrategy extends BaseStrategy {
+public class HoursStrategy extends RecommendationStrategyBase {
 
     /**
      * Instantiates a new HoursStrategy object.

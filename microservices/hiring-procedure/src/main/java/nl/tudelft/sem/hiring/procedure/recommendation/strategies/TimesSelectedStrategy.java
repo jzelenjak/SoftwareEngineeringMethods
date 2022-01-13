@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
  *  recommending candidate TAs based of the number of times they have been selected as a TA for
  *  any edition of the given course.
  */
-public class TimesSelectedStrategy extends BaseStrategy {
+public class TimesSelectedStrategy extends RecommendationStrategyBase {
 
     /**
      * Instantiates a new TimesSelectedStrategy object.

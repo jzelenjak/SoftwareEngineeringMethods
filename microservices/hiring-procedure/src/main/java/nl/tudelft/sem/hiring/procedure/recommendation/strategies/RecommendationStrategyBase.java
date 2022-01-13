@@ -22,13 +22,13 @@ import reactor.core.publisher.Mono;
 
 /**
  * A class that is the base class for all the recommendation strategy objects.
- * It implements RecommendationStrategy interface and thus requires all of its child classes
+ * It implements Recommender interface and thus requires all of its child classes
  *  implement this interface.
  * In addition, this class stores some member variables and provides some methods that are used
  *  for processing Monos, serialization and deserialization, as well as building URLs
  *  when making requests to other microservices.
  */
-public abstract class BaseStrategy implements RecommendationStrategy {
+public abstract class RecommendationStrategyBase implements Recommender {
 
     protected final transient GatewayConfig gatewayConfig;
 
@@ -41,14 +41,14 @@ public abstract class BaseStrategy implements RecommendationStrategy {
     private static final transient String SCHEME = "http";
 
     /**
-     * Instantiates a new TimesSelectedStrategy object.
+     * Constructor for RecommendationStrategyBase class.
      *
      * @param repo          the TA application repository.
      * @param gatewayConfig the gateway configuration.
      * @param authorization the authorization token of the caller.
      */
-    public BaseStrategy(SubmissionRepository repo, GatewayConfig gatewayConfig,
-                                 String authorization) {
+    public RecommendationStrategyBase(SubmissionRepository repo, GatewayConfig gatewayConfig,
+                                      String authorization) {
         this.repo = repo;
         this.webClient = WebClient.create();
         this.gatewayConfig = gatewayConfig;

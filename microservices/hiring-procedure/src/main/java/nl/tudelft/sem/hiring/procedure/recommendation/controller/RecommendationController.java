@@ -1,17 +1,13 @@
 package nl.tudelft.sem.hiring.procedure.recommendation.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import nl.tudelft.sem.hiring.procedure.recommendation.dto.RecommendationRequest;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
-import nl.tudelft.sem.hiring.procedure.recommendation.factory.StrategyFactory;
-import nl.tudelft.sem.hiring.procedure.recommendation.strategies.RecommendationStrategy;
-import nl.tudelft.sem.hiring.procedure.recommendation.strategies.StrategyType;
+import nl.tudelft.sem.hiring.procedure.recommendation.factory.RecommenderFactory;
+import nl.tudelft.sem.hiring.procedure.recommendation.strategies.Recommender;
 import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncAuthValidator;
@@ -85,7 +81,7 @@ public class RecommendationController {
      *         (wrapped in the mono). The size of the list is at most `amount`.
      */
     private Mono<List<Recommendation>> recommend(RecommendationRequest req, String jwt) {
-        RecommendationStrategy strategy = StrategyFactory
+        Recommender strategy = RecommenderFactory
             .create(repo, gatewayConfig, jwt, req.getStrategy());
         return strategy.recommend(req.getCourseId(), req.getAmount(), req.getMinValue());
     }

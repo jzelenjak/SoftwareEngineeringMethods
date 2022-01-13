@@ -5,11 +5,11 @@ import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import reactor.core.publisher.Mono;
 
 /**
- * The interface that provides the functionality for a strategy for recommending a user.
- * It is based on a certain metric (total times selected, times selected for a given course,
- * the highest grade or the most hours spent working on the given course)
+ * The interface that provides functionality for recommending a user. The strategies that
+ * implement this interface are based on a certain metric (total times selected, times selected
+ * for a given course, the highest grade or the most hours spent working on the given course).
  */
-public interface RecommendationStrategy {
+public interface Recommender {
 
     /**
      * Recommends at most the specified number of users who have applied for the specified course.

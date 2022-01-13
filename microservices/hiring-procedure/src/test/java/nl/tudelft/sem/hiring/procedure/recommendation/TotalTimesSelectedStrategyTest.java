@@ -6,7 +6,7 @@ import java.util.Scanner;
 import nl.tudelft.sem.hiring.procedure.entities.Submission;
 import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
-import nl.tudelft.sem.hiring.procedure.recommendation.strategies.RecommendationStrategy;
+import nl.tudelft.sem.hiring.procedure.recommendation.strategies.Recommender;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.TotalTimesSelectedStrategy;
 import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import org.assertj.core.api.Assertions;
@@ -22,7 +22,7 @@ public class TotalTimesSelectedStrategyTest {
     @Autowired
     private transient SubmissionRepository repo;
 
-    private transient RecommendationStrategy strategy;
+    private transient Recommender strategy;
 
     private final transient LocalDateTime time = LocalDateTime.now();
 
