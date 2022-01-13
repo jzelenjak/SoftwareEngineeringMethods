@@ -304,8 +304,11 @@ public class SubmissionController {
      * Client deals with contract creation.
      *
      * @param userId   is the ID of the user for which the contract is requested.
-     *                 Parameter may be null, in which case the contract was requested
-     *                 by the userId in the JWT
+     *                 Parameter may be null,
+     *                 in case the requester wants to get their own contract.
+     * @param name     is the name of the requester to get their own contract.
+     *                 Parameter may be null,
+     *                 in case the requester wants to get someone else's contract.
      * @param courseId is the ID of the course for which the contract is requested
      * @param headers  is the list of the request headers
      * @return a JSON body containing the relevant data to be filled in
@@ -315,38 +318,30 @@ public class SubmissionController {
                                          @RequestParam(required = false) String name,
                                          @RequestParam long courseId,
                                          @RequestHeader HttpHeaders headers) {
-
+        // Only admins/lecturers can make use of the user id parameter.
+        // Students should only make use of the name parameter.
         AsyncValidator head = buildVariableValidator(userId);
 
         return head.validate(headers, "").flatMap(value -> {
             Contract contract = new Contract();
             String token = headers.getFirst(HttpHeaders.AUTHORIZATION);
             Mono<JsonObject> courseInfo = getCourseInfoFromCourseId(courseId, token);
-            if (userId == null) {
-                return courseInfo
+            long ownUserId = getUserIdFromToken(headers);
+
+            if (userId != null && userId != ownUserId) {
+                // Only admin/lecturers are allowed to do this
+                return getNameFromUserId(userId, token)
                         .doOnError(e -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        COURSE_NOT_FOUND)))
-                        .flatMap(info -> {
-                            contract.setTaName(name);
-                            setContractParams(info, contract, headers, courseId);
-                            return Mono.just(contract.toDto());
+                                USER_NOT_FOUND)))
+                        .flatMap(retrievedName -> {
+                            contract.setTaName(retrievedName);
+                            return convertContractToMonoDto(courseInfo, contract, userId, courseId);
                         });
+            } else {
+                // Only students can do this.
+                contract.setTaName(name);
+                return convertContractToMonoDto(courseInfo, contract, ownUserId, courseId);
             }
-            Mono<String> userName = getNameFromUserId(userId, token);
-            return userName
-                    .doOnError(e -> Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            USER_NOT_FOUND)))
-                    .flatMap(retrievedName -> {
-                        contract.setTaName(retrievedName);
-                        return courseInfo
-                               .doOnError(e -> Mono.error(
-                                   new ResponseStatusException(HttpStatus.NOT_FOUND,
-                                       COURSE_NOT_FOUND)))
-                               .flatMap(info -> {
-                                   setContractParams(info, contract, headers, courseId);
-                                   return Mono.just(contract.toDto());
-                               });
-                    });
         });
     }
 
@@ -608,8 +603,16 @@ public class SubmissionController {
         return info.get("courseCode").getAsString();
     }
 
+    /**
+     * Sets the parameter for the given contract.
+     *
+     * @param info          the info to get course information from.
+     * @param contract      the contract to change the information from.
+     * @param userId        the userId to search the max hours from.
+     * @param courseId      the courseId to search the max hours from.
+     */
     private void setContractParams(JsonObject info, Contract contract,
-                                   HttpHeaders headers, Long courseId) {
+                                   Long userId, Long courseId) {
         String courseCode = getCourseCodeFromInfo(info);
         ZonedDateTime startDate = getStartDateFromInfo(info);
         ZonedDateTime endDate = getEndDateFromInfo(info);
@@ -617,6 +620,28 @@ public class SubmissionController {
         contract.setStartDate(startDate);
         contract.setEndDate(endDate);
         contract.setMaxHours(submissionService
-            .getMaxHours(getUserIdFromToken(headers), courseId));
+                .getMaxHours(userId, courseId));
+    }
+
+    /**
+     * Helper method to reduce duplication in the code for getting contract.
+     *
+     * @param courseInfo the courseInfo from the request made to microservice courses.
+     * @param contract   the contract to modify changes to.
+     * @param userId     the userId for the contract to change to.
+     * @param courseId   the courseId for the contract to change to.
+     *
+     * @return the contractDto, or throw an exception when something went wrong.
+     */
+    private Mono<ContractDto> convertContractToMonoDto(Mono<JsonObject> courseInfo,
+                                                   Contract contract, Long userId, Long courseId) {
+        return courseInfo
+                .doOnError(e -> Mono.error(
+                        new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                COURSE_NOT_FOUND)))
+                .flatMap(info -> {
+                    setContractParams(info, contract, userId, courseId);
+                    return Mono.just(contract.toDto());
+                });
     }
 }
