@@ -47,7 +47,10 @@ The API documentation for users microservice can be found in `docs/API-document-
 
 <!Insert here a short description of the purpose of each file in your microservice.>
 **Controllers**:
-- ```UserController.java```: Takes care of all the users API, following the ```<host><port>/api/users/<request>``` path. Such as _registering, fetching user by username, user ID and role, changing the role, and deleting user_ endpoints.
+- ```UserBaseController.java```: The base abstract parent class whose child classes take care of the users API, following the ```<host><port>/api/users/<request>``` path
+- ```UserExistenceController```:  Takes care of the users **Create** and **Delete** API (_registering_ and _deleting user_ endpoints)
+- ```UserPersonalInfoController```: Takes care of the users **Update** API (_changing first name, last name and role_ endpoints)
+- ```UserQueryController```: Takes care of the users **Retrieve** API (_fetching user by username, user ID, role, first and last name_ endpoints)
 
 **Entities**:
 - ```User.java```: which is a class to store the data in a User object (database-generated _user ID_, unique _username_, not blank and not null _first and last name_, _role_).

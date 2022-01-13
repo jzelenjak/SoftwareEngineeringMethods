@@ -7,14 +7,13 @@ import nl.tudelft.sem.users.entities.User;
 import nl.tudelft.sem.users.entities.UserRole;
 import nl.tudelft.sem.users.repositories.UserRepository;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.test.annotation.DirtiesContext;
 
 @SpringBootTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class UserServiceTest {
     @Autowired
     private transient UserRepository userRepository;
@@ -22,9 +21,15 @@ class UserServiceTest {
     @Autowired
     private transient UserService userService;
 
-    private final transient String username = "amogus@student.tudelft.nl";
+    private final transient String username = "aamogus";
     private final transient String firstName = "Stan";
     private final transient String lastName = "Lee";
+
+    @BeforeEach
+    void setup() {
+        userRepository.deleteAll();
+    }
+
 
     /**
      * Tests for registerUser method.
