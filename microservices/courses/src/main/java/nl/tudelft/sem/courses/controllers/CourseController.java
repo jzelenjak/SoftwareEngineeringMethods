@@ -7,6 +7,8 @@ import io.jsonwebtoken.Jws;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import lombok.Data;
 import nl.tudelft.sem.courses.communication.CourseRequest;
 import nl.tudelft.sem.courses.communication.CourseResponse;
 import nl.tudelft.sem.courses.communication.EditionsResponse;
@@ -17,6 +19,7 @@ import nl.tudelft.sem.courses.entities.Course;
 import nl.tudelft.sem.courses.entities.Grade;
 import nl.tudelft.sem.courses.services.CourseService;
 import nl.tudelft.sem.jwt.JwtUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -33,29 +36,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/courses")
+@Data
 public class CourseController {
 
     private static final String notAuthorized = "Not authorized";
+    private CourseService courseService;
+    private JwtUtils jwtUtils;
+    private  ObjectMapper objectMapper;
 
-    private final transient CourseService courseService;
-
-    private final transient JwtUtils jwtUtils;
-
-    private final transient ObjectMapper objectMapper;
-
-    /**
-     * Constructs the CourseController class.
-     *
-     * @param courseService is the course service used to perform business logic.
-     * @param jwtUtils      is the JWT utility library used to decode JWT tokens.
-     * @param objectMapper  is the object mapper used to convert objects to JSON.
-     */
-    public CourseController(CourseService courseService, JwtUtils jwtUtils,
-                            ObjectMapper objectMapper) {
-        this.courseService = courseService;
-        this.jwtUtils = jwtUtils;
-        this.objectMapper = objectMapper;
-    }
 
     /**
      * Creates a new course. The request must provide a CourseRequest Object.
@@ -191,44 +179,7 @@ public class CourseController {
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
     }
 
-    /**
-     * Endpoint for getting multiple
-     * user grades with specific restrictions.
-     * You must provide a JSON or
-     * Recommendation request object which contains the
-     * following information:
-     * course id
-     * amount
-     * minimum grade
-     * user ids - for the users we want the grades for
-     *
-     *
-     * @param recommendationRequest - recommendation request object
-     * @return a map of user ids as keys and grade as values
-     */
-    @PostMapping("/statistics/user-grade")
-    public Map<Long, Float> getMultipleUserGrades(
-            @RequestBody RecommendationRequest recommendationRequest,
-            @RequestHeader HttpHeaders httpHeaders) {
-        Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if (checkIfLecturerOrAdmin(webToken)) {
-            Map<Long, Float> userGrades = courseService
-                    .getMultipleUserGrades(recommendationRequest);
-            if (userGrades == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Failed to get user grades");
-            }
-            return userGrades;
-        }
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
-    }
 
-    /**
-     * Removes a course in the courses repo if it exists.
-     *
-     * @param id -  Id of the course we want to delete
-     * @return returns a http success or bad request
-     */
     @DeleteMapping("/delete/{id}")
     public boolean deleteCourse(@PathVariable long id,
                                 @RequestHeader HttpHeaders httpHeaders) {
@@ -245,56 +196,7 @@ public class CourseController {
     }
 
 
-    /**
-     * Accepts a request to add a grade to the repository.
-     * Passes on the grade to the courses service
-     *
-     * @param request -  a request object containing grade information
-     * @return - a string confirming whether or not the method is successful.
-     */
-    @PostMapping("/create/grade")
-    public boolean addGrade(@RequestBody GradeRequest request,
-                            @RequestHeader HttpHeaders httpHeaders) {
-        Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if (checkIfAdmin(webToken) || (checkIfLecturer(webToken) && courseService
-                .lecturerTeachesCourse(jwtUtils.getUserId(webToken), request.getCourseId()))) {
-            if (request == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "No Request was provided");
-            }
-            if (courseService.addGrade(request)) {
-                return true;
-            } else {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Could not add grade to the repo");
-            }
-        }
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
-    }
 
-    /**
-     * Returns the grade of a user for a specific course.
-     *
-     * @param userid   - the users id
-     * @param courseId - the courses id
-     * @return - a floating point value representing the grade.
-     */
-    @GetMapping("/get/grade/{userid}/{courseid}")
-    public float getGradeOfUser(@PathVariable("userid") long userid,
-                                @PathVariable("courseid") long courseId,
-                                @RequestHeader HttpHeaders httpHeaders) {
-        Jws<Claims> webToken = isAuthorized(httpHeaders);
-        if (checkIfLecturerOrAdmin(webToken) || checkIfStudent(webToken)) {
-            Grade grade = courseService.getGrade(userid, courseId);
-            if (grade == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Could not find the grade for user and course");
-            } else {
-                return grade.getGradeValue();
-            }
-        }
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, notAuthorized);
-    }
 
     /**
      * Returns all the course ids for a lecturer.
