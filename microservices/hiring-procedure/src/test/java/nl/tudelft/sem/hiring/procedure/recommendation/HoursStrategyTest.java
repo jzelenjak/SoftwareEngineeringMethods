@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 import nl.tudelft.sem.hiring.procedure.entities.Submission;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.HoursStrategy;
-import nl.tudelft.sem.hiring.procedure.recommendation.strategies.RecommendationStrategy;
+import nl.tudelft.sem.hiring.procedure.recommendation.strategies.Recommender;
 import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import okhttp3.HttpUrl;
@@ -34,7 +34,7 @@ public class HoursStrategyTest {
     @Autowired
     private transient SubmissionRepository repo;
 
-    private transient RecommendationStrategy strategy;
+    private transient Recommender strategy;
 
     private final transient LocalDateTime time = LocalDateTime.now();
 

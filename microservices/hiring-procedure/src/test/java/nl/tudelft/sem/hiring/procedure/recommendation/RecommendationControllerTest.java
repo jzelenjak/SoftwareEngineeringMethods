@@ -254,7 +254,7 @@ public class RecommendationControllerTest {
     }
 
     @Test
-    void testRecommendMissingFieldInJson() throws Exception {
+    void testRecommendUnrecognisableFieldInJson() throws Exception {
         configureJwsMock(AsyncRoleValidator.Roles.LECTURER);
         String json = new ObjectMapper().createObjectNode()
             .put("course", 4242442L)
@@ -263,6 +263,20 @@ public class RecommendationControllerTest {
         MvcResult mvcResult = this.mockMvc.perform(post(RECOMMEND_URL)
             .header(HttpHeaders.AUTHORIZATION, "JWT")
             .contentType(MediaType.APPLICATION_JSON).content(json)).andReturn();
+        mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testRecommendNotAllFieldsInTheRequest() throws Exception {
+        configureJwsMock(AsyncRoleValidator.Roles.LECTURER);
+        String json = new ObjectMapper().createObjectNode().put("courseId", 4242442L)
+            .put("minValue", 42.69).toString();
+
+        MvcResult mvcResult = this.mockMvc.perform(post(RECOMMEND_URL)
+                .header(HttpHeaders.AUTHORIZATION, "aValidJWT")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+            .andReturn();
         mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isBadRequest());
     }
 

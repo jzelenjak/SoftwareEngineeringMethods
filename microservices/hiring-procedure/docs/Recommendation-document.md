@@ -13,7 +13,7 @@ The Strategy design pattern enables users to select the behaviour of the program
 
 ## How
 
-In our case, we use the Strategy pattern to send out TA recommendations based on the lecturer’s preference. To do so, we provide a `RecommendationStrategy` interface upon which strategies are implemented. The following four recommendation methods are implemented:
+In our case, we use the Strategy pattern to send out TA recommendations based on the lecturer’s preference. To do so, we provide a `Recommender` interface upon which strategies are implemented. The following four recommendation strategies are implemented:
 
 `TotalTimesSelectedStrategy`: prioritize the candidate TA’s that _have been selected the most for a TA position **for any course**_.
 
@@ -24,9 +24,9 @@ In our case, we use the Strategy pattern to send out TA recommendations based on
 `HoursSpentStrategy`: prioritize the candidate TA’s that _have the most logged hours as a TA **in the previous editions of a certain course**_.
 
 
-## Recommender class
+## RecommenderFactory class
 
-We have created a class `Recommender` that has an object of type `RecommendationStrategy` as a private field. It takes the implementation of that interface as a parameter of the constructor, enabling `RecommendationController` to create a `Recommender` with the desired implementation of `RecommendationStrategy`.
+We have created a class `RecommenderFactory` that creates an object of type `Recommender` based on the desired type of strategy.
 
 
 ## Asynchronous communication with other microservices

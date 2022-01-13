@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 import nl.tudelft.sem.hiring.procedure.entities.Submission;
 import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
-import nl.tudelft.sem.hiring.procedure.recommendation.strategies.RecommendationStrategy;
+import nl.tudelft.sem.hiring.procedure.recommendation.strategies.Recommender;
 import nl.tudelft.sem.hiring.procedure.recommendation.strategies.TimesSelectedStrategy;
 import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
@@ -34,7 +34,7 @@ public class TimesSelectedStrategyTest {
     @Autowired
     private transient SubmissionRepository repo;
 
-    private transient RecommendationStrategy strategy;
+    private transient Recommender strategy;
 
     private final transient LocalDateTime time = LocalDateTime.now();
 

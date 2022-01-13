@@ -9,30 +9,87 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.validation.constraints.NotNull;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
+import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
+import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 /**
- * The interface that represents a strategy for recommending a user.
- * It is based on a certain metric (total times selected, times selected for a given course,
- * the highest grade or the most hours spent working on the given course)
+ * A class that is the base class for all the recommendation strategy objects.
+ * It implements Recommender interface and thus requires all of its child classes
+ *  implement this interface.
+ * In addition, this class stores some member variables and provides some methods that are used
+ *  for processing Monos, serialization and deserialization, as well as building URLs
+ *  when making requests to other microservices.
  */
-public interface RecommendationStrategy {
+public abstract class RecommendationStrategyBase implements Recommender {
+
+    protected final transient GatewayConfig gatewayConfig;
+
+    protected final transient WebClient webClient;
+
+    protected final transient SubmissionRepository repo;
+
+    protected final transient String authorization;
+
+    private static final transient String SCHEME = "http";
 
     /**
-     * Recommends at most the specified number of users who have applied for the specified course.
+     * Constructor for RecommendationStrategyBase class.
      *
-     * @param courseId the id of the course
-     * @param amount   the maximum number of recommendations for the course
-     * @param minValue the minimum value for the metric (used for filtering)
-     * @return the list of recommendations for candidate TAs.
-     *          The size of the list is at most `amount`
+     * @param repo          the TA application repository.
+     * @param gatewayConfig the gateway configuration.
+     * @param authorization the authorization token of the caller.
      */
-    Mono<List<Recommendation>> recommend(long courseId, int amount, double minValue);
+    public RecommendationStrategyBase(SubmissionRepository repo, GatewayConfig gatewayConfig,
+                                      String authorization) {
+        this.repo = repo;
+        this.webClient = WebClient.create();
+        this.gatewayConfig = gatewayConfig;
+        this.authorization = authorization;
+    }
 
+    /**
+     * A helper method to send a POST request to another microservice in order to
+     *  get some data related to recommendations.
+     *
+     * @param uri           the URI of the request
+     * @param body          the JSON body of the request
+     * @param authorization the value of the AUTHORIZATION header of the request
+     * @return the client response object wrapped in a Mono.
+     */
+    protected Mono<ClientResponse> post(String uri, String body, String authorization) {
+        return this.webClient
+            .post()
+            .uri(uri)
+            .header(HttpHeaders.AUTHORIZATION, authorization)
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .body(Mono.just(body), String.class)
+            .exchange();
+    }
+
+    /**
+     * A helper method to send a GET request to another microservice in order to
+     *  get some data related to recommendations. Used for sending a request to courses
+     *  microservice to get all the course IDs of the courses with the same course code.
+     *
+     * @param uri           the URI of the request
+     * @param authorization the value of the AUTHORIZATION header of the request
+     * @return the client response object wrapped in a Mono.
+     */
+    protected Mono<ClientResponse> get(String uri, String authorization) {
+        return this.webClient
+            .get()
+            .uri(uri)
+            .header(HttpHeaders.AUTHORIZATION, authorization)
+            .exchange();
+    }
 
     /**
      * A helper method to process the received mono response.
@@ -43,8 +100,8 @@ public interface RecommendationStrategy {
      * @return the list of recommendations for candidate TAs based on certain metric
      *          (wrapped in the mono). The size of the list is at most `amount`.
      */
-    default Mono<List<Recommendation>> processMono(ClientResponse response,
-                                 @NotNull Function<String, Mono<List<Recommendation>>> callback) {
+    protected Mono<List<Recommendation>> processMono(ClientResponse response,
+                              @NotNull Function<String, Mono<List<Recommendation>>> callback) {
         if (response.statusCode().isError()) {
             return Mono.error(new ResponseStatusException(response.statusCode(),
                 "Could not make any recommendations"));
@@ -68,7 +125,7 @@ public interface RecommendationStrategy {
      * @return the list of recommendations for candidate TAs
      * @throws JsonProcessingException when an error occurs while processing JSON string
      */
-    default List<Recommendation> convertJsonToRecommendationList(String json)
+    protected List<Recommendation> convertJsonToRecommendationList(String json)
         throws JsonProcessingException {
 
         ObjectMapper mapper = new ObjectMapper();
@@ -94,7 +151,7 @@ public interface RecommendationStrategy {
      * @return the Java List of Longs
      * @throws JsonProcessingException when an error occurs while processing JSON string
      */
-    default List<Long> convertJsonToLongList(String json, String field)
+    protected List<Long> convertJsonToLongList(String json, String field)
         throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         String jsonList = mapper.readTree(json).get(field).toString();
@@ -105,17 +162,17 @@ public interface RecommendationStrategy {
     /**
      * A helper method that converts a list of Recommendations to a Mono.
      *
-     * @param recommendations a (possibly empty) list of Recommendations
+     * @param list a (possibly empty) list of Recommendations
      * @return the list of recommendations wrapped inside a Mono if the list is not empty.
      *          If the list is empty, a ResponseStatusException with the status 404
      *          is returned, wrapped in a mono.
      */
-    default Mono<List<Recommendation>> recommendationsToMono(List<Recommendation> recommendations) {
-        if (recommendations.isEmpty()) {
+    protected Mono<List<Recommendation>> recommendationsToMono(List<Recommendation> list) {
+        if (list.isEmpty()) {
             return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
                 "Could not make any recommendations"));
         }
-        return Mono.just(recommendations);
+        return Mono.just(list);
     }
 
     /**
@@ -126,9 +183,9 @@ public interface RecommendationStrategy {
      * @param path the path in the URL
      * @return the complete String URL
      */
-    default String buildUri(String host, int port, String... path) {
+    protected String buildUri(String host, int port, String... path) {
         return UriComponentsBuilder.newInstance()
-            .scheme("http")
+            .scheme(SCHEME)
             .host(host)
             .port(port)
             .pathSegment(path)
@@ -144,10 +201,10 @@ public interface RecommendationStrategy {
      * @param path     the path in the URL
      * @return the complete String URL
      */
-    default String buildUriWithCourseId(String host, int port,
+    protected String buildUriWithCourseId(String host, int port,
                                         long courseId, String... path) {
         return UriComponentsBuilder.newInstance()
-            .scheme("http")
+            .scheme(SCHEME)
             .host(host)
             .port(port)
             .pathSegment(path)
