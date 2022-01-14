@@ -125,7 +125,7 @@ public class SubmissionControllerTest {
         courseInfoResponseCache.invalidateCache();
 
         // Object retrieval
-        when(submissionService.getSubmission(anyLong())).thenReturn(submission);
+        when(submissionService.getSubmission(anyLong())).thenReturn(Optional.of(submission));
 
         // Default JWT mock behaviour
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
@@ -411,7 +411,7 @@ public class SubmissionControllerTest {
         // Set mocks
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
         when(submissionService.checkCandidate(submissionId)).thenReturn(true);
-        when(submissionService.getSubmission(submissionId)).thenReturn(submission);
+        when(submissionService.getSubmission(submissionId)).thenReturn(Optional.of(submission));
 
         // Register listener
         JsonObject json = new JsonObject();
@@ -453,7 +453,7 @@ public class SubmissionControllerTest {
         when(jwtUtils.resolveToken(JWT)).thenReturn(RESOLVED_TOKEN);
         when(jwtUtils.validateAndParseClaims(RESOLVED_TOKEN)).thenReturn(claims);
         when(jwtUtils.getRole(claims)).thenReturn(AsyncRoleValidator.Roles.LECTURER.name());
-        when(submissionService.getSubmission(submissionId)).thenReturn(null);
+        when(submissionService.getSubmission(submissionId)).thenReturn(Optional.empty());
 
         // Perform the call
         MvcResult result = mockMvc.perform(post(HIRE_API)
@@ -602,7 +602,7 @@ public class SubmissionControllerTest {
         // Create new submission
         ZonedDateTime start = ZonedDateTime.now();
         Submission submission = new Submission(userId, courseId, start.toLocalDateTime());
-        when(submissionService.getSubmission(userId, courseId)).thenReturn(submission);
+        when(submissionService.getSubmission(userId, courseId)).thenReturn(Optional.of(submission));
 
         // Configure request mock
         when(jwtUtils.getUserId(Mockito.any())).thenReturn(userId);
@@ -633,7 +633,7 @@ public class SubmissionControllerTest {
     void testWithdrawNonExisting() throws Exception {
         // Create new submission mock behaviour
         when(submissionService.getSubmission(userId, courseId))
-            .thenReturn(null);
+            .thenReturn(Optional.empty());
 
         // Configure request mock
         when(jwtUtils.getUserId(Mockito.any())).thenReturn(userId);
@@ -666,7 +666,7 @@ public class SubmissionControllerTest {
         ZonedDateTime start = ZonedDateTime.now();
         Submission submission = new Submission(userId, courseId, start.toLocalDateTime());
         submission.setStatus(SubmissionStatus.ACCEPTED);
-        when(submissionService.getSubmission(userId, courseId)).thenReturn(submission);
+        when(submissionService.getSubmission(userId, courseId)).thenReturn(Optional.of(submission));
 
         // Configure request mock
         when(jwtUtils.getUserId(Mockito.any())).thenReturn(userId);
@@ -698,7 +698,7 @@ public class SubmissionControllerTest {
         // Submission info
         long submissionId = 1337L;
         Submission submissionMock = Mockito.mock(Submission.class);
-        when(submissionService.getSubmission(submissionId)).thenReturn(submissionMock);
+        when(submissionService.getSubmission(submissionId)).thenReturn(Optional.of(submissionMock));
         when(submissionService.checkCandidate(submissionId)).thenReturn(true);
 
         // Configure request mock
@@ -731,7 +731,7 @@ public class SubmissionControllerTest {
     void testRejectNonExisting() throws Exception {
         // Submission info
         long submissionId = 1337L;
-        when(submissionService.getSubmission(submissionId)).thenReturn(null);
+        when(submissionService.getSubmission(submissionId)).thenReturn(Optional.empty());
 
         // Configure request mock
         when(jwtUtils.getUserId(Mockito.any())).thenReturn(userId);
@@ -760,7 +760,7 @@ public class SubmissionControllerTest {
         long submissionId = 1337L;
         Submission submissionMock = Mockito.mock(Submission.class);
         when(submissionService.getSubmission(submissionId))
-                .thenReturn(submissionMock);
+                .thenReturn(Optional.of(submissionMock));
         when(submissionMock.getStatus()).thenReturn(SubmissionStatus.ACCEPTED);
 
         // Configure request mock

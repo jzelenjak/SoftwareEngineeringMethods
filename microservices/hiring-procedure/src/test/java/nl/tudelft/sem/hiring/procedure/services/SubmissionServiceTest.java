@@ -171,20 +171,22 @@ public class SubmissionServiceTest {
     @Test
     public void getApplicationTest() {
         given(submissionRepository.findByUserIdAndCourseId(userId1, courseId1))
-                .willReturn(Optional.of(submission1));
-        Submission actual = submissionService.getSubmission(userId1, courseId1);
-        assertEquals(submission1, actual);
-        verify(submissionRepository, times(1)).findByUserIdAndCourseId(userId1, courseId1);
+            .willReturn(Optional.of(submission1));
+        Optional<Submission> actual = submissionService.getSubmission(userId1, courseId1);
+        assertTrue(actual.isPresent());
+        assertEquals(submission1, actual.get());
+        verify(submissionRepository).findByUserIdAndCourseId(userId1, courseId1);
     }
 
     @Test
     public void testGetApplicationById() {
         given(submissionRepository.findById(submission1.getSubmissionId())).willReturn(
-                Optional.of(submission1));
-        Submission actual = submissionService.getSubmission(
+            Optional.of(submission1));
+        Optional<Submission> actual = submissionService.getSubmission(
             submission1.getSubmissionId());
-        assertEquals(submission1, actual);
-        verify(submissionRepository, times(1)).findById(submission1.getSubmissionId());
+        assertTrue(actual.isPresent());
+        assertEquals(submission1, actual.get());
+        verify(submissionRepository).findById(submission1.getSubmissionId());
     }
 
     @Test

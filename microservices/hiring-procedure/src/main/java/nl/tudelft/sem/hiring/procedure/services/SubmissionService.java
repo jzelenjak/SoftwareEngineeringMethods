@@ -78,11 +78,10 @@ public class SubmissionService {
      * Returns the submission associated to the id.
      *
      * @param submissionId is the id of the submission.
-     * @return the submission associated to the id, if exists. Null otherwise.
+     * @return the submission associated to the id, if exists.
      */
-    public Submission getSubmission(long submissionId) {
-        Optional<Submission> optionalSubmission = submissionRepository.findById(submissionId);
-        return optionalSubmission.orElse(null);
+    public Optional<Submission> getSubmission(long submissionId) {
+        return submissionRepository.findById(submissionId);
     }
 
     /**
@@ -91,13 +90,12 @@ public class SubmissionService {
      *
      * @param userId   is the ID of the user.
      * @param courseId is the ID of the course.
-     * @return the submission associated to the user and course, if exists. Null otherwise.
+     * @return the submission associated to the user and course, if exists.
      */
-    public Submission getSubmission(long userId, long courseId) {
-        Optional<Submission> optionalSubmission =
-            submissionRepository.findByUserIdAndCourseId(userId, courseId);
-        return optionalSubmission.orElse(null);
+    public Optional<Submission> getSubmission(long userId, long courseId) {
+        return submissionRepository.findByUserIdAndCourseId(userId, courseId);
     }
+
 
     public List<Submission> getSubmissionsForStudent(long userId) {
         return submissionRepository.findAllByUserId(userId);

@@ -22,7 +22,7 @@ public class AsyncValidatorDirector {
      * @param userId the id of the user for which to perform the checks
      * @return a pre-built chain that contains all the aforementioned.
      */
-    public AsyncValidator hiringChain(long courseId, long userId) {
+    public AsyncValidator chainAdminResponsibleLecturerCourseUserLimit(long courseId, long userId) {
         return AsyncValidator.Builder.newBuilder()
             .addValidators(
                 new AsyncAuthValidator(jwtUtils),
@@ -74,7 +74,7 @@ public class AsyncValidatorDirector {
      *               Otherwise, the role validator will contain the admin and lecturer roles.
      * @return a pre-built chain that contains all the aforementioned.
      */
-    public AsyncValidator chainVariableValidator(Long userId) {
+    public AsyncValidator chainStudentOrAdminAnyLecturer(Long userId) {
         AsyncValidator.Builder builder = AsyncValidator.Builder.newBuilder();
         builder.addValidator(new AsyncAuthValidator(jwtUtils));
         if (userId != null) {

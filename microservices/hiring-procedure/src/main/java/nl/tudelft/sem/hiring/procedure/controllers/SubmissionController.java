@@ -11,7 +11,6 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Set;
 import lombok.Data;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
 import nl.tudelft.sem.hiring.procedure.contracts.Contract;
@@ -151,15 +150,20 @@ public class SubmissionController {
     public Mono<Void> hireTa(@RequestParam long submissionId,
                              @RequestHeader HttpHeaders authHeader) {
         // Fetch the submission using the provided ID
-        Submission submission = submissionService.getSubmission(submissionId);
-        if (submission == null) {
+        Optional<Submission> submissionOpt = submissionService.getSubmission(submissionId);
+
+        // Check if the submission exists
+        if (submissionOpt.isEmpty()) {
             return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "Submission with that id does not exist"));
+                "Submission not found"));
         }
+        Submission submission = submissionOpt.get();
+
         long courseId = submission.getCourseId();
         long userId = submission.getUserId();
 
-        AsyncValidator head = validatorDirector.hiringChain(courseId, userId);
+        AsyncValidator head = validatorDirector
+            .chainAdminResponsibleLecturerCourseUserLimit(courseId, userId);
 
         return head.validate(authHeader, "").flatMap(value -> {
             if (!submissionService.checkCandidate(submissionId)) {
@@ -187,11 +191,15 @@ public class SubmissionController {
     @PostMapping("reject")
     public Mono<Void> reject(@RequestParam long submissionId, @RequestHeader HttpHeaders headers) {
         // Fetch the submission using the provided ID
-        Submission submission = submissionService.getSubmission(submissionId);
-        if (submission == null) {
+        Optional<Submission> submissionOpt = submissionService.getSubmission(submissionId);
+
+        // Check if the submission exists
+        if (submissionOpt.isEmpty()) {
             return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                "Submission with that id does not exist"));
+                "Submission not found"));
         }
+        Submission submission = submissionOpt.get();
+
         long courseId = submission.getCourseId();
 
         // Construct validator chain
@@ -231,11 +239,16 @@ public class SubmissionController {
             String resolvedToken = jwtUtils.resolveToken(token);
 
             long userId = jwtUtils.getUserId(jwtUtils.validateAndParseClaims(resolvedToken));
-            Submission submission = submissionService.getSubmission(userId, courseId);
-            if (submission == null) {
+            // Fetch the submission using the provided ID
+            Optional<Submission> submissionOpt = submissionService.getSubmission(userId, courseId);
+
+            // Check if the submission exists
+            if (submissionOpt.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Submission with that id does not exist"));
+                    "Submission not found"));
             }
+            Submission submission = submissionOpt.get();
+
 
             // Check if the submission has not been processed yet
             if (submission.getStatus() != SubmissionStatus.IN_PROGRESS) {
@@ -271,7 +284,7 @@ public class SubmissionController {
                                          @RequestHeader HttpHeaders headers) {
         // Only admins/lecturers can make use of the user id parameter.
         // Students should only make use of the name parameter.
-        AsyncValidator head = validatorDirector.chainVariableValidator(userId);
+        AsyncValidator head = validatorDirector.chainStudentOrAdminAnyLecturer(userId);
 
         return head.validate(headers, "").flatMap(value -> {
             Contract contract = new Contract();
@@ -309,7 +322,7 @@ public class SubmissionController {
     public Mono<Integer> getMaxHours(@RequestParam(required = false) Long userId,
                                      @RequestParam long courseId,
                                      @RequestHeader HttpHeaders headers) {
-        AsyncValidator head = validatorDirector.chainVariableValidator(userId);
+        AsyncValidator head = validatorDirector.chainStudentOrAdminAnyLecturer(userId);
         return head.validate(headers, "").flatMap(value -> {
             Long finalUserId = userId;
             if (userId == null) {
@@ -369,7 +382,7 @@ public class SubmissionController {
     public Mono<Double> getRating(@RequestParam(required = false) Long userId,
                                   @RequestParam long courseId,
                                   @RequestHeader HttpHeaders headers) {
-        AsyncValidator head = validatorDirector.chainVariableValidator(userId);
+        AsyncValidator head = validatorDirector.chainStudentOrAdminAnyLecturer(userId);
 
         return head.validate(headers, "").flatMap(value -> {
             Long finalUserId = userId;
@@ -448,7 +461,7 @@ public class SubmissionController {
     public Mono<List<Submission>> getStudentSubmissions(
             @RequestParam(required = false) Long userId,
             @RequestHeader HttpHeaders headers) {
-        AsyncValidator head = validatorDirector.chainVariableValidator(userId);
+        AsyncValidator head = validatorDirector.chainStudentOrAdminAnyLecturer(userId);
 
         return head.validate(headers, "").flatMap(value -> {
             Long finalUserId = userId;
