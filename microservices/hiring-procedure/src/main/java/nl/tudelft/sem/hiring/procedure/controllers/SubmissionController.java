@@ -11,7 +11,6 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Set;
 import lombok.Data;
 import nl.tudelft.sem.hiring.procedure.cache.CourseInfoResponseCache;
 import nl.tudelft.sem.hiring.procedure.contracts.Contract;
@@ -21,16 +20,8 @@ import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
 import nl.tudelft.sem.hiring.procedure.services.NotificationService;
 import nl.tudelft.sem.hiring.procedure.services.SubmissionService;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
-import nl.tudelft.sem.hiring.procedure.validation.AsyncAuthValidator;
-import nl.tudelft.sem.hiring.procedure.validation.AsyncCourseCandidacyValidator;
-import nl.tudelft.sem.hiring.procedure.validation.AsyncCourseExistsValidator;
-import nl.tudelft.sem.hiring.procedure.validation.AsyncCourseTimeValidator;
-import nl.tudelft.sem.hiring.procedure.validation.AsyncLecturerValidator;
-import nl.tudelft.sem.hiring.procedure.validation.AsyncRoleValidator;
-import nl.tudelft.sem.hiring.procedure.validation.AsyncRoleValidator.Roles;
-import nl.tudelft.sem.hiring.procedure.validation.AsyncTaLimitValidator;
-import nl.tudelft.sem.hiring.procedure.validation.AsyncUserExistsValidator;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncValidator;
+import nl.tudelft.sem.hiring.procedure.validation.AsyncValidatorDirector;
 import nl.tudelft.sem.jwt.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -62,6 +53,7 @@ public class SubmissionController {
     private WebClient webClient;
     private GatewayConfig gatewayConfig;
     private final transient JwtUtils jwtUtils;
+    private AsyncValidatorDirector validatorDirector;
 
     /**
      * Constructor for the Submission Controller.
@@ -83,6 +75,8 @@ public class SubmissionController {
         this.webClient = WebClient.create();
         this.jwtUtils = jwtUtils;
         this.gatewayConfig = gatewayConfig;
+        this.validatorDirector = new AsyncValidatorDirector(jwtUtils, gatewayConfig,
+            submissionService, courseInfoCache);
     }
 
     /**
@@ -95,14 +89,7 @@ public class SubmissionController {
     @ResponseBody
     public Mono<Void> applyTa(@RequestParam() long courseId,
                               @RequestHeader() HttpHeaders authHeader) {
-        AsyncValidator head = AsyncValidator.Builder.newBuilder()
-                .addValidators(
-                        new AsyncAuthValidator(jwtUtils),
-                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.STUDENT)),
-                        new AsyncCourseTimeValidator(courseInfoCache, courseId),
-                        new AsyncCourseCandidacyValidator(jwtUtils, submissionService,
-                                gatewayConfig, courseId))
-                .build();
+        AsyncValidator head = validatorDirector.chainStudentCourseTimeAndMax(courseId);
 
         return head.validate(authHeader, "").flatMap(value -> {
             long userId = getUserIdFromToken(authHeader);
@@ -128,12 +115,7 @@ public class SubmissionController {
     @ResponseBody
     public Mono<List<Submission>> getSubmissions(@RequestParam() long courseId,
                                                  @RequestHeader() HttpHeaders authHeader) {
-        AsyncValidator head = AsyncValidator.Builder.newBuilder()
-                .addValidators(
-                        new AsyncAuthValidator(jwtUtils),
-                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)),
-                        new AsyncLecturerValidator(jwtUtils, gatewayConfig, courseId))
-                .build();
+        AsyncValidator head = validatorDirector.chainAdminResponsibleLecturer(courseId);
 
         return head.validate(authHeader, "").flatMap(value ->
                 Mono.just(submissionService.getSubmissionsForCourse(courseId)));
@@ -150,11 +132,7 @@ public class SubmissionController {
     @GetMapping("/get-all-submissions")
     @ResponseBody
     public Mono<List<Submission>> getAllSubmissions(@RequestHeader() HttpHeaders authHeader) {
-        AsyncValidator head = AsyncValidator.Builder.newBuilder()
-                .addValidators(
-                        new AsyncAuthValidator(jwtUtils),
-                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)))
-                .build();
+        AsyncValidator head = validatorDirector.chainAdminAnyLecturer();
 
         return head.validate(authHeader, "").flatMap(value ->
                 Mono.just(submissionService.getAllSubmissions()));
@@ -177,34 +155,28 @@ public class SubmissionController {
         // Check if the submission exists
         if (submissionOpt.isEmpty()) {
             return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Submission not found"));
+                "Submission not found"));
         }
         Submission submission = submissionOpt.get();
-        long courseId = submission.getCourseId();
 
-        AsyncValidator head = AsyncValidator.Builder.newBuilder()
-                .addValidators(
-                        new AsyncAuthValidator(jwtUtils),
-                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)),
-                        new AsyncLecturerValidator(jwtUtils, gatewayConfig, courseId),
-                        new AsyncCourseExistsValidator(courseInfoCache, courseId),
-                        new AsyncUserExistsValidator(gatewayConfig, submission.getUserId()),
-                        new AsyncTaLimitValidator(submissionService, courseInfoCache, courseId)
-                ).build();
+        long courseId = submission.getCourseId();
+        long userId = submission.getUserId();
+
+        AsyncValidator head = validatorDirector
+            .chainAdminResponsibleLecturerCourseUserLimit(courseId, userId);
 
         return head.validate(authHeader, "").flatMap(value -> {
             if (!submissionService.checkCandidate(submissionId)) {
                 return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "User is not a viable candidate"));
+                    "User is not a viable candidate"));
             }
-
             // Register hiring
-            submissionService.hire(submission.getSubmissionId());
+            submissionService.hire(submissionId);
 
             // Send notification request
-            notificationService.notify(submission.getUserId(),
+            notificationService.notify(userId,
                     String.format("Your submission with id %s has been approved.",
-                            submission.getSubmissionId()),
+                            submissionId),
                     authHeader.getFirst(HttpHeaders.AUTHORIZATION));
             return Mono.empty();
         });
@@ -224,34 +196,28 @@ public class SubmissionController {
         // Check if the submission exists
         if (submissionOpt.isEmpty()) {
             return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Submission not found"));
+                "Submission not found"));
         }
         Submission submission = submissionOpt.get();
 
+        long courseId = submission.getCourseId();
+
         // Construct validator chain
-        AsyncValidator head = AsyncValidator.Builder.newBuilder()
-                .addValidators(
-                        new AsyncAuthValidator(jwtUtils),
-                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN)),
-                        new AsyncLecturerValidator(jwtUtils, gatewayConfig,
-                                submission.getCourseId())
-                ).build();
+        AsyncValidator head = validatorDirector.chainAdminResponsibleLecturer(courseId);
 
         // Perform validation, and reject submission if exists
         return head.validate(headers, "").flatMap(value -> {
-            // Check if the submission is already processed (withdrawn, rejected, or accepted)
-            if (submission.getStatus() != SubmissionStatus.IN_PROGRESS) {
+            if (!submissionService.checkCandidate(submissionId)) {
                 return Mono.error(new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                        "Submission has already been processed"));
+                    "Submission has already been processed"));
             }
-
             // Change the status of the submission to rejected
             submissionService.rejectSubmission(submissionId);
 
             // Send notification request
             notificationService.notify(submission.getUserId(),
                     String.format("Your submission with id %s has been rejected.",
-                            submission.getSubmissionId()),
+                            submissionId),
                     headers.getFirst(HttpHeaders.AUTHORIZATION));
             return Mono.empty();
         });
@@ -265,12 +231,7 @@ public class SubmissionController {
      */
     @PostMapping("withdraw")
     public Mono<Void> withdraw(@RequestParam long courseId, @RequestHeader HttpHeaders headers) {
-        AsyncValidator head = AsyncValidator.Builder.newBuilder()
-                .addValidators(
-                        new AsyncAuthValidator(jwtUtils),
-                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.STUDENT, Roles.ADMIN)),
-                        new AsyncCourseTimeValidator(courseInfoCache, courseId)
-                ).build();
+        AsyncValidator head = validatorDirector.chainStudentAdminCourseTime(courseId);
 
         // Perform validation, and map to an appropriate response
         return head.validate(headers, "").flatMap(value -> {
@@ -278,22 +239,25 @@ public class SubmissionController {
             String resolvedToken = jwtUtils.resolveToken(token);
 
             long userId = jwtUtils.getUserId(jwtUtils.validateAndParseClaims(resolvedToken));
-            Optional<Submission> submission = submissionService.getSubmission(userId, courseId);
+            // Fetch the submission using the provided ID
+            Optional<Submission> submissionOpt = submissionService.getSubmission(userId, courseId);
 
-            // Check if the submission is valid (exists)
-            if (submission.isEmpty()) {
-                return Mono.error(new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
-                        "Submission does not exist"));
+            // Check if the submission exists
+            if (submissionOpt.isEmpty()) {
+                return Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Submission not found"));
             }
+            Submission submission = submissionOpt.get();
+
 
             // Check if the submission has not been processed yet
-            if (submission.get().getStatus() != SubmissionStatus.IN_PROGRESS) {
+            if (submission.getStatus() != SubmissionStatus.IN_PROGRESS) {
                 return Mono.error(new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED,
                         "Submission has already been processed"));
             }
 
             // Change the status of the submission to 'withdrawn'
-            submissionService.withdrawSubmission(submission.get().getSubmissionId());
+            submissionService.withdrawSubmission(submission.getSubmissionId());
             return Mono.empty();
         });
     }
@@ -320,7 +284,7 @@ public class SubmissionController {
                                          @RequestHeader HttpHeaders headers) {
         // Only admins/lecturers can make use of the user id parameter.
         // Students should only make use of the name parameter.
-        AsyncValidator head = buildVariableValidator(userId);
+        AsyncValidator head = validatorDirector.chainStudentOrAdminAnyLecturer(userId);
 
         return head.validate(headers, "").flatMap(value -> {
             Contract contract = new Contract();
@@ -358,7 +322,7 @@ public class SubmissionController {
     public Mono<Integer> getMaxHours(@RequestParam(required = false) Long userId,
                                      @RequestParam long courseId,
                                      @RequestHeader HttpHeaders headers) {
-        AsyncValidator head = buildVariableValidator(userId);
+        AsyncValidator head = validatorDirector.chainStudentOrAdminAnyLecturer(userId);
         return head.validate(headers, "").flatMap(value -> {
             Long finalUserId = userId;
             if (userId == null) {
@@ -385,10 +349,8 @@ public class SubmissionController {
     @PostMapping("set-max-hours")
     public Mono<Void> setMaxHours(@RequestParam long submissionId,
                                   @RequestHeader HttpHeaders headers, @RequestBody String body) {
-        AsyncValidator head = AsyncValidator.Builder.newBuilder()
-                .addValidators(new AsyncAuthValidator(jwtUtils),
-                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN))
-                ).build();
+        AsyncValidator head = validatorDirector.chainAdminAnyLecturer();
+
         return head.validate(headers, "").flatMap(value -> {
             int hours;
             Gson gson = new Gson();
@@ -420,7 +382,7 @@ public class SubmissionController {
     public Mono<Double> getRating(@RequestParam(required = false) Long userId,
                                   @RequestParam long courseId,
                                   @RequestHeader HttpHeaders headers) {
-        AsyncValidator head = buildVariableValidator(userId);
+        AsyncValidator head = validatorDirector.chainStudentOrAdminAnyLecturer(userId);
 
         return head.validate(headers, "").flatMap(value -> {
             Long finalUserId = userId;
@@ -456,10 +418,7 @@ public class SubmissionController {
     @PostMapping("rate")
     public Mono<Void> setRating(@RequestParam long submissionId,
                                 @RequestHeader HttpHeaders headers, @RequestBody String body) {
-        AsyncValidator head = AsyncValidator.Builder.newBuilder()
-                .addValidators(new AsyncAuthValidator(jwtUtils),
-                        new AsyncRoleValidator(jwtUtils, Set.of(Roles.LECTURER, Roles.ADMIN))
-                ).build();
+        AsyncValidator head = validatorDirector.chainAdminAnyLecturer();
 
         return head.validate(headers, "").flatMap(value -> {
             double rating;
@@ -502,7 +461,7 @@ public class SubmissionController {
     public Mono<List<Submission>> getStudentSubmissions(
             @RequestParam(required = false) Long userId,
             @RequestHeader HttpHeaders headers) {
-        AsyncValidator head = buildVariableValidator(userId);
+        AsyncValidator head = validatorDirector.chainStudentOrAdminAnyLecturer(userId);
 
         return head.validate(headers, "").flatMap(value -> {
             Long finalUserId = userId;
@@ -530,19 +489,6 @@ public class SubmissionController {
         String resolvedToken = jwtUtils.resolveToken(authJwt.getFirst("Authorization"));
         Jws<Claims> userClaims = jwtUtils.validateAndParseClaims(resolvedToken);
         return jwtUtils.getUserId(userClaims);
-    }
-
-    private AsyncValidator buildVariableValidator(Long userId) {
-        AsyncValidator.Builder builder = AsyncValidator.Builder.newBuilder();
-        builder.addValidator(new AsyncAuthValidator(jwtUtils));
-        if (userId != null) {
-            builder.addValidator(new AsyncRoleValidator(jwtUtils,
-                    Set.of(Roles.LECTURER, Roles.ADMIN)));
-
-        } else {
-            builder.addValidator(new AsyncRoleValidator(jwtUtils, Set.of(Roles.STUDENT)));
-        }
-        return builder.build();
     }
 
     private Mono<String> getNameFromUserId(Long userId, String token) {

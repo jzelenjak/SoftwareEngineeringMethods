@@ -1,5 +1,6 @@
 package nl.tudelft.sem.hiring.procedure.services;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -170,7 +171,7 @@ public class SubmissionServiceTest {
     @Test
     public void getApplicationTest() {
         given(submissionRepository.findByUserIdAndCourseId(userId1, courseId1))
-                .willReturn(Optional.of(submission1));
+            .willReturn(Optional.of(submission1));
         Optional<Submission> actual = submissionService.getSubmission(userId1, courseId1);
         assertTrue(actual.isPresent());
         assertEquals(submission1, actual.get());
@@ -180,9 +181,9 @@ public class SubmissionServiceTest {
     @Test
     public void testGetApplicationById() {
         given(submissionRepository.findById(submission1.getSubmissionId())).willReturn(
-                Optional.of(submission1));
+            Optional.of(submission1));
         Optional<Submission> actual = submissionService.getSubmission(
-                submission1.getSubmissionId());
+            submission1.getSubmissionId());
         assertTrue(actual.isPresent());
         assertEquals(submission1, actual.get());
         verify(submissionRepository).findById(submission1.getSubmissionId());
