@@ -4,11 +4,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import javax.swing.text.html.Option;
 import nl.tudelft.sem.hiring.procedure.entities.Submission;
 import nl.tudelft.sem.hiring.procedure.entities.SubmissionStatus;
 import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Mono;
 
 @Service
 public class SubmissionService {
@@ -91,6 +95,7 @@ public class SubmissionService {
     public Optional<Submission> getSubmission(long userId, long courseId) {
         return submissionRepository.findByUserIdAndCourseId(userId, courseId);
     }
+
 
     public List<Submission> getSubmissionsForStudent(long userId) {
         return submissionRepository.findAllByUserId(userId);

@@ -1,19 +1,13 @@
 package nl.tudelft.sem.hiring.procedure.recommendation.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
+import nl.tudelft.sem.hiring.procedure.recommendation.dto.RecommendationRequest;
 import nl.tudelft.sem.hiring.procedure.recommendation.entities.Recommendation;
-import nl.tudelft.sem.hiring.procedure.recommendation.service.Recommender;
-import nl.tudelft.sem.hiring.procedure.recommendation.strategies.GradeStrategy;
-import nl.tudelft.sem.hiring.procedure.recommendation.strategies.HoursStrategy;
-import nl.tudelft.sem.hiring.procedure.recommendation.strategies.RecommendationStrategy;
-import nl.tudelft.sem.hiring.procedure.recommendation.strategies.StrategyType;
-import nl.tudelft.sem.hiring.procedure.recommendation.strategies.TimesSelectedStrategy;
-import nl.tudelft.sem.hiring.procedure.recommendation.strategies.TotalTimesSelectedStrategy;
+import nl.tudelft.sem.hiring.procedure.recommendation.factory.RecommenderFactory;
+import nl.tudelft.sem.hiring.procedure.recommendation.strategies.Recommender;
 import nl.tudelft.sem.hiring.procedure.repositories.SubmissionRepository;
 import nl.tudelft.sem.hiring.procedure.utils.GatewayConfig;
 import nl.tudelft.sem.hiring.procedure.validation.AsyncAuthValidator;
@@ -41,18 +35,19 @@ public class RecommendationController {
 
     private final transient JwtUtils jwtUtils;
 
-    private final transient SubmissionRepository submissionRepository;
+    private final transient SubmissionRepository repo;
 
     /**
      * Instantiates a new RecommendationController object.
      *
      * @param repo          the application repository
-     * @param gatewayConfig the gateway configuration
+     * @param config        the gateway configuration
+     * @param jwtUtils      JWT related utilities
      */
     public RecommendationController(SubmissionRepository repo,
-                                    GatewayConfig gatewayConfig, JwtUtils jwtUtils) {
-        this.submissionRepository = repo;
-        this.gatewayConfig = gatewayConfig;
+                                    GatewayConfig config, JwtUtils jwtUtils) {
+        this.repo = repo;
+        this.gatewayConfig = config;
         this.jwtUtils = jwtUtils;
     }
 
@@ -80,39 +75,15 @@ public class RecommendationController {
     /**
      * A helper method that selects the specified strategy and makes recommendations.
      *
-     * @param courseId      the id of the course
-     * @param amount        the maximum number of recommendations to return
-     * @param minValue      the minimum value for the metric (used for filtering)
-     * @param strategy      the metric to base recommendations on
-     *                      (total times selected, times selected for a given course,
-     *                      the highest grade or the most hours spent working on the given course)
-     * @param authorization the authorization token of the caller
+     * @param req   the object with the parameters for recommendation
+     * @param jwt   the jwt token of the caller
      * @return the list of recommendations for candidate TAs based on the specified metric
      *         (wrapped in the mono). The size of the list is at most `amount`.
      */
-    private Mono<List<Recommendation>> recommend(long courseId, int amount,
-                                                 double minValue, StrategyType strategy,
-                                                 String authorization) {
-        switch (strategy) {
-            case TOTAL_TIMES_SELECTED:
-                RecommendationStrategy strategy1 =
-                        new TotalTimesSelectedStrategy(submissionRepository);
-                return new Recommender(strategy1).recommend(courseId, amount, minValue);
-            case TIMES_SELECTED:
-                RecommendationStrategy strategy2 =
-                        new TimesSelectedStrategy(submissionRepository, gatewayConfig,
-                                authorization);
-                return new Recommender(strategy2).recommend(courseId, amount, minValue);
-            case GRADE:
-                RecommendationStrategy strategy3 =
-                        new GradeStrategy(submissionRepository, gatewayConfig, authorization);
-                return new Recommender(strategy3).recommend(courseId, amount, minValue);
-            //HOURS
-            default:
-                RecommendationStrategy strategy4 =
-                        new HoursStrategy(submissionRepository, gatewayConfig, authorization);
-                return new Recommender(strategy4).recommend(courseId, amount, minValue);
-        }
+    private Mono<List<Recommendation>> recommend(RecommendationRequest req, String jwt) {
+        Recommender strategy = RecommenderFactory
+            .create(repo, gatewayConfig, jwt, req.getStrategy());
+        return strategy.recommend(req.getCourseId(), req.getAmount(), req.getMinValue());
     }
 
     /**
@@ -125,23 +96,12 @@ public class RecommendationController {
      */
     private Mono<List<Recommendation>> parseBodyAndRecommend(String body, String authorization) {
         try {
-            JsonNode node = new ObjectMapper().readTree(body);
-            long courseId = Long.parseLong(node.get("courseId").asText());
-            int amount = Integer.parseInt(node.get("amount").asText());
-            double minValue = Double.parseDouble(node.get("minValue").asText());
-            StrategyType strategy = StrategyType
-                    .valueOf(node.get("strategy").asText().toUpperCase(Locale.ROOT));
-
-            return recommend(courseId, amount, minValue, strategy, authorization);
+            ObjectMapper mapper = new ObjectMapper();
+            RecommendationRequest req = mapper.readValue(body, RecommendationRequest.class);
+            return recommend(req, authorization);
         } catch (JsonProcessingException e) {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Invalid request body format"));
-        } catch (NumberFormatException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Cannot parse the number provided");
-        } catch (IllegalArgumentException e) {
-            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "The specified strategy does not exist"));
         } catch (Exception e) {
             // Will be NullPointerException. Since, PMD complains about catching NPE,
             //  a general exception put here

@@ -37,3 +37,4 @@ __MACOSX/
 
 /microservices/hiring-procedure/out/*
 !/microservices/hiring-procedure/out/out.pdf
+codemr/
