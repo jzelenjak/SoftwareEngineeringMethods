@@ -59,13 +59,6 @@ class NotificationServiceTest {
     }
 
     @Test
-    void testChangeUserFromNotificationNotFound() {
-        Assertions.assertThrows(EntityNotFoundException.class, () -> this.notificationService
-                        .changeUserIdFromNotification(11L, 5555334L),
-                String.format("Notification with id %d has not been found", 11L));
-    }
-
-    @Test
     void testChangeMessageFromNotificationSuccess() {
         final long userId = 55415553368669L;
         this.notificationRepository.save(new Notification(userId, "You have been selected!"));
@@ -88,14 +81,6 @@ class NotificationServiceTest {
         Assertions.assertEquals(newMessage, notification.getMessage());
 
         this.notificationRepository.delete(notification);
-    }
-
-    @Test
-    void testChangeMessageFromNotificationNotFound() {
-        Assertions.assertThrows(EntityNotFoundException.class, () -> this.notificationService
-                    .changeMessageFromNotification(13L,
-                            "Your hours have been approved."),
-                String.format("Notification with id %d has not been found", 13L));
     }
 
     @Test
