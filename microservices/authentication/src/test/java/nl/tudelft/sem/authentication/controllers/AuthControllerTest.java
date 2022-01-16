@@ -30,9 +30,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 
 @SpringBootTest
@@ -133,8 +135,10 @@ class AuthControllerTest {
         String username = "admin1";
         String password = "MyAdmin1";
 
+        String oldEncodedPassword = encode(password);
+
         this.userDataRepository
-                .save(new UserData(username, encode(password), UserRole.ADMIN, 2049100L));
+                .save(new UserData(username, oldEncodedPassword, UserRole.ADMIN, 2049100L));
 
         String jwt = jwtTokenProvider.createToken(2049100L, UserRole.ADMIN, new Date());
         String jwtPrefixed = PREFIX + jwt;
@@ -147,6 +151,12 @@ class AuthControllerTest {
                         .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
                         .characterEncoding(UTF8))
                 .andExpect(status().isOk());
+
+        Optional<UserData> optionalUser = userDataRepository.findByUsername(username);
+        assert optionalUser.isPresent();
+        UserData user = optionalUser.get();
+
+        Assertions.assertNotEquals(oldEncodedPassword, user.getPassword());
 
         this.userDataRepository.deleteById(username);
     }
@@ -214,13 +224,25 @@ class AuthControllerTest {
         String jwt = jwtTokenProvider.createToken(1048369L, UserRole.LECTURER, new Date());
         String jwtPrefixed = PREFIX + jwt;
 
-        this.mockMvc
+        ResultActions resultActions = this.mockMvc
                 .perform(get(LOGIN_URL)
                         .contentType(APPLICATION_JSON)
                         .content(createJson(USERNAME, username, PASSWORD, password))
                         .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
                         .characterEncoding(UTF8))
                 .andExpect(status().isOk());
+
+        // Fetch list from the repository.
+        Optional<List<Notification>> optionalList = notificationRepository.findByUserId(1048369L);
+        assert optionalList.isPresent();
+        List<Notification> list = optionalList.get();
+
+        // Get the response and see if response contains what it should contain.
+        MockHttpServletResponse response = resultActions.andReturn().getResponse();
+        Assertions.assertTrue(response.getHeader(HttpHeaders.AUTHORIZATION).contains("Bearer"));
+        Assertions.assertEquals("application/json", response.getHeader(HttpHeaders.CONTENT_TYPE));
+        Assertions.assertEquals(authController.turnListInJsonResponse(list),
+                response.getContentAsString());
 
         Jws<Claims> claimsJws = this.jwtTokenProvider.validateAndParseToken(jwt);
         Assertions.assertNotNull(claimsJws);
@@ -242,13 +264,19 @@ class AuthControllerTest {
         String jwt = jwtTokenProvider.createToken(9057302L, UserRole.ADMIN, new Date());
         String jwtPrefixed = PREFIX + jwt;
 
-        this.mockMvc
+        ResultActions resultActions = this.mockMvc
                 .perform(get(LOGIN_URL)
                         .contentType(APPLICATION_JSON)
                         .content(createJson(USERNAME, username, PASSWORD, password))
                         .header(HttpHeaders.AUTHORIZATION, jwtPrefixed)
                         .characterEncoding(UTF8))
                 .andExpect(status().isOk());
+
+        // Get the response and see if response contains what it should contain.
+        MockHttpServletResponse response = resultActions.andReturn().getResponse();
+        Assertions.assertTrue(response.getHeader(HttpHeaders.AUTHORIZATION).contains("Bearer"));
+        Assertions.assertEquals("application/json", response.getHeader(HttpHeaders.CONTENT_TYPE));
+        Assertions.assertEquals("No new notifications.", response.getContentAsString());
 
         Jws<Claims> claimsJws = this.jwtTokenProvider.validateAndParseToken(jwt);
         Assertions.assertNotNull(claimsJws);
