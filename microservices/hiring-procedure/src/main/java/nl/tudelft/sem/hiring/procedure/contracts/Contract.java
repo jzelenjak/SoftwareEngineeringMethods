@@ -62,7 +62,7 @@ public class Contract {
      * @throws IOException if the resource is not present on the server or other issues
      * @throws DocumentException if PdfStamper does not work
      */
-    public void generate(String name) throws IOException, DocumentException {
+    public byte[] generate() throws IOException, DocumentException {
         URL baseContract;
 
         baseContract = Thread.currentThread().getContextClassLoader()
@@ -73,9 +73,9 @@ public class Contract {
         }
         BaseFont bf = BaseFont.createFont(
                 BaseFont.HELVETICA, BaseFont.CP1252, BaseFont.EMBEDDED);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         PdfReader reader = new PdfReader(baseContract); // input PDF
-        PdfStamper stamper = new PdfStamper(reader,
-            new FileOutputStream("out/" + name + ".pdf")); // output PDF
+        PdfStamper stamper = new PdfStamper(reader, byteArrayOutputStream); // output PDF
 
         if (this.taName != null) {
             addText(taName, taPos, stamper, bf);
@@ -92,7 +92,7 @@ public class Contract {
         addText(String.valueOf(maxHours), maxHoursPos, stamper, bf);
 
         stamper.close();
-        return;
+        return byteArrayOutputStream.toByteArray();
     }
 
     private void addText(String text, Position pos, PdfStamper stamper, BaseFont bf) {
