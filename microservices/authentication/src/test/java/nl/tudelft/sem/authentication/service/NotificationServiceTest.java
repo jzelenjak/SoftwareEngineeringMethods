@@ -7,6 +7,7 @@ import javax.persistence.EntityNotFoundException;
 import nl.tudelft.sem.authentication.entities.Notification;
 import nl.tudelft.sem.authentication.repositories.NotificationRepository;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,6 +19,13 @@ class NotificationServiceTest {
 
     @Autowired
     private transient NotificationRepository notificationRepository;
+
+    @BeforeEach
+    void setupBefore() {
+        // Delete all entries from in-memory database before running a test
+        this.notificationRepository.deleteAll();
+    }
+
 
     @Test
     void testAddNotificationSuccess() {
@@ -65,6 +73,7 @@ class NotificationServiceTest {
                 String.format("Notification with id %d has not been found", 11L));
     }
 
+
     @Test
     void testChangeMessageFromNotificationSuccess() {
         final long userId = 55415553368669L;
@@ -93,10 +102,11 @@ class NotificationServiceTest {
     @Test
     void testChangeMessageFromNotificationNotFound() {
         Assertions.assertThrows(EntityNotFoundException.class, () -> this.notificationService
-                    .changeMessageFromNotification(13L,
-                            "Your hours have been approved."),
+                        .changeMessageFromNotification(13L,
+                                "Your hours have been approved."),
                 String.format("Notification with id %d has not been found", 13L));
     }
+
 
     @Test
     void testLoadByNotificationIdFound() {

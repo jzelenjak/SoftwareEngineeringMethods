@@ -293,6 +293,32 @@ class NotificationControllerTest {
     }
 
     @Test
+    @WithMockUser(username = STUDENTUSERNAME, password = SHAREDPASSWORD)
+    void testChangeUserFromNotificationAsStudentFailed() throws Exception {
+        Notification notification = new Notification(4608648L, "Welkom!");
+        this.notificationRepository.save(notification);
+        final long targetNotificationId = notification.getNotificationId();
+
+        this.mockMvc
+                .perform(put(CHANGE_USER_URL)
+                        .contentType(APPLICATION_JSON)
+                        .content(createJson(NOTIFICATIONID,
+                                String.valueOf(targetNotificationId), NEWUSER, "754321"))
+                        .header(HttpHeaders.AUTHORIZATION, jwtStudent)
+                        .characterEncoding(UTF8))
+                .andExpect(status().isForbidden());
+
+        Optional<Notification> optionalNotification =
+                this.notificationRepository.findByNotificationId(targetNotificationId);
+        assert optionalNotification.isPresent();
+
+        Notification newNotification = optionalNotification.get();
+        Assertions.assertEquals(4608648L, newNotification.getUserId());
+
+        this.notificationRepository.deleteAll();
+    }
+
+    @Test
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
     void testChangeMessageFromNotificationSuccess() throws Exception {
         Notification notification = new Notification(4648648L, "Hi JavAa!");
@@ -320,6 +346,33 @@ class NotificationControllerTest {
     }
 
     @Test
+    @WithMockUser(username = STUDENTUSERNAME, password = SHAREDPASSWORD)
+    void testChangeMessageFromNotificationAsStudentFailed() throws Exception {
+        Notification notification = new Notification(4648648L, "MT sucks");
+        this.notificationRepository.save(notification);
+        final long targetNotificationId = notification.getNotificationId();
+
+        this.mockMvc
+                .perform(put(CHANGE_MESSAGE_URL)
+                        .contentType(APPLICATION_JSON)
+                        .content(createJson(NOTIFICATIONID,
+                                String.valueOf(targetNotificationId),
+                                NEWMESSAGE, "MT is cool"))
+                        .header(HttpHeaders.AUTHORIZATION, jwtStudent)
+                        .characterEncoding(UTF8))
+                .andExpect(status().isForbidden());
+
+        Optional<Notification> optionalNotification =
+                this.notificationRepository.findByNotificationId(targetNotificationId);
+        assert optionalNotification.isPresent();
+
+        Notification newNotification = optionalNotification.get();
+        Assertions.assertEquals("MT sucks", newNotification.getMessage());
+
+        this.notificationRepository.deleteAll();
+    }
+
+    @Test
     @WithMockUser(username = ADMINUSERNAME, password = SHAREDPASSWORD)
     void testDeleteExistingNotificationById() throws Exception {
         Notification notification = new Notification(1212121L, "Delete me!");
@@ -333,6 +386,32 @@ class NotificationControllerTest {
                         .header(HttpHeaders.AUTHORIZATION, jwtAdmin)
                         .characterEncoding(UTF8))
                 .andExpect(status().isOk());
+
+        Optional<Notification> optionalNotification =
+                this.notificationRepository.findByNotificationId(targetNotificationId);
+        assert optionalNotification.isEmpty();
+
+        this.notificationRepository.deleteAll();
+    }
+
+    @Test
+    @WithMockUser(username = STUDENTUSERNAME, password = SHAREDPASSWORD)
+    void testDeleteExistingNotificationByIdAsStudentFailed() throws Exception {
+        Notification notification = new Notification(1212121L, "I am sus");
+        this.notificationRepository.save(notification);
+        final long targetNotificationId = notification.getNotificationId();
+        this.mockMvc
+                .perform(delete(DELETE_BY_ID_URL)
+                        .contentType(APPLICATION_JSON)
+                        .content(createJson(NOTIFICATIONID,
+                                String.valueOf(targetNotificationId)))
+                        .header(HttpHeaders.AUTHORIZATION, jwtStudent)
+                        .characterEncoding(UTF8))
+                .andExpect(status().isForbidden());
+
+        Optional<Notification> optionalNotification =
+                this.notificationRepository.findByNotificationId(targetNotificationId);
+        assert optionalNotification.isPresent();
 
         this.notificationRepository.deleteAll();
     }
@@ -366,5 +445,34 @@ class NotificationControllerTest {
         assert listOfNotifications.isEmpty();
     }
 
+    @Test
+    @WithMockUser(username = STUDENTUSERNAME, password = SHAREDPASSWORD)
+    void testDeleteExistingNotificationByUserIdAsStudentFailed() throws Exception {
+        Notification notification1 = new Notification(5551234L, "Top");
+        Notification notification2 = new Notification(5551234L, "Middle");
+        Notification notification3 = new Notification(5551234L, "Bottom");
 
+        List<Notification> list = new ArrayList<>();
+        list.add(notification1);
+        list.add(notification2);
+        list.add(notification3);
+
+        this.notificationRepository.save(notification1);
+        this.notificationRepository.save(notification2);
+        this.notificationRepository.save(notification3);
+
+        this.mockMvc
+                .perform(delete(DELETE_BY_USER_URL)
+                        .contentType(APPLICATION_JSON)
+                        .content(createJson(USERID, "5551234"))
+                        .header(HttpHeaders.AUTHORIZATION, jwtStudent)
+                        .characterEncoding(UTF8))
+                .andExpect(status().isForbidden());
+
+        Optional<List<Notification>> listOfNotifications =
+                this.notificationRepository.findByUserId(5551234L);
+        assert listOfNotifications.isPresent();
+
+        Assertions.assertEquals(list.size(), listOfNotifications.get().size());
+    }
 }
